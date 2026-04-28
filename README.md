@@ -1,174 +1,102 @@
-# Adaptive
+# AdaptiveJS
 
-Adaptive is an experimental application framework for server-rendered, reactive, multi-target UI.
+AdaptiveJS is an experimental TypeScript and TSX framework for server-rendered applications with hydration, file-based routing, and fine-grained reactivity.
 
-At a high level, the project combines:
+It is designed around a simple authoring model for the web today, while keeping room for multi-target execution through a shared IR architecture.
 
-- fine-grained reactivity and direct rendering
-- file-based SSR routing
-- client component boundaries
-- deployment presets for `node`, `netlify` and `vercel`
-- a declarative UI layer that is not tied to the DOM as the only runtime
-
-The npm scope is:
+The public npm scope is:
 
 - `@adaptivejs/*`
 
-## Mental model
+## What is AdaptiveJS?
 
-Adaptive is closer to:
+AdaptiveJS is a framework built around a few core ideas:
 
-- Solid-style reactivity and directness
-- Next-style application structure and SSR ergonomics
+- TypeScript and TSX as the default authoring model
+- SSR with client hydration
+- file-based routing from `src/pages`
+- fine-grained reactive primitives instead of heavy view abstractions
+- an experimental IR-oriented architecture for future non-web targets
 
-but it is not a React clone, Solid clone, or Next clone.
+Today, the web target is the most complete part of the system. The multi-target side is still experimental, but it already influences how the framework is structured.
 
-The main design goal is to keep the authoring model simple in TypeScript and TSX while allowing:
+## Why AdaptiveJS?
 
-- server rendering
-- client hydration
-- route-level metadata
-- deploy-target-specific output
-- future non-web targets through a shared IR and common abstractions
+- Simple TSX authoring without large abstraction layers
+- Built-in SSR, hydration, and file-based routing
+- Fine-grained reactivity for interactive UI
+- Explicit deploy presets for `node`, `netlify`, and `vercel`
+- Future-ready architecture for multi-runtime and multi-target output via IR
 
-## Package layout
+## Example
 
-Public packages today:
+```tsx
+import { useReactive } from "@adaptivejs/web";
+import { Button, Column, Text } from "@adaptivejs/ui";
 
-- `@adaptivejs/cli`
+export default function Page() {
+  const [count, setCount] = useReactive(0);
+
+  return (
+    <Column>
+      <Text>{() => `Count: ${count()}`}</Text>
+      <Button onClick={() => setCount((value) => value + 1)}>
+        Increment
+      </Button>
+    </Column>
+  );
+}
+```
+
+## Architecture
+
+AdaptiveJS is organized as a layered system rather than a single monolithic package.
+
 - `@adaptivejs/core`
+  Shared primitives, JSX runtime entrypoints, and IR-facing types.
 - `@adaptivejs/common`
+  Cross-target abstractions such as `AdaptiveFormData` and platform-facing APIs.
 - `@adaptivejs/ui`
+  Declarative UI primitives like `Column`, `Row`, `Text`, `Button`, `Card`, and related building blocks.
 - `@adaptivejs/ft`
+  Fine-grained reactive runtime, client execution, effects, hydration, and client component registration.
 - `@adaptivejs/ssr`
+  Node SSR server, request handling, template assembly, and metadata injection.
 - `@adaptivejs/static`
+  Preset-oriented output pipeline for deploy targets such as `node`, `netlify`, and `vercel`.
 - `@adaptivejs/web`
-- `create-adaptive-app`
+  Main web-facing package that application authors consume.
+- `@adaptivejs/cli`
+  CLI used for development, build, start, and preset output generation.
 
-Experimental or internal packages:
-
-- `@adaptivejs/example`
-- `@adaptivejs/mobile-android`
-- `@adaptivejs/desktop`
-
-### `@adaptivejs/core`
-
-Shared framework primitives and IR-facing types.
-
-Responsibilities:
-
-- JSX runtime entrypoints
-- IR primitives
-- shared authoring types
-
-### `@adaptivejs/common`
-
-Common cross-target abstractions that should not live in a web-only package.
-
-Examples:
-
-- `AdaptiveFormData`
-- platform API surfaces such as `App.*`
-
-### `@adaptivejs/ui`
-
-Declarative UI layer and common primitives.
-
-Examples:
-
-- `Column`
-- `Row`
-- `Text`
-- `Button`
-- `Surface`
-- `AppBar`
-
-### `@adaptivejs/ft`
-
-Reactive runtime and client-side execution primitives.
-
-Examples:
-
-- hydration
-- state
-- effects
-- client component registration
-- server action client bridge
-
-### `@adaptivejs/ssr`
-
-Node SSR runtime and request handling utilities for the web target.
-
-Examples:
-
-- server creation
-- route matching
-- HTML template assembly
-- metadata injection
-
-### `@adaptivejs/web`
-
-Official web target surface.
-
-This is the package app authors normally consume for:
-
-- JSX runtime
-- SSR integration
-- route rendering
-- client component integration
-- exported web-facing APIs
-
-### `@adaptivejs/static`
-
-Preset-based deploy output built on top of Nitro.
-
-Current presets:
-
-- `node`
-- `netlify`
-- `vercel`
-- `static`
-
-This package is responsible for turning the base Adaptive build into deploy-target-specific output.
-
-### `create-adaptive-app`
-
-Starter generator for new projects.
-
-The template already includes:
-
-- `adaptive dev`
-- `adaptive build`
-- `adaptive start`
-- `adaptive build --preset netlify`
-- `adaptive preview --preset netlify`
-- `netlify.toml`
-
-## What works today
+## Core Features
 
 Current working surface:
 
-- TSX with a custom runtime
+- TSX pages and layouts
+- file-based routing in `src/pages`
+- dynamic routes such as `[slug].tsx`
+- SSR and hydration
+- client components via `"client";`
+- server modules via `"server";`
 - `useReactive`
 - `useEffect`
 - `useLayoutEffect`
-- `useContext`
-- `useMemo`
-- file-based routing via `src/pages`
-- dynamic routes such as `[slug].tsx`
-- server modules via `"server";`
-- client components via `"client";`
-- SSR and hydration on the web target
-- route-level metadata via `generateMetadata(...)`
-- deploy presets for `node`, `netlify` and `vercel`
+- `createContext` and `useContext`
+- route-level metadata with `generateMetadata(...)`
+- deploy presets for `node`, `netlify`, and `vercel`
 
-## Build model
+## Build and Output Model
 
-Adaptive uses a two-stage build model.
+AdaptiveJS uses a two-stage build model.
 
 ### Base build
 
-`adaptive build` produces the framework's base application output:
+```bash
+adaptive build
+```
+
+This produces the framework build output under:
 
 - `dist/client`
 - `dist/server`
@@ -177,123 +105,57 @@ Adaptive uses a two-stage build model.
 
 ### Preset build
 
-`adaptive build --preset <target>` produces target-specific output under:
+```bash
+adaptive build --preset node
+adaptive build --preset netlify
+adaptive build --preset vercel
+```
 
-- `.adaptivejs/output/<preset>`
-
-Examples:
+Preset outputs are grouped under:
 
 - `.adaptivejs/output/node`
 - `.adaptivejs/output/netlify`
 - `.adaptivejs/output/vercel`
 
-Adaptive-owned adapter and cache artifacts also live under:
+Adaptive-owned adapter and cache artifacts are also grouped under:
 
 - `.adaptivejs/adapters/...`
 - `.adaptivejs/cache/...`
 
-This keeps deploy artifacts grouped instead of scattering `.output`, `.adaptive-nitro`, and related folders at the app root.
+## Metadata
 
-## Preview model
-
-Adaptive supports local preview for preset output.
-
-Examples:
-
-```bash
-adaptive build --preset node
-adaptive preview --preset node
-```
-
-```bash
-adaptive build --preset netlify
-adaptive preview --preset netlify
-```
-
-```bash
-adaptive build --preset vercel
-adaptive preview --preset vercel
-```
-
-## Metadata API
-
-Routes or layouts can provide metadata using a callback similar in spirit to modern app routers:
+Routes and layouts can export metadata using a callback similar to modern SSR routers:
 
 ```ts
-export async function generateMetadata(context) {
+export async function generateMetadata() {
   return {
     title: "My page",
-    description: "Adaptive page description",
+    description: "AdaptiveJS page",
     canonical: "https://example.com",
     openGraph: {
       title: "My page",
-      description: "Adaptive page description",
-    },
-    twitter: {
-      card: "summary_large_image",
+      description: "AdaptiveJS page",
     },
   };
 }
 ```
 
-Adaptive injects metadata into the HTML head during SSR.
+AdaptiveJS injects metadata during SSR using the `<!--adaptive-head-->` placeholder in the HTML template.
 
-To support this, the HTML template should contain:
+## Positioning
 
-```html
-<!--adaptive-head-->
-```
+AdaptiveJS is not a React clone, not a Solid clone, and not a Next.js clone.
 
-If the placeholder is missing, Adaptive falls back to injecting before `</head>`.
+The closest mental model is:
 
-## Environment loading
+- Solid-like reactivity and directness
+- Next-like SSR, routing, and app structure
+- an additional IR-oriented layer for future multi-target execution
 
-The CLI loads `.env` files automatically in an order similar to modern SSR frameworks:
+That combination is the main identity of the project today.
 
-- `.env.development.local` or `.env.production.local`
-- `.env.local`
-- `.env.development` or `.env.production`
-- `.env`
+## Status
 
-Commands:
+AdaptiveJS is still experimental, but the current web stack is already usable for real SSR projects and deploy-preset workflows.
 
-- `adaptive dev` uses `development`
-- `adaptive build` uses `production`
-- `adaptive start` uses `production`
-
-Only variables prefixed with `ADAPTIVE_PUBLIC_` are exposed to the client bundle.
-
-## Monorepo development
-
-Install and validate the monorepo:
-
-```bash
-npm install
-npm run typecheck
-npm run build
-```
-
-Run the example app:
-
-```bash
-cd D:\projetos\Adaptive\example
-npm run dev
-```
-
-## Current direction
-
-Adaptive is still experimental, but the current architecture is already shaped around:
-
-1. shared authoring in TypeScript and TSX
-2. a first-class web target
-3. deploy presets as explicit build outputs
-4. progressive movement toward non-web targets through shared abstractions and IR
-
-Today the web target is the most complete part of the system.
-
-The long-term direction is:
-
-- `core` and `common` as shared foundation
-- `ui` as shared declarative authoring layer
-- `web` as the main production-ready target
-- native targets evolving on top of the same semantics instead of the DOM being the only execution model
+The broader multi-target architecture is under active development.
