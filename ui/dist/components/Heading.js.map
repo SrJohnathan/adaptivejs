@@ -1,0 +1,11 @@
+{
+  "mappings": "AACA,SAAS,6BAA6B;AACtC,SAAS,kBAAkB;AAM3B,OAAO,SAAS,QACd,SACA,QAAsB,EAAE,EACxB,QAAyB,EAAE,EACV;CACjB,MAAM,QAAQ,MAAM,SAAS;CAC7B,MAAM,eAAe,EAAE,GAAG,OAAO;AACjC,QAAO,aAAa;AAEpB,QAAO,sBACL,WACA,WAAW,cAAc;EACvB;EACA;EACD,CAAC,EACF,QACD",
+  "names": [],
+  "sources": [
+    "D:\\projetos\\Adaptive\\ui\\src\\components\\Heading.ts"
+  ],
+  "sourcesContent": [
+    "import type { AdaptiveUIChild, AdaptiveUIProps, AdaptiveUIStyle } from \"../primitives.js\";\nimport { adaptiveCreateElement } from \"../primitives.js\";\r\nimport { mergeProps } from \"../internal/shared.js\";\r\n\r\nexport type HeadingProps = AdaptiveUIProps & {\r\n  level?: number;\r\n};\r\n\r\nexport function Heading(\r\n  content: string,\r\n  props: HeadingProps = {},\r\n  style: AdaptiveUIStyle = {}\r\n): AdaptiveUIChild {\n  const level = props.level ?? 1;\r\n  const headingProps = { ...props };\r\n  delete headingProps.level;\r\n\r\n  return adaptiveCreateElement(\r\n    \"heading\",\r\n    mergeProps(headingProps, {\r\n      level,\r\n      style\r\n    }),\r\n    content\r\n  );\r\n}\r\n"
+  ],
+  "version": 3
+}

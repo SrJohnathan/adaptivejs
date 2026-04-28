@@ -1,0 +1,11 @@
+{
+  "mappings": "AAAA,SAAS,uBAAuB,aAAmC;AACnE,SAAS,eAAe;AAExB,OAAO,SAAS,UAAU,OAAe,OAAwB,IAA8B;AAC7F,QAAO,cACC,CACJ,sBACE,SACA;EACE,SAAS;EACT,OAAO;IACJ,MAAM,UAAU;IAChB,MAAM,aAAa;IACnB,MAAM,eAAe;GACvB;EACF,EACD,MACD,EACD,MACD,EACD,EAAE,EACF,GAAG,MAAM,eAAe,QAAQ,CACjC",
+  "names": [],
+  "sources": [
+    "D:\\projetos\\Adaptive\\ui\\src\\components\\FormGroup.ts"
+  ],
+  "sourcesContent": [
+    "import { adaptiveCreateElement, Style, type AdaptiveUIChild } from \"../primitives.js\";\nimport { Surface } from \"./Surface.js\";\n\nexport function FormGroup(label: string, input: AdaptiveUIChild, id?: string): AdaptiveUIChild {\n  return Surface(\n    () => [\n      adaptiveCreateElement(\n        \"label\",\n        {\n          htmlFor: id,\n          style: {\n            [Style.Display]: \"block\",\n            [Style.FontWeight]: \"600\",\n            [Style.MarginBottom]: \"0.5rem\",\n          },\n        },\n        label,\n      ),\n      input,\n    ],\n    {},\n    { [Style.MarginBottom]: \"1rem\" },\n  );\n}\n"
+  ],
+  "version": 3
+}

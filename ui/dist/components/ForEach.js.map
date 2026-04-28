@@ -1,0 +1,11 @@
+{
+  "mappings": "AAEA,OAAO,SAAS,QACd,OACA,YACmB;AACnB,QAAO,MAAM,KAAK,MAAM,UAAU,WAAW,MAAM,MAAM,CAAC",
+  "names": [],
+  "sources": [
+    "D:\\projetos\\Adaptive\\ui\\src\\components\\ForEach.ts"
+  ],
+  "sourcesContent": [
+    "import type { AdaptiveUIChild } from \"../primitives.js\";\n\r\nexport function ForEach<T>(\r\n  items: T[],\r\n  renderItem: (item: T, index: number) => AdaptiveUIChild\n): AdaptiveUIChild[] {\n  return items.map((item, index) => renderItem(item, index));\r\n}\r\n"
+  ],
+  "version": 3
+}

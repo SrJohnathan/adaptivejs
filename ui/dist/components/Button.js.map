@@ -1,0 +1,11 @@
+{
+  "mappings": "AAAA,SACE,6BAIK;AACP,SAAS,kBAAkB;AAQ3B,OAAO,SAAS,OACd,OACA,QAAqB,EAAE,EACvB,QAAyB,EAAE,EACV;AACjB,QAAO,sBACL,UACA,WAAW,OAAO,EAAE,OAAO,CAAC,EAC5B,MACD",
+  "names": [],
+  "sources": [
+    "D:\\projetos\\Adaptive\\ui\\src\\components\\Button.ts"
+  ],
+  "sourcesContent": [
+    "import {\n  adaptiveCreateElement,\n  type AdaptiveUIChild,\n  type AdaptiveUIProps,\n  type AdaptiveUIStyle\n} from \"../primitives.js\";\nimport { mergeProps } from \"../internal/shared.js\";\r\n\r\nexport type ButtonProps = AdaptiveUIProps & {\r\n  disabled?: boolean;\r\n  variant?: string;\r\n  onPress?: (...args: any[]) => void;\r\n};\r\n\r\nexport function Button(\r\n  label: string,\r\n  props: ButtonProps = {},\r\n  style: AdaptiveUIStyle = {}\r\n): AdaptiveUIChild {\n  return adaptiveCreateElement(\r\n    \"button\",\r\n    mergeProps(props, { style }),\r\n    label\r\n  );\r\n}\r\n"
+  ],
+  "version": 3
+}

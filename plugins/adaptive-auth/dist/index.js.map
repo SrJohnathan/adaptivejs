@@ -1,0 +1,11 @@
+{
+  "mappings": "AAAA,SACE,oBACA,mBACA,oBACA,oBACA,qBACA,iCACK;AACP,SAAS,wBAAwB;AACjC,SAAS,8BAA8B",
+  "names": [],
+  "sources": [
+    "D:\\projetos\\Adaptive\\plugins\\adaptive-auth\\src\\index.ts"
+  ],
+  "sourcesContent": [
+    "export {\n  createAdaptiveAuth,\n  createAuthPlugins,\n  resolveAuthSession,\n  requireAuthSession,\n  createOAuthProvider,\n  createCredentialsProvider\n} from \"./server.js\";\nexport { fetchAuthSession } from \"./client.js\";\nexport { MemoryAuthSessionStore } from \"./session-store.js\";\nexport type {\n  AdaptiveAuth,\n  AdaptiveAuthOptions,\n  AdaptiveAuthProvider,\n  AuthSessionRecord,\n  AuthSessionStore,\n  AuthTokenSet,\n  ProviderAuthorizeContext,\n  ProviderCredentialsContext,\n  ProviderCallbackContext,\n  ProviderCallbackResult,\n  PublicAuthSession\n} from \"./types.js\";\n"
+  ],
+  "version": 3
+}

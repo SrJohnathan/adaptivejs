@@ -1,0 +1,57 @@
+export {
+  createElement,
+  Fragment,
+  jsx,
+  jsxs,
+  jsxDEV,
+  useRef,
+  useRefReactive
+} from "./jsx-runtime.js";
+
+export {
+  createIRText,
+  createIRDynamic,
+  createIRFragment,
+  createIRElement,
+  createIRPageDocument,
+  createIRDesktopDocument,
+  normalizeToIR,
+  serializeIR,
+  serializeIRPageDocument,
+  serializeIRDesktopDocument
+} from "./ir.js";
+
+export type {
+  IRScalar,
+  IRValue,
+  IRDynamicValue,
+  IREventValue,
+  IRTextNode,
+  IRDynamicNode,
+  IRFragmentNode,
+  IRElementNode,
+  IRNode,
+  IRStateDefinition,
+  IRStateBinding,
+  IRStateAction,
+  IRLifecycleEffect,
+  IRComponentBinding,
+  IRComponentAction,
+  IRPageDocument,
+  IRDesktopDocument,
+  IRDesktopPageDocument,
+  IRPageManifestEntry,
+  NormalizeToIROptions
+} from "./ir.js";
+
+export type {
+  AdaptiveChild,
+  AdaptiveNode,
+  AdaptiveType,
+  ReactiveElement,
+  ReactiveNode,
+  Ref,
+  Context,
+  ProviderProps,
+  Box
+} from "./types.js";

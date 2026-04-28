@@ -1,0 +1,11 @@
+{
+  "mappings": "AAAA,SAAS,kBAAkB;AAG3B,OAAO,MAAM,uBAAyF;CACpG,AAAiB,WAAW,IAAI,KAAsC;CAEtE,MAAM,IAAI,WAAmB;AAC3B,SAAO,KAAK,SAAS,IAAI,UAAU,IAAI;;CAGzC,MAAM,IAAI,WAAmB,QAAiC;AAC5D,OAAK,SAAS,IAAI,WAAW,OAAO;;CAGtC,MAAM,OAAO,WAAmB;AAC9B,OAAK,SAAS,OAAO,UAAU;;;AAInC,OAAO,SAAS,kBAAkB;AAChC,QAAO,YAAY",
+  "names": [],
+  "sources": [
+    "D:\\projetos\\Adaptive\\plugins\\adaptive-auth\\src\\session-store.ts"
+  ],
+  "sourcesContent": [
+    "import { randomUUID } from \"node:crypto\";\nimport type { AuthSessionRecord, AuthSessionStore } from \"./types.js\";\n\nexport class MemoryAuthSessionStore<User = Record<string, unknown>> implements AuthSessionStore<User> {\n  private readonly sessions = new Map<string, AuthSessionRecord<User>>();\n\n  async get(sessionId: string) {\n    return this.sessions.get(sessionId) ?? null;\n  }\n\n  async set(sessionId: string, record: AuthSessionRecord<User>) {\n    this.sessions.set(sessionId, record);\n  }\n\n  async delete(sessionId: string) {\n    this.sessions.delete(sessionId);\n  }\n}\n\nexport function createSessionId() {\n  return randomUUID();\n}\n"
+  ],
+  "version": 3
+}

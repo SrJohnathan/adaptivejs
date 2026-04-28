@@ -1,0 +1,11 @@
+{
+  "mappings": "",
+  "names": [],
+  "sources": [
+    "D:\\projetos\\Adaptive\\ft\\src\\interface\\ContextProps.ts"
+  ],
+  "sourcesContent": [
+    "\r\n\r\n\r\nexport interface ContextStack<T> {\r\n    sha:string\r\n    values:T\r\n\r\n\r\n}"
+  ],
+  "version": 3
+}

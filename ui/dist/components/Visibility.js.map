@@ -1,0 +1,11 @@
+{
+  "mappings": "AAAA,SAAS,wBAA8C;AACvD,SAAS,oBAAoB;AAE7B,OAAO,SAAS,WAAW,SAAkB,OAA+C;AAC1F,QAAO,UAAU,aAAa,OAAO,CAAC,GAAG,kBAAkB",
+  "names": [],
+  "sources": [
+    "D:\\projetos\\Adaptive\\ui\\src\\components\\Visibility.ts"
+  ],
+  "sourcesContent": [
+    "import { adaptiveFragment, type AdaptiveUIChild } from \"../primitives.js\";\nimport { adaptiveWrap } from \"../internal/shared.js\";\n\nexport function Visibility(visible: boolean, child: () => AdaptiveUIChild): AdaptiveUIChild {\n  return visible ? adaptiveWrap(child()) : adaptiveFragment();\r\n}\r\n"
+  ],
+  "version": 3
+}

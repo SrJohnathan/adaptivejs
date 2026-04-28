@@ -1,0 +1,11 @@
+{
+  "mappings": ";AACA,OAAO,MAAM,WAAW;CACtB,OAAO;CACP,MAAM;CACN,MAAM;CACN,OAAO;CACR;;AAGD,OAAO,MAAM,SAAS;CACpB,UAAU,SAAS;CACnB,eAAe;CAChB;AAED,OAAO,SAAS,aAAa,SAAyD;AACpF,QAAO,OAAO,QAAQ,QAAQ;;;AAIhC,OAAO,MAAM,SAAS;CACpB,QAAQ,SAAiB,GAAG,SAAgB;AAC1C,MAAI,OAAO,iBAAiB,OAAO,YAAY,SAAS,OAAO;AAC7D,WAAQ,MAAM,mBAAmB,WAAW,GAAG,KAAK;;;CAGxD,OAAO,SAAiB,GAAG,SAAgB;AACzC,MAAI,OAAO,iBAAiB,OAAO,YAAY,SAAS,MAAM;AAC5D,WAAQ,KAAK,qBAAqB,WAAW,GAAG,KAAK;;;CAGzD,OAAO,SAAiB,GAAG,SAAgB;AACzC,MAAI,OAAO,iBAAiB,OAAO,YAAY,SAAS,MAAM;AAC5D,WAAQ,KAAK,kBAAkB,WAAW,GAAG,KAAK;;;CAGtD,QAAQ,SAAiB,GAAG,SAAgB;AAC1C,MAAI,OAAO,iBAAiB,OAAO,YAAY,SAAS,OAAO;AAC7D,WAAQ,MAAM,mBAAmB,WAAW,GAAG,KAAK;;;CAGzD",
+  "names": [],
+  "sources": [
+    "D:\\projetos\\Adaptive\\ft\\src\\logging_configuration.ts"
+  ],
+  "sourcesContent": [
+    "// Crie um sistema de log dedicado\nexport const LogLevel = {\n  ERROR: 0,\n  WARN: 1,\n  INFO: 2,\n  DEBUG: 3\n};\n\n// Configuração que pode ser acessada pelo consumidor\nexport const config = {\n  logLevel: LogLevel.WARN, // Nível padrão\n  enableConsole: true\n};\n\nexport function setupLogging(options: { logLevel?: number, enableConsole?: boolean }) {\n  Object.assign(config, options);\n}\n\n// Funções de log que verificam a configuração\nexport const logger = {\n  error: (message: string, ...args: any[]) => {\n    if (config.enableConsole && config.logLevel >= LogLevel.ERROR) {\n      console.error(`[Hydrate Error] ${message}`, ...args);\n    }\n  },\n  warn: (message: string, ...args: any[]) => {\n    if (config.enableConsole && config.logLevel >= LogLevel.WARN) {\n      console.warn(`[Hydrate Warning] ${message}`, ...args);\n    }\n  },\n  info: (message: string, ...args: any[]) => {\n    if (config.enableConsole && config.logLevel >= LogLevel.INFO) {\n      console.info(`[Hydrate Info] ${message}`, ...args);\n    }\n  },\n  debug: (message: string, ...args: any[]) => {\n    if (config.enableConsole && config.logLevel >= LogLevel.DEBUG) {\n      console.debug(`[Hydrate Debug] ${message}`, ...args);\n    }\n  }\n};"
+  ],
+  "version": 3
+}

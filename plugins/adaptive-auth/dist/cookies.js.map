@@ -1,0 +1,11 @@
+{
+  "mappings": "AAEA,OAAO,SAAS,gBAAgB,cAAkC,YAAoB;AACpF,KAAI,CAAC,aAAc,QAAO;CAE1B,MAAM,QAAQ,aAAa,MAAM,IAAI,CAAC,KAAK,SAAS,KAAK,MAAM,CAAC;AAChE,MAAK,MAAM,QAAQ,OAAO;AACxB,MAAI,CAAC,KAAK,WAAW,GAAG,WAAW,GAAG,CAAE;AACxC,SAAO,mBAAmB,KAAK,MAAM,WAAW,SAAS,EAAE,CAAC;;AAG9D,QAAO;;AAGT,OAAO,SAAS,oBAAoB,MAAyB,WAA0B;CACrF,MAAM,EAAE,YAAY,cAAc,eAAe,aAAa,KAAK;CACnE,MAAM,WAAW;EACf,GAAG,WAAW,GAAG,mBAAmB,aAAa,GAAG;EACpD;EACA;EACA,YAAY,SAAS,GAAG,aAAa,GAAG,SAAS,MAAM,EAAE;EAC1D;AAED,KAAI,eAAe;AACjB,WAAS,KAAK,SAAS;;AAGzB,KAAI,WAAW;AACb,WAAS,KAAK,WAAW,eAAe;QACnC;AACL,WAAS,KAAK,wCAAwC;AACtD,WAAS,KAAK,YAAY;;AAG5B,QAAO,SAAS,KAAK,KAAK",
+  "names": [],
+  "sources": [
+    "D:\\projetos\\Adaptive\\plugins\\adaptive-auth\\src\\cookies.ts"
+  ],
+  "sourcesContent": [
+    "import type { AdaptiveAuth } from \"./types.js\";\n\nexport function readCookieValue(cookieHeader: string | undefined, cookieName: string) {\n  if (!cookieHeader) return null;\n\n  const parts = cookieHeader.split(\";\").map((part) => part.trim());\n  for (const part of parts) {\n    if (!part.startsWith(`${cookieName}=`)) continue;\n    return decodeURIComponent(part.slice(cookieName.length + 1));\n  }\n\n  return null;\n}\n\nexport function serializeAuthCookie(auth: AdaptiveAuth<any>, sessionId: string | null) {\n  const { cookieName, cookieMaxAge, secureCookies, sameSite } = auth.options;\n  const segments = [\n    `${cookieName}=${encodeURIComponent(sessionId ?? \"\")}`,\n    \"Path=/\",\n    \"HttpOnly\",\n    `SameSite=${sameSite[0].toUpperCase()}${sameSite.slice(1)}`\n  ];\n\n  if (secureCookies) {\n    segments.push(\"Secure\");\n  }\n\n  if (sessionId) {\n    segments.push(`Max-Age=${cookieMaxAge}`);\n  } else {\n    segments.push(\"Expires=Thu, 01 Jan 1970 00:00:00 GMT\");\n    segments.push(\"Max-Age=0\");\n  }\n\n  return segments.join(\"; \");\n}\n"
+  ],
+  "version": 3
+}

@@ -1,0 +1,55 @@
+{
+  "name": "@adaptivejs/web",
+  "version": "0.1.8",
+  "description": "Official web target for Adaptive, including runtime, SSR, and hydration.",
+  "license": "MIT",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./app": {
+      "types": "./dist/apis/app.d.ts",
+      "import": "./dist/apis/app.js"
+    },
+    "./client": {
+      "types": "./dist/client.d.ts",
+      "import": "./dist/client.js"
+    },
+    "./server": {
+      "types": "./dist/server.d.ts",
+      "import": "./dist/server.js"
+    },
+    "./jsx-runtime": {
+      "types": "./dist/jsx-runtime.d.ts",
+      "import": "./dist/jsx-runtime.js"
+    },
+    "./jsx-dev-runtime": {
+      "types": "./dist/jsx-dev-runtime.d.ts",
+      "import": "./dist/jsx-dev-runtime.js"
+    }
+  },
+  "scripts": {
+    "build": "npm run build --workspace @adaptivejs/ft && npm run build --workspace @adaptivejs/core && npm run build --workspace @adaptivejs/common && npm run build --workspace @adaptivejs/ssr && node ../scripts/build-package.mjs web && tsc -p tsconfig.json --emitDeclarationOnly",
+    "dev": "node ../scripts/build-package.mjs web",
+    "typecheck": "npm run build --workspace @adaptivejs/ft && npm run build --workspace @adaptivejs/core && npm run build --workspace @adaptivejs/common && npm run build --workspace @adaptivejs/ssr && tsc -p tsconfig.json --noEmit"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "dependencies": {
+    "@adaptivejs/ft": "^0.1.8",
+    "@adaptivejs/common": "^0.1.8",
+    "@adaptivejs/core": "^0.1.8",
+    "@adaptivejs/ssr": "^0.1.8"
+  },
+  "devDependencies": {
+    "typescript": "^5.8.2"
+  }
+}

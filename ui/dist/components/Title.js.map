@@ -1,0 +1,11 @@
+{
+  "mappings": "AACA,SAAS,eAAe;AAExB,OAAO,SAAS,MACd,SACA,QAAgB,GAChB,QAAyB,EAAE,EAC3B,QAAyB,EAAE,EACV;AACjB,QAAO,QAAQ,SAAS;EAAE,GAAG;EAAO;EAAO,EAAE,MAAM",
+  "names": [],
+  "sources": [
+    "D:\\projetos\\Adaptive\\ui\\src\\components\\Title.ts"
+  ],
+  "sourcesContent": [
+    "import type { AdaptiveUIChild, AdaptiveUIProps, AdaptiveUIStyle } from \"../primitives.js\";\nimport { Heading } from \"./Heading.js\";\n\nexport function Title(\n  content: string,\n  level: number = 1,\n  props: AdaptiveUIProps = {},\n  style: AdaptiveUIStyle = {},\n): AdaptiveUIChild {\n  return Heading(content, { ...props, level }, style);\n}\n"
+  ],
+  "version": 3
+}

@@ -1,0 +1,2964 @@
+{
+  "kind": "desktop-entry",
+  "entry": "src/pages/index.tsx",
+  "initialRoute": "/",
+  "state": [],
+  "bindings": [],
+  "actions": [],
+  "effects": [],
+  "componentBindings": [],
+  "componentActions": [],
+  "pages": [
+    {
+      "route": "/",
+      "source": "src/pages/index.tsx",
+      "state": [],
+      "bindings": [],
+      "actions": [],
+      "effects": [],
+      "componentBindings": [],
+      "componentActions": [],
+      "tree": {
+        "kind": "element",
+        "tag": "container",
+        "props": {
+          "className": "shell",
+          "style": {
+            "maxWidth": 920,
+            "margin": "48px auto",
+            "padding": 32,
+            "borderRadius": 28,
+            "border": "1px solid #d8cdb8",
+            "backgroundColor": "#f8f1e6"
+          }
+        },
+        "children": [
+          {
+            "kind": "element",
+            "tag": "container",
+            "props": {
+              "className": "hero",
+              "style": {
+                "gap": 24
+              }
+            },
+            "children": [
+              {
+                "kind": "element",
+                "tag": "row",
+                "props": {
+                  "className": "nav",
+                  "style": {
+                    "gap": 18
+                  }
+                },
+                "children": [
+                  {
+                    "kind": "element",
+                    "tag": "link",
+                    "props": {
+                      "href": "/",
+                      "label": "Home"
+                    },
+                    "children": [
+                      {
+                        "kind": "text",
+                        "value": "Home"
+                      }
+                    ]
+                  },
+                  {
+                    "kind": "element",
+                    "tag": "link",
+                    "props": {
+                      "href": "/about",
+                      "label": "About"
+                    },
+                    "children": [
+                      {
+                        "kind": "text",
+                        "value": "About"
+                      }
+                    ]
+                  },
+                  {
+                    "kind": "element",
+                    "tag": "link",
+                    "props": {
+                      "href": "/compose",
+                      "label": "Compose UI"
+                    },
+                    "children": [
+                      {
+                        "kind": "text",
+                        "value": "Compose UI"
+                      }
+                    ]
+                  },
+                  {
+                    "kind": "element",
+                    "tag": "link",
+                    "props": {
+                      "href": "/workspace",
+                      "label": "Workspace"
+                    },
+                    "children": [
+                      {
+                        "kind": "text",
+                        "value": "Workspace"
+                      }
+                    ]
+                  },
+                  {
+                    "kind": "element",
+                    "tag": "link",
+                    "props": {
+                      "href": "/hooks",
+                      "label": "Hooks Demo"
+                    },
+                    "children": [
+                      {
+                        "kind": "text",
+                        "value": "Hooks Demo"
+                      }
+                    ]
+                  },
+                  {
+                    "kind": "element",
+                    "tag": "link",
+                    "props": {
+                      "href": "/jsx-hooks",
+                      "label": "JSX Hooks"
+                    },
+                    "children": [
+                      {
+                        "kind": "text",
+                        "value": "JSX Hooks"
+                      }
+                    ]
+                  },
+                  {
+                    "kind": "element",
+                    "tag": "link",
+                    "props": {
+                      "href": "/reactive-context",
+                      "label": "Reactive Context"
+                    },
+                    "children": [
+                      {
+                        "kind": "text",
+                        "value": "Reactive Context"
+                      }
+                    ]
+                  },
+                  {
+                    "kind": "element",
+                    "tag": "link",
+                    "props": {
+                      "href": "/notes/adaptive",
+                      "label": "Dynamic Route"
+                    },
+                    "children": [
+                      {
+                        "kind": "text",
+                        "value": "Dynamic Route"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "kind": "element",
+                "tag": "text",
+                "props": {},
+                "children": [
+                  {
+                    "kind": "text",
+                    "value": "app platform:"
+                  },
+                  {
+                    "kind": "text",
+                    "value": "desktop"
+                  }
+                ]
+              },
+              {
+                "kind": "element",
+                "tag": "text",
+                "props": {
+                  "className": "muted",
+                  "style": {
+                    "color": "#6c5c48",
+                    "fontSize": 18
+                  }
+                },
+                "children": [
+                  {
+                    "kind": "text",
+                    "value": "Adaptive example app"
+                  }
+                ]
+              },
+              {
+                "kind": "element",
+                "tag": "heading",
+                "props": {
+                  "style": {
+                    "fontSize": 56,
+                    "color": "#1f1d1a"
+                  },
+                  "level": 1
+                },
+                "children": [
+                  {
+                    "kind": "text",
+                    "value": "React-like authoring, direct DOM mindset, SSR-ready structure."
+                  }
+                ]
+              },
+              {
+                "kind": "element",
+                "tag": "text",
+                "props": {
+                  "className": "muted",
+                  "style": {
+                    "color": "#6c5c48",
+                    "fontSize": 18
+                  }
+                },
+                "children": [
+                  {
+                    "kind": "text",
+                    "value": "This example uses"
+                  },
+                  {
+                    "kind": "element",
+                    "tag": "strong",
+                    "props": {},
+                    "children": [
+                      {
+                        "kind": "text",
+                        "value": "@adaptivejs/web"
+                      }
+                    ]
+                  },
+                  {
+                    "kind": "text",
+                    "value": "as the unified web target for UI and SSR."
+                  }
+                ]
+              },
+              {
+                "kind": "element",
+                "tag": "container",
+                "props": {
+                  "className": "grid",
+                  "style": {
+                    "gap": 20
+                  }
+                },
+                "children": [
+                  {
+                    "kind": "element",
+                    "tag": "container",
+                    "props": {
+                      "className": "card",
+                      "style": {
+                        "padding": 24,
+                        "borderRadius": 24,
+                        "border": "1px solid #d8cdb8",
+                        "backgroundColor": "#fbf7ef"
+                      }
+                    },
+                    "children": [
+                      {
+                        "kind": "element",
+                        "tag": "heading",
+                        "props": {
+                          "level": 3
+                        },
+                        "children": [
+                          {
+                            "kind": "text",
+                            "value": "TSX Components"
+                          }
+                        ]
+                      },
+                      {
+                        "kind": "element",
+                        "tag": "text",
+                        "props": {
+                          "className": "muted",
+                          "style": {
+                            "color": "#6c5c48"
+                          }
+                        },
+                        "children": [
+                          {
+                            "kind": "text",
+                            "value": "Pages are regular TSX functions."
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "kind": "element",
+                    "tag": "container",
+                    "props": {
+                      "className": "card",
+                      "style": {
+                        "padding": 24,
+                        "borderRadius": 24,
+                        "border": "1px solid #d8cdb8",
+                        "backgroundColor": "#fbf7ef"
+                      }
+                    },
+                    "children": [
+                      {
+                        "kind": "element",
+                        "tag": "heading",
+                        "props": {
+                          "level": 3
+                        },
+                        "children": [
+                          {
+                            "kind": "text",
+                            "value": "SSR Router"
+                          }
+                        ]
+                      },
+                      {
+                        "kind": "element",
+                        "tag": "text",
+                        "props": {
+                          "className": "muted",
+                          "style": {
+                            "color": "#6c5c48"
+                          }
+                        },
+                        "children": [
+                          {
+                            "kind": "text",
+                            "value": "Routes are resolved from src/pages on the server."
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "kind": "element",
+                    "tag": "container",
+                    "props": {
+                      "className": "card",
+                      "style": {
+                        "padding": 24,
+                        "borderRadius": 24,
+                        "border": "1px solid #d8cdb8",
+                        "backgroundColor": "#fbf7ef"
+                      }
+                    },
+                    "children": [
+                      {
+                        "kind": "element",
+                        "tag": "heading",
+                        "props": {
+                          "level": 3
+                        },
+                        "children": [
+                          {
+                            "kind": "text",
+                            "value": "Page IR"
+                          }
+                        ]
+                      },
+                      {
+                        "kind": "element",
+                        "tag": "text",
+                        "props": {
+                          "className": "muted",
+                          "style": {
+                            "color": "#6c5c48"
+                          }
+                        },
+                        "children": [
+                          {
+                            "kind": "text",
+                            "value": "Each route can now produce its own IR artifact during build."
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "kind": "element",
+                    "tag": "container",
+                    "props": {
+                      "className": "card",
+                      "style": {
+                        "padding": 24,
+                        "borderRadius": 24,
+                        "border": "1px solid #d8cdb8",
+                        "backgroundColor": "#fbf7ef"
+                      }
+                    },
+                    "children": [
+                      {
+                        "kind": "element",
+                        "tag": "heading",
+                        "props": {
+                          "level": 3
+                        },
+                        "children": [
+                          {
+                            "kind": "text",
+                            "value": "No Vite Core"
+                          }
+                        ]
+                      },
+                      {
+                        "kind": "element",
+                        "tag": "text",
+                        "props": {
+                          "className": "muted",
+                          "style": {
+                            "color": "#6c5c48"
+                          }
+                        },
+                        "children": [
+                          {
+                            "kind": "text",
+                            "value": "This setup runs without a Vite dependency."
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "kind": "element",
+                "tag": "container",
+                "props": {
+                  "action": "/_action/subscribe",
+                  "method": "post",
+                  "style": {
+                    "gap": 16
+                  }
+                },
+                "children": [
+                  {
+                    "kind": "element",
+                    "tag": "text",
+                    "props": {
+                      "for": "email",
+                      "style": {
+                        "fontSize": 18
+                      }
+                    },
+                    "children": [
+                      {
+                        "kind": "text",
+                        "value": "Subscribe demo action"
+                      }
+                    ]
+                  },
+                  {
+                    "kind": "element",
+                    "tag": "input",
+                    "props": {
+                      "id": "email",
+                      "name": "email",
+                      "type": "email",
+                      "placeholder": "you@example.com",
+                      "style": {
+                        "width": "100%",
+                        "padding": 16,
+                        "borderRadius": 16,
+                        "border": "1px solid #d8cdb8",
+                        "backgroundColor": "#fffdf8"
+                      }
+                    },
+                    "children": []
+                  },
+                  {
+                    "kind": "element",
+                    "tag": "button",
+                    "props": {
+                      "type": "submit",
+                      "style": {
+                        "width": "100%",
+                        "padding": 16,
+                        "borderRadius": 16,
+                        "backgroundColor": "#1f7b6d",
+                        "color": "#ffffff"
+                      },
+                      "label": "Send"
+                    },
+                    "children": [
+                      {
+                        "kind": "text",
+                        "value": "Send"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "route": "/about",
+      "source": "src/pages/about.tsx",
+      "state": [],
+      "bindings": [],
+      "actions": [],
+      "effects": [],
+      "componentBindings": [],
+      "componentActions": [],
+      "tree": {
+        "kind": "element",
+        "tag": "container",
+        "props": {
+          "className": "shell"
+        },
+        "children": [
+          {
+            "kind": "element",
+            "tag": "container",
+            "props": {
+              "className": "hero"
+            },
+            "children": [
+              {
+                "kind": "element",
+                "tag": "row",
+                "props": {
+                  "className": "nav"
+                },
+                "children": [
+                  {
+                    "kind": "element",
+                    "tag": "link",
+                    "props": {
+                      "href": "/",
+                      "label": "Home"
+                    },
+                    "children": [
+                      {
+                        "kind": "text",
+                        "value": "Home"
+                      }
+                    ]
+                  },
+                  {
+                    "kind": "element",
+                    "tag": "link",
+                    "props": {
+                      "href": "/about",
+                      "label": "About"
+                    },
+                    "children": [
+                      {
+                        "kind": "text",
+                        "value": "About"
+                      }
+                    ]
+                  },
+                  {
+                    "kind": "element",
+                    "tag": "link",
+                    "props": {
+                      "href": "/compose",
+                      "label": "Compose UI"
+                    },
+                    "children": [
+                      {
+                        "kind": "text",
+                        "value": "Compose UI"
+                      }
+                    ]
+                  },
+                  {
+                    "kind": "element",
+                    "tag": "link",
+                    "props": {
+                      "href": "/workspace",
+                      "label": "Workspace"
+                    },
+                    "children": [
+                      {
+                        "kind": "text",
+                        "value": "Workspace"
+                      }
+                    ]
+                  },
+                  {
+                    "kind": "element",
+                    "tag": "link",
+                    "props": {
+                      "href": "/hooks",
+                      "label": "Hooks Demo"
+                    },
+                    "children": [
+                      {
+                        "kind": "text",
+                        "value": "Hooks Demo"
+                      }
+                    ]
+                  },
+                  {
+                    "kind": "element",
+                    "tag": "link",
+                    "props": {
+                      "href": "/jsx-hooks",
+                      "label": "JSX Hooks"
+                    },
+                    "children": [
+                      {
+                        "kind": "text",
+                        "value": "JSX Hooks"
+                      }
+                    ]
+                  },
+                  {
+                    "kind": "element",
+                    "tag": "link",
+                    "props": {
+                      "href": "/reactive-context",
+                      "label": "Reactive Context"
+                    },
+                    "children": [
+                      {
+                        "kind": "text",
+                        "value": "Reactive Context"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "kind": "element",
+                "tag": "text",
+                "props": {
+                  "className": "muted"
+                },
+                "children": [
+                  {
+                    "kind": "text",
+                    "value": "About Adaptive"
+                  }
+                ]
+              },
+              {
+                "kind": "element",
+                "tag": "heading",
+                "props": {
+                  "level": 1
+                },
+                "children": [
+                  {
+                    "kind": "text",
+                    "value": "A small framework direction with server rendering built in."
+                  }
+                ]
+              },
+              {
+                "kind": "element",
+                "tag": "text",
+                "props": {
+                  "className": "muted"
+                },
+                "children": [
+                  {
+                    "kind": "text",
+                    "value": "The goal is to keep the component ergonomics familiar while staying closer to fine-grained reactivity than virtual DOM diffing."
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "route": "/compose",
+      "source": "src/pages/compose.tsx",
+      "state": [],
+      "bindings": [],
+      "actions": [],
+      "effects": [],
+      "componentBindings": [],
+      "componentActions": [],
+      "tree": {
+        "kind": "element",
+        "tag": "container",
+        "props": {
+          "className": "shell"
+        },
+        "children": [
+          {
+            "kind": "element",
+            "tag": "column",
+            "props": {},
+            "children": [
+              {
+                "kind": "element",
+                "tag": "card",
+                "props": {
+                  "className": "hero",
+                  "style": {
+                    "Border": "none",
+                    "Padding": "32px",
+                    "BoxShadow": "0 24px 60px rgba(28, 26, 23, 0.08)"
+                  }
+                },
+                "children": [
+                  {
+                    "kind": "element",
+                    "tag": "row",
+                    "props": {
+                      "className": "nav",
+                      "style": {
+                        "MarginBottom": "1.5rem"
+                      }
+                    },
+                    "children": [
+                      {
+                        "kind": "element",
+                        "tag": "link",
+                        "props": {
+                          "href": "/",
+                          "label": "Home"
+                        },
+                        "children": [
+                          {
+                            "kind": "text",
+                            "value": "Home"
+                          }
+                        ]
+                      },
+                      {
+                        "kind": "element",
+                        "tag": "link",
+                        "props": {
+                          "href": "/about",
+                          "label": "About"
+                        },
+                        "children": [
+                          {
+                            "kind": "text",
+                            "value": "About"
+                          }
+                        ]
+                      },
+                      {
+                        "kind": "element",
+                        "tag": "link",
+                        "props": {
+                          "href": "/compose",
+                          "label": "Compose UI"
+                        },
+                        "children": [
+                          {
+                            "kind": "text",
+                            "value": "Compose UI"
+                          }
+                        ]
+                      },
+                      {
+                        "kind": "element",
+                        "tag": "link",
+                        "props": {
+                          "href": "/workspace",
+                          "label": "Workspace"
+                        },
+                        "children": [
+                          {
+                            "kind": "text",
+                            "value": "Workspace"
+                          }
+                        ]
+                      },
+                      {
+                        "kind": "element",
+                        "tag": "link",
+                        "props": {
+                          "href": "/hooks",
+                          "label": "Hooks Demo"
+                        },
+                        "children": [
+                          {
+                            "kind": "text",
+                            "value": "Hooks Demo"
+                          }
+                        ]
+                      },
+                      {
+                        "kind": "element",
+                        "tag": "link",
+                        "props": {
+                          "href": "/jsx-hooks",
+                          "label": "JSX Hooks"
+                        },
+                        "children": [
+                          {
+                            "kind": "text",
+                            "value": "JSX Hooks"
+                          }
+                        ]
+                      },
+                      {
+                        "kind": "element",
+                        "tag": "link",
+                        "props": {
+                          "href": "/reactive-context",
+                          "label": "Reactive Context"
+                        },
+                        "children": [
+                          {
+                            "kind": "text",
+                            "value": "Reactive Context"
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "kind": "element",
+                    "tag": "text",
+                    "props": {
+                      "className": "muted"
+                    },
+                    "children": [
+                      {
+                        "kind": "text",
+                        "value": "Declarative compose style"
+                      }
+                    ]
+                  },
+                  {
+                    "kind": "element",
+                    "tag": "text",
+                    "props": {},
+                    "children": [
+                      {
+                        "kind": "text",
+                        "value": "This page is built with the compose API instead of regular TSX."
+                      }
+                    ]
+                  },
+                  {
+                    "kind": "element",
+                    "tag": "text",
+                    "props": {
+                      "className": "muted"
+                    },
+                    "children": [
+                      {
+                        "kind": "text",
+                        "value": "The goal here is to show the second authoring style: more structured, more DSL-like, and closer to Compose or Flutter ergonomics."
+                      }
+                    ]
+                  },
+                  {
+                    "kind": "element",
+                    "tag": "spacer",
+                    "props": {},
+                    "children": [
+                      {
+                        "kind": "text",
+                        "value": "1.25rem"
+                      }
+                    ]
+                  },
+                  {
+                    "kind": "element",
+                    "tag": "row",
+                    "props": {
+                      "className": "grid"
+                    },
+                    "children": [
+                      {
+                        "kind": "element",
+                        "tag": "card",
+                        "props": {
+                          "className": "card",
+                          "style": {
+                            "Width": "100%"
+                          }
+                        },
+                        "children": [
+                          {
+                            "kind": "element",
+                            "tag": "text",
+                            "props": {},
+                            "children": [
+                              {
+                                "kind": "text",
+                                "value": "Column / Row"
+                              }
+                            ]
+                          },
+                          {
+                            "kind": "element",
+                            "tag": "text",
+                            "props": {},
+                            "children": [
+                              {
+                                "kind": "text",
+                                "value": "Layout is composed with functions instead of nested JSX blocks."
+                              }
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "kind": "element",
+                        "tag": "card",
+                        "props": {
+                          "className": "card",
+                          "style": {
+                            "Width": "100%"
+                          }
+                        },
+                        "children": [
+                          {
+                            "kind": "element",
+                            "tag": "text",
+                            "props": {},
+                            "children": [
+                              {
+                                "kind": "text",
+                                "value": "Form primitives"
+                              }
+                            ]
+                          },
+                          {
+                            "kind": "element",
+                            "tag": "text",
+                            "props": {},
+                            "children": [
+                              {
+                                "kind": "text",
+                                "value": "Inputs, labels and groups can be assembled as declarative building blocks."
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "kind": "element",
+                    "tag": "spacer",
+                    "props": {},
+                    "children": [
+                      {
+                        "kind": "text",
+                        "value": "1.25rem"
+                      }
+                    ]
+                  },
+                  {
+                    "kind": "element",
+                    "tag": "form",
+                    "props": {},
+                    "children": [
+                      {
+                        "kind": "element",
+                        "tag": "container",
+                        "props": {},
+                        "children": [
+                          {
+                            "kind": "text",
+                            "value": "Name"
+                          }
+                        ]
+                      },
+                      {
+                        "kind": "element",
+                        "tag": "container",
+                        "props": {},
+                        "children": [
+                          {
+                            "kind": "text",
+                            "value": "Favorite style"
+                          }
+                        ]
+                      },
+                      {
+                        "kind": "element",
+                        "tag": "button",
+                        "props": {
+                          "label": "Compose Submit",
+                          "type": "submit"
+                        },
+                        "children": []
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "route": "/hooks",
+      "source": "src/pages/hooks.tsx",
+      "state": [
+        {
+          "id": "count",
+          "setter": "setCount",
+          "kind": "reactive",
+          "source": "useReactive",
+          "initial": 0
+        },
+        {
+          "id": "status",
+          "setter": "setStatus",
+          "kind": "reactive",
+          "source": "useReactive",
+          "initial": "booting"
+        },
+        {
+          "id": "email",
+          "setter": "setEmail",
+          "kind": "reactive",
+          "source": "useReactive",
+          "initial": "hello@adaptive.dev"
+        },
+        {
+          "id": "serverMessage",
+          "setter": "setServerMessage",
+          "kind": "reactive",
+          "source": "useReactive",
+          "initial": "No server action called yet."
+        },
+        {
+          "id": "selectedFile",
+          "setter": "setSelectedFile",
+          "kind": "reactive",
+          "source": "useReactive",
+          "initial": null
+        }
+      ],
+      "bindings": [
+        {
+          "stateId": "email",
+          "access": "call",
+          "scope": "render"
+        },
+        {
+          "stateId": "selectedFile",
+          "access": "call",
+          "scope": "render"
+        },
+        {
+          "stateId": "email",
+          "access": "value",
+          "scope": "render"
+        },
+        {
+          "stateId": "count",
+          "access": "value",
+          "scope": "render"
+        },
+        {
+          "stateId": "count",
+          "access": "call",
+          "scope": "render"
+        },
+        {
+          "stateId": "status",
+          "access": "call",
+          "scope": "render"
+        },
+        {
+          "stateId": "serverMessage",
+          "access": "call",
+          "scope": "render"
+        }
+      ],
+      "actions": [
+        {
+          "id": "status:setStatus:0",
+          "stateId": "status",
+          "setter": "setStatus",
+          "operation": "set",
+          "argument": "mounted",
+          "scope": "render"
+        },
+        {
+          "id": "status:setStatus:1",
+          "stateId": "status",
+          "setter": "setStatus",
+          "operation": "set",
+          "argument": "disposed",
+          "scope": "render"
+        },
+        {
+          "id": "serverMessage:setServerMessage:2",
+          "stateId": "serverMessage",
+          "setter": "setServerMessage",
+          "operation": "set",
+          "argument": {
+            "kind": "dynamic",
+            "hint": "initial:serverMessage"
+          },
+          "scope": "render"
+        },
+        {
+          "id": "serverMessage:setServerMessage:3",
+          "stateId": "serverMessage",
+          "setter": "setServerMessage",
+          "operation": "set",
+          "argument": {
+            "kind": "dynamic",
+            "hint": "initial:serverMessage"
+          },
+          "scope": "render"
+        },
+        {
+          "id": "email:setEmail:4",
+          "stateId": "email",
+          "setter": "setEmail",
+          "operation": "set",
+          "argument": {
+            "kind": "dynamic",
+            "hint": "initial:email"
+          },
+          "scope": "render"
+        },
+        {
+          "id": "selectedFile:setSelectedFile:5",
+          "stateId": "selectedFile",
+          "setter": "setSelectedFile",
+          "operation": "set",
+          "argument": {
+            "kind": "dynamic",
+            "hint": "initial:selectedFile"
+          },
+          "scope": "render"
+        },
+        {
+          "id": "count:setCount:6",
+          "stateId": "count",
+          "setter": "setCount",
+          "operation": "update",
+          "argument": {
+            "kind": "dynamic",
+            "hint": "initial:count"
+          },
+          "scope": "render"
+        }
+      ],
+      "effects": [
+        {
+          "id": "effect:0",
+          "hook": "useEffect",
+          "runOn": "resume",
+          "cleanupOn": "pause",
+          "actions": [
+            {
+              "id": "effect:0:status:setStatus:0",
+              "stateId": "status",
+              "setter": "setStatus",
+              "operation": "set",
+              "argument": "mounted",
+              "scope": "other"
+            }
+          ],
+          "cleanupActions": [
+            {
+              "id": "effect:0:status:setStatus:1",
+              "stateId": "status",
+              "setter": "setStatus",
+              "operation": "set",
+              "argument": "disposed",
+              "scope": "other"
+            }
+          ],
+          "unsupported": []
+        }
+      ],
+      "componentBindings": [],
+      "componentActions": [
+        {
+          "component": "Button",
+          "index": 2,
+          "target": "button.onPress",
+          "eventName": "onPress",
+          "actionId": "count:setCount:6",
+          "stateId": "count"
+        }
+      ],
+      "tree": {
+        "kind": "element",
+        "tag": "container",
+        "props": {
+          "className": "shell"
+        },
+        "children": [
+          {
+            "kind": "element",
+            "tag": "row",
+            "props": {
+              "className": "nav"
+            },
+            "children": [
+              {
+                "kind": "element",
+                "tag": "link",
+                "props": {
+                  "href": "/",
+                  "label": "Home"
+                },
+                "children": [
+                  {
+                    "kind": "text",
+                    "value": "Home"
+                  }
+                ]
+              },
+              {
+                "kind": "element",
+                "tag": "link",
+                "props": {
+                  "href": "/about",
+                  "label": "About"
+                },
+                "children": [
+                  {
+                    "kind": "text",
+                    "value": "About"
+                  }
+                ]
+              },
+              {
+                "kind": "element",
+                "tag": "link",
+                "props": {
+                  "href": "/compose",
+                  "label": "Compose UI"
+                },
+                "children": [
+                  {
+                    "kind": "text",
+                    "value": "Compose UI"
+                  }
+                ]
+              },
+              {
+                "kind": "element",
+                "tag": "link",
+                "props": {
+                  "href": "/hooks",
+                  "label": "Hooks Demo"
+                },
+                "children": [
+                  {
+                    "kind": "text",
+                    "value": "Hooks Demo"
+                  }
+                ]
+              },
+              {
+                "kind": "element",
+                "tag": "link",
+                "props": {
+                  "href": "/jsx-hooks",
+                  "label": "JSX Hooks"
+                },
+                "children": [
+                  {
+                    "kind": "text",
+                    "value": "JSX Hooks"
+                  }
+                ]
+              },
+              {
+                "kind": "element",
+                "tag": "link",
+                "props": {
+                  "href": "/reactive-context",
+                  "label": "Reactive Context"
+                },
+                "children": [
+                  {
+                    "kind": "text",
+                    "value": "Reactive Context"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "kind": "dynamic",
+            "hint": "jsx:unknown-tag"
+          }
+        ]
+      }
+    },
+    {
+      "route": "/jsx-hooks",
+      "source": "src/pages/jsx-hooks.tsx",
+      "state": [
+        {
+          "id": "count",
+          "setter": "setCount",
+          "kind": "reactive",
+          "source": "useReactive",
+          "initial": 0
+        },
+        {
+          "id": "name",
+          "setter": "setName",
+          "kind": "reactive",
+          "source": "useReactive",
+          "initial": "Adaptive"
+        },
+        {
+          "id": "effectLog",
+          "setter": "setEffectLog",
+          "kind": "reactive",
+          "source": "useReactive",
+          "initial": "waiting"
+        }
+      ],
+      "bindings": [
+        {
+          "stateId": "name",
+          "access": "value",
+          "scope": "other"
+        },
+        {
+          "stateId": "count",
+          "access": "call",
+          "scope": "render"
+        },
+        {
+          "stateId": "name",
+          "access": "call",
+          "scope": "render"
+        },
+        {
+          "stateId": "name",
+          "access": "value",
+          "scope": "render"
+        },
+        {
+          "stateId": "effectLog",
+          "access": "call",
+          "scope": "render"
+        }
+      ],
+      "actions": [
+        {
+          "id": "count:setCount:0",
+          "stateId": "count",
+          "setter": "setCount",
+          "operation": "update",
+          "argument": {
+            "kind": "dynamic",
+            "hint": "initial:count"
+          },
+          "scope": "render"
+        },
+        {
+          "id": "effectLog:setEffectLog:1",
+          "stateId": "effectLog",
+          "setter": "setEffectLog",
+          "operation": "set",
+          "argument": {
+            "kind": "dynamic",
+            "hint": "initial:effectLog"
+          },
+          "scope": "render"
+        },
+        {
+          "id": "name:setName:2",
+          "stateId": "name",
+          "setter": "setName",
+          "operation": "set",
+          "argument": {
+            "kind": "dynamic",
+            "hint": "initial:name"
+          },
+          "scope": "render"
+        }
+      ],
+      "effects": [
+        {
+          "id": "effect:0",
+          "hook": "useEffect",
+          "runOn": "resume",
+          "cleanupOn": "pause",
+          "actions": [
+            {
+              "id": "effect:0:effectLog:setEffectLog:0",
+              "stateId": "effectLog",
+              "setter": "setEffectLog",
+              "operation": "set",
+              "argument": {
+                "kind": "dynamic",
+                "hint": "initial:effectLog"
+              },
+              "scope": "other"
+            }
+          ],
+          "cleanupActions": [],
+          "unsupported": []
+        }
+      ],
+      "componentBindings": [],
+      "componentActions": [
+        {
+          "component": "Button",
+          "index": 0,
+          "target": "button.onPress",
+          "eventName": "onPress",
+          "actionId": "count:setCount:0",
+          "stateId": "count"
+        }
+      ],
+      "tree": {
+        "kind": "element",
+        "tag": "container",
+        "props": {
+          "className": "shell"
+        },
+        "children": [
+          {
+            "kind": "element",
+            "tag": "row",
+            "props": {
+              "className": "nav"
+            },
+            "children": [
+              {
+                "kind": "element",
+                "tag": "link",
+                "props": {
+                  "href": "/",
+                  "label": "Home"
+                },
+                "children": [
+                  {
+                    "kind": "text",
+                    "value": "Home"
+                  }
+                ]
+              },
+              {
+                "kind": "element",
+                "tag": "link",
+                "props": {
+                  "href": "/about",
+                  "label": "About"
+                },
+                "children": [
+                  {
+                    "kind": "text",
+                    "value": "About"
+                  }
+                ]
+              },
+              {
+                "kind": "element",
+                "tag": "link",
+                "props": {
+                  "href": "/compose",
+                  "label": "Compose UI"
+                },
+                "children": [
+                  {
+                    "kind": "text",
+                    "value": "Compose UI"
+                  }
+                ]
+              },
+              {
+                "kind": "element",
+                "tag": "link",
+                "props": {
+                  "href": "/hooks",
+                  "label": "Hooks Demo"
+                },
+                "children": [
+                  {
+                    "kind": "text",
+                    "value": "Hooks Demo"
+                  }
+                ]
+              },
+              {
+                "kind": "element",
+                "tag": "link",
+                "props": {
+                  "href": "/jsx-hooks",
+                  "label": "JSX Hooks"
+                },
+                "children": [
+                  {
+                    "kind": "text",
+                    "value": "JSX Hooks"
+                  }
+                ]
+              },
+              {
+                "kind": "element",
+                "tag": "link",
+                "props": {
+                  "href": "/reactive-context",
+                  "label": "Reactive Context"
+                },
+                "children": [
+                  {
+                    "kind": "text",
+                    "value": "Reactive Context"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "kind": "dynamic",
+            "hint": "jsx:unknown-tag"
+          }
+        ]
+      }
+    },
+    {
+      "route": "/notes/:slug",
+      "source": "src/pages/notes/[slug].tsx",
+      "state": [],
+      "bindings": [],
+      "actions": [],
+      "effects": [],
+      "componentBindings": [],
+      "componentActions": [],
+      "tree": {
+        "kind": "element",
+        "tag": "container",
+        "props": {
+          "className": "shell"
+        },
+        "children": [
+          {
+            "kind": "element",
+            "tag": "container",
+            "props": {
+              "className": "hero"
+            },
+            "children": [
+              {
+                "kind": "element",
+                "tag": "row",
+                "props": {
+                  "className": "nav"
+                },
+                "children": [
+                  {
+                    "kind": "element",
+                    "tag": "link",
+                    "props": {
+                      "href": "/",
+                      "label": "Home"
+                    },
+                    "children": [
+                      {
+                        "kind": "text",
+                        "value": "Home"
+                      }
+                    ]
+                  },
+                  {
+                    "kind": "element",
+                    "tag": "link",
+                    "props": {
+                      "href": "/about",
+                      "label": "About"
+                    },
+                    "children": [
+                      {
+                        "kind": "text",
+                        "value": "About"
+                      }
+                    ]
+                  },
+                  {
+                    "kind": "element",
+                    "tag": "link",
+                    "props": {
+                      "href": "/compose",
+                      "label": "Compose UI"
+                    },
+                    "children": [
+                      {
+                        "kind": "text",
+                        "value": "Compose UI"
+                      }
+                    ]
+                  },
+                  {
+                    "kind": "element",
+                    "tag": "link",
+                    "props": {
+                      "href": "/hooks",
+                      "label": "Hooks Demo"
+                    },
+                    "children": [
+                      {
+                        "kind": "text",
+                        "value": "Hooks Demo"
+                      }
+                    ]
+                  },
+                  {
+                    "kind": "element",
+                    "tag": "link",
+                    "props": {
+                      "href": "/jsx-hooks",
+                      "label": "JSX Hooks"
+                    },
+                    "children": [
+                      {
+                        "kind": "text",
+                        "value": "JSX Hooks"
+                      }
+                    ]
+                  },
+                  {
+                    "kind": "element",
+                    "tag": "link",
+                    "props": {
+                      "href": "/reactive-context",
+                      "label": "Reactive Context"
+                    },
+                    "children": [
+                      {
+                        "kind": "text",
+                        "value": "Reactive Context"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "kind": "element",
+                "tag": "text",
+                "props": {
+                  "className": "muted"
+                },
+                "children": [
+                  {
+                    "kind": "text",
+                    "value": "Dynamic route"
+                  }
+                ]
+              },
+              {
+                "kind": "element",
+                "tag": "heading",
+                "props": {
+                  "level": 1
+                },
+                "children": [
+                  {
+                    "kind": "dynamic",
+                    "hint": "expression:Identifier"
+                  }
+                ]
+              },
+              {
+                "kind": "element",
+                "tag": "text",
+                "props": {
+                  "className": "muted"
+                },
+                "children": [
+                  {
+                    "kind": "text",
+                    "value": "This page was resolved from"
+                  },
+                  {
+                    "kind": "element",
+                    "tag": "code",
+                    "props": {},
+                    "children": [
+                      {
+                        "kind": "text",
+                        "value": "src/pages/notes/[slug].tsx"
+                      }
+                    ]
+                  },
+                  {
+                    "kind": "text",
+                    "value": "."
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "route": "/reactive-context",
+      "source": "src/pages/reactive-context.tsx",
+      "state": [
+        {
+          "id": "value",
+          "setter": "setValue",
+          "kind": "reactive",
+          "source": "useReactive",
+          "initial": 0
+        },
+        {
+          "id": "name",
+          "setter": "setName",
+          "kind": "reactive",
+          "source": "useReactive",
+          "initial": "Adaptive Builder"
+        },
+        {
+          "id": "effectLog",
+          "setter": "setEffectLog",
+          "kind": "reactive",
+          "source": "useReactive",
+          "initial": "waiting for effect"
+        }
+      ],
+      "bindings": [
+        {
+          "stateId": "value",
+          "access": "call",
+          "scope": "render"
+        },
+        {
+          "stateId": "name",
+          "access": "call",
+          "scope": "render"
+        },
+        {
+          "stateId": "name",
+          "access": "value",
+          "scope": "render"
+        },
+        {
+          "stateId": "value",
+          "access": "value",
+          "scope": "render"
+        },
+        {
+          "stateId": "effectLog",
+          "access": "call",
+          "scope": "render"
+        }
+      ],
+      "actions": [
+        {
+          "id": "value:setValue:0",
+          "stateId": "value",
+          "setter": "setValue",
+          "operation": "update",
+          "argument": {
+            "kind": "dynamic",
+            "hint": "initial:value"
+          },
+          "scope": "event"
+        },
+        {
+          "id": "effectLog:setEffectLog:1",
+          "stateId": "effectLog",
+          "setter": "setEffectLog",
+          "operation": "set",
+          "argument": {
+            "kind": "dynamic",
+            "hint": "initial:effectLog"
+          },
+          "scope": "render"
+        },
+        {
+          "id": "name:setName:2",
+          "stateId": "name",
+          "setter": "setName",
+          "operation": "set",
+          "argument": {
+            "kind": "dynamic",
+            "hint": "initial:name"
+          },
+          "scope": "event"
+        }
+      ],
+      "effects": [
+        {
+          "id": "effect:0",
+          "hook": "useEffect",
+          "runOn": "resume",
+          "cleanupOn": "pause",
+          "actions": [
+            {
+              "id": "effect:0:effectLog:setEffectLog:0",
+              "stateId": "effectLog",
+              "setter": "setEffectLog",
+              "operation": "set",
+              "argument": {
+                "kind": "dynamic",
+                "hint": "initial:effectLog"
+              },
+              "scope": "other"
+            }
+          ],
+          "cleanupActions": [],
+          "unsupported": []
+        }
+      ],
+      "componentBindings": [],
+      "componentActions": [],
+      "tree": {
+        "kind": "element",
+        "tag": "container",
+        "props": {
+          "className": "shell"
+        },
+        "children": [
+          {
+            "kind": "element",
+            "tag": "row",
+            "props": {
+              "className": "nav"
+            },
+            "children": [
+              {
+                "kind": "element",
+                "tag": "link",
+                "props": {
+                  "href": "/",
+                  "label": "Home"
+                },
+                "children": [
+                  {
+                    "kind": "text",
+                    "value": "Home"
+                  }
+                ]
+              },
+              {
+                "kind": "element",
+                "tag": "link",
+                "props": {
+                  "href": "/about",
+                  "label": "About"
+                },
+                "children": [
+                  {
+                    "kind": "text",
+                    "value": "About"
+                  }
+                ]
+              },
+              {
+                "kind": "element",
+                "tag": "link",
+                "props": {
+                  "href": "/compose",
+                  "label": "Compose UI"
+                },
+                "children": [
+                  {
+                    "kind": "text",
+                    "value": "Compose UI"
+                  }
+                ]
+              },
+              {
+                "kind": "element",
+                "tag": "link",
+                "props": {
+                  "href": "/hooks",
+                  "label": "Hooks Demo"
+                },
+                "children": [
+                  {
+                    "kind": "text",
+                    "value": "Hooks Demo"
+                  }
+                ]
+              },
+              {
+                "kind": "element",
+                "tag": "link",
+                "props": {
+                  "href": "/jsx-hooks",
+                  "label": "JSX Hooks"
+                },
+                "children": [
+                  {
+                    "kind": "text",
+                    "value": "JSX Hooks"
+                  }
+                ]
+              },
+              {
+                "kind": "element",
+                "tag": "link",
+                "props": {
+                  "href": "/reactive-context",
+                  "label": "Reactive Context"
+                },
+                "children": [
+                  {
+                    "kind": "text",
+                    "value": "Reactive Context"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "kind": "element",
+            "tag": "container",
+            "props": {
+              "className": "hero"
+            },
+            "children": [
+              {
+                "kind": "element",
+                "tag": "text",
+                "props": {
+                  "className": "muted"
+                },
+                "children": [
+                  {
+                    "kind": "text",
+                    "value": "Context + component local reactive state"
+                  }
+                ]
+              },
+              {
+                "kind": "element",
+                "tag": "heading",
+                "props": {
+                  "level": 1
+                },
+                "children": [
+                  {
+                    "kind": "text",
+                    "value": "Regular components using shared context and local reactivity"
+                  }
+                ]
+              },
+              {
+                "kind": "element",
+                "tag": "text",
+                "props": {
+                  "className": "muted"
+                },
+                "children": [
+                  {
+                    "kind": "text",
+                    "value": "useEffect log: effect ran for Adaptive Builder"
+                  }
+                ]
+              },
+              {
+                "kind": "element",
+                "tag": "text",
+                "props": {
+                  "style": {
+                    "kind": "dynamic",
+                    "hint": "prop:style"
+                  }
+                },
+                "children": [
+                  {
+                    "kind": "text",
+                    "value": "Context role: Guest"
+                  }
+                ]
+              },
+              {
+                "kind": "element",
+                "tag": "container",
+                "props": {
+                  "style": {
+                    "height": "16px"
+                  }
+                },
+                "children": [
+                  {
+                    "kind": "text",
+                    "value": ""
+                  }
+                ]
+              },
+              {
+                "kind": "element",
+                "tag": "text",
+                "props": {
+                  "for": "profile-name",
+                  "className": "muted"
+                },
+                "children": [
+                  {
+                    "kind": "text",
+                    "value": "Shared name"
+                  }
+                ]
+              },
+              {
+                "kind": "element",
+                "tag": "input",
+                "props": {
+                  "id": "profile-name",
+                  "value": {
+                    "kind": "dynamic",
+                    "hint": "prop:value"
+                  },
+                  "onInput": {
+                    "kind": "event",
+                    "name": "onInput"
+                  }
+                },
+                "children": []
+              },
+              {
+                "kind": "element",
+                "tag": "text",
+                "props": {
+                  "className": "muted"
+                },
+                "children": [
+                  {
+                    "kind": "text",
+                    "value": "Current input value: Adaptive Builder"
+                  }
+                ]
+              },
+              {
+                "kind": "element",
+                "tag": "container",
+                "props": {
+                  "className": "grid"
+                },
+                "children": [
+                  {
+                    "kind": "element",
+                    "tag": "container",
+                    "props": {
+                      "className": "card"
+                    },
+                    "children": [
+                      {
+                        "kind": "element",
+                        "tag": "heading",
+                        "props": {
+                          "level": 3
+                        },
+                        "children": [
+                          {
+                            "kind": "text",
+                            "value": "Counter A"
+                          }
+                        ]
+                      },
+                      {
+                        "kind": "element",
+                        "tag": "text",
+                        "props": {
+                          "className": "muted"
+                        },
+                        "children": [
+                          {
+                            "kind": "text",
+                            "value": "Local count: 0"
+                          }
+                        ]
+                      },
+                      {
+                        "kind": "element",
+                        "tag": "button",
+                        "props": {
+                          "type": "button",
+                          "onPress": {
+                            "kind": "event",
+                            "name": "onPress"
+                          },
+                          "label": "Increment local state"
+                        },
+                        "children": [
+                          {
+                            "kind": "text",
+                            "value": "Increment local state"
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "kind": "element",
+                    "tag": "container",
+                    "props": {
+                      "className": "card"
+                    },
+                    "children": [
+                      {
+                        "kind": "element",
+                        "tag": "heading",
+                        "props": {
+                          "level": 3
+                        },
+                        "children": [
+                          {
+                            "kind": "text",
+                            "value": "Counter B"
+                          }
+                        ]
+                      },
+                      {
+                        "kind": "element",
+                        "tag": "text",
+                        "props": {
+                          "className": "muted"
+                        },
+                        "children": [
+                          {
+                            "kind": "text",
+                            "value": "Local count: 0"
+                          }
+                        ]
+                      },
+                      {
+                        "kind": "element",
+                        "tag": "button",
+                        "props": {
+                          "type": "button",
+                          "onPress": {
+                            "kind": "event",
+                            "name": "onPress"
+                          },
+                          "label": "Increment local state"
+                        },
+                        "children": [
+                          {
+                            "kind": "text",
+                            "value": "Increment local state"
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "route": "/workspace",
+      "source": "src/pages/workspace.tsx",
+      "state": [],
+      "bindings": [],
+      "actions": [],
+      "effects": [],
+      "componentBindings": [],
+      "componentActions": [],
+      "tree": {
+        "kind": "element",
+        "tag": "container",
+        "props": {
+          "className": "shell"
+        },
+        "children": [
+          {
+            "kind": "element",
+            "tag": "column",
+            "props": {},
+            "children": [
+              {
+                "kind": "element",
+                "tag": "surface",
+                "props": {
+                  "className": "hero",
+                  "padding": 20,
+                  "style": {
+                    "border": "1px solid rgba(28, 26, 23, 0.08)",
+                    "borderRadius": "18px",
+                    "background": "rgba(255,255,255,0.9)",
+                    "backdropFilter": "blur(6px)"
+                  }
+                },
+                "children": [
+                  {
+                    "kind": "element",
+                    "tag": "row",
+                    "props": {
+                      "style": {
+                        "alignItems": "center",
+                        "justifyContent": "space-between"
+                      }
+                    },
+                    "children": [
+                      {
+                        "kind": "element",
+                        "tag": "link",
+                        "props": {
+                          "href": "/",
+                          "label": "Home"
+                        },
+                        "children": [
+                          {
+                            "kind": "text",
+                            "value": "Home"
+                          }
+                        ]
+                      },
+                      {
+                        "kind": "element",
+                        "tag": "link",
+                        "props": {
+                          "href": "/about",
+                          "label": "About"
+                        },
+                        "children": [
+                          {
+                            "kind": "text",
+                            "value": "About"
+                          }
+                        ]
+                      },
+                      {
+                        "kind": "element",
+                        "tag": "link",
+                        "props": {
+                          "href": "/compose",
+                          "label": "Compose UI"
+                        },
+                        "children": [
+                          {
+                            "kind": "text",
+                            "value": "Compose UI"
+                          }
+                        ]
+                      },
+                      {
+                        "kind": "element",
+                        "tag": "link",
+                        "props": {
+                          "href": "/workspace",
+                          "label": "Workspace"
+                        },
+                        "children": [
+                          {
+                            "kind": "text",
+                            "value": "Workspace"
+                          }
+                        ]
+                      },
+                      {
+                        "kind": "element",
+                        "tag": "column",
+                        "props": {
+                          "style": {
+                            "flex": 1
+                          }
+                        },
+                        "children": [
+                          {
+                            "kind": "element",
+                            "tag": "text",
+                            "props": {
+                              "className": "muted"
+                            },
+                            "children": [
+                              {
+                                "kind": "text",
+                                "value": "Adaptive UI"
+                              }
+                            ]
+                          },
+                          {
+                            "kind": "element",
+                            "tag": "heading",
+                            "props": {
+                              "level": 2
+                            },
+                            "children": [
+                              {
+                                "kind": "text",
+                                "value": "Adaptive Workspace"
+                              }
+                            ]
+                          },
+                          {
+                            "kind": "element",
+                            "tag": "text",
+                            "props": {
+                              "className": "muted"
+                            },
+                            "children": [
+                              {
+                                "kind": "text",
+                                "value": "Second declarative page using the new AppBar primitive."
+                              }
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "kind": "element",
+                        "tag": "button",
+                        "props": {
+                          "label": "New page"
+                        },
+                        "children": []
+                      },
+                      {
+                        "kind": "element",
+                        "tag": "button",
+                        "props": {
+                          "label": "Export IR",
+                          "type": "button"
+                        },
+                        "children": []
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "kind": "element",
+                "tag": "spacer",
+                "props": {},
+                "children": [
+                  {
+                    "kind": "text",
+                    "value": "1rem"
+                  }
+                ]
+              },
+              {
+                "kind": "element",
+                "tag": "row",
+                "props": {
+                  "className": "grid"
+                },
+                "children": [
+                  {
+                    "kind": "element",
+                    "tag": "card",
+                    "props": {
+                      "className": "card",
+                      "style": {
+                        "Width": "100%"
+                      }
+                    },
+                    "children": [
+                      {
+                        "kind": "element",
+                        "tag": "text",
+                        "props": {},
+                        "children": [
+                          {
+                            "kind": "text",
+                            "value": "Page IR"
+                          }
+                        ]
+                      },
+                      {
+                        "kind": "element",
+                        "tag": "text",
+                        "props": {},
+                        "children": [
+                          {
+                            "kind": "text",
+                            "value": "Each page now generates its own IR file and manifest entry during build."
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "kind": "element",
+                    "tag": "card",
+                    "props": {
+                      "className": "card",
+                      "style": {
+                        "Width": "100%"
+                      }
+                    },
+                    "children": [
+                      {
+                        "kind": "element",
+                        "tag": "text",
+                        "props": {},
+                        "children": [
+                          {
+                            "kind": "text",
+                            "value": "Semantic AppBar"
+                          }
+                        ]
+                      },
+                      {
+                        "kind": "element",
+                        "tag": "text",
+                        "props": {},
+                        "children": [
+                          {
+                            "kind": "text",
+                            "value": "The UI layer now exposes an AppBar primitive shared by web and future native targets."
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "kind": "element",
+                "tag": "spacer",
+                "props": {},
+                "children": [
+                  {
+                    "kind": "text",
+                    "value": "1rem"
+                  }
+                ]
+              },
+              {
+                "kind": "element",
+                "tag": "card",
+                "props": {
+                  "className": "hero"
+                },
+                "children": [
+                  {
+                    "kind": "element",
+                    "tag": "text",
+                    "props": {},
+                    "children": [
+                      {
+                        "kind": "text",
+                        "value": "Why per-page IR?"
+                      }
+                    ]
+                  },
+                  {
+                    "kind": "element",
+                    "tag": "text",
+                    "props": {
+                      "className": "muted"
+                    },
+                    "children": [
+                      {
+                        "kind": "text",
+                        "value": "Because large projects should not emit a single giant JSON. Route-level IR gives us chunking, cache boundaries and a cleaner bridge for desktop and mobile targets."
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ],
+  "tree": {
+    "kind": "element",
+    "tag": "container",
+    "props": {
+      "className": "shell",
+      "style": {
+        "maxWidth": 920,
+        "margin": "48px auto",
+        "padding": 32,
+        "borderRadius": 28,
+        "border": "1px solid #d8cdb8",
+        "backgroundColor": "#f8f1e6"
+      }
+    },
+    "children": [
+      {
+        "kind": "element",
+        "tag": "container",
+        "props": {
+          "className": "hero",
+          "style": {
+            "gap": 24
+          }
+        },
+        "children": [
+          {
+            "kind": "element",
+            "tag": "row",
+            "props": {
+              "className": "nav",
+              "style": {
+                "gap": 18
+              }
+            },
+            "children": [
+              {
+                "kind": "element",
+                "tag": "link",
+                "props": {
+                  "href": "/",
+                  "label": "Home"
+                },
+                "children": [
+                  {
+                    "kind": "text",
+                    "value": "Home"
+                  }
+                ]
+              },
+              {
+                "kind": "element",
+                "tag": "link",
+                "props": {
+                  "href": "/about",
+                  "label": "About"
+                },
+                "children": [
+                  {
+                    "kind": "text",
+                    "value": "About"
+                  }
+                ]
+              },
+              {
+                "kind": "element",
+                "tag": "link",
+                "props": {
+                  "href": "/compose",
+                  "label": "Compose UI"
+                },
+                "children": [
+                  {
+                    "kind": "text",
+                    "value": "Compose UI"
+                  }
+                ]
+              },
+              {
+                "kind": "element",
+                "tag": "link",
+                "props": {
+                  "href": "/workspace",
+                  "label": "Workspace"
+                },
+                "children": [
+                  {
+                    "kind": "text",
+                    "value": "Workspace"
+                  }
+                ]
+              },
+              {
+                "kind": "element",
+                "tag": "link",
+                "props": {
+                  "href": "/hooks",
+                  "label": "Hooks Demo"
+                },
+                "children": [
+                  {
+                    "kind": "text",
+                    "value": "Hooks Demo"
+                  }
+                ]
+              },
+              {
+                "kind": "element",
+                "tag": "link",
+                "props": {
+                  "href": "/jsx-hooks",
+                  "label": "JSX Hooks"
+                },
+                "children": [
+                  {
+                    "kind": "text",
+                    "value": "JSX Hooks"
+                  }
+                ]
+              },
+              {
+                "kind": "element",
+                "tag": "link",
+                "props": {
+                  "href": "/reactive-context",
+                  "label": "Reactive Context"
+                },
+                "children": [
+                  {
+                    "kind": "text",
+                    "value": "Reactive Context"
+                  }
+                ]
+              },
+              {
+                "kind": "element",
+                "tag": "link",
+                "props": {
+                  "href": "/notes/adaptive",
+                  "label": "Dynamic Route"
+                },
+                "children": [
+                  {
+                    "kind": "text",
+                    "value": "Dynamic Route"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "kind": "element",
+            "tag": "text",
+            "props": {},
+            "children": [
+              {
+                "kind": "text",
+                "value": "app platform:"
+              },
+              {
+                "kind": "text",
+                "value": "desktop"
+              }
+            ]
+          },
+          {
+            "kind": "element",
+            "tag": "text",
+            "props": {
+              "className": "muted",
+              "style": {
+                "color": "#6c5c48",
+                "fontSize": 18
+              }
+            },
+            "children": [
+              {
+                "kind": "text",
+                "value": "Adaptive example app"
+              }
+            ]
+          },
+          {
+            "kind": "element",
+            "tag": "heading",
+            "props": {
+              "style": {
+                "fontSize": 56,
+                "color": "#1f1d1a"
+              },
+              "level": 1
+            },
+            "children": [
+              {
+                "kind": "text",
+                "value": "React-like authoring, direct DOM mindset, SSR-ready structure."
+              }
+            ]
+          },
+          {
+            "kind": "element",
+            "tag": "text",
+            "props": {
+              "className": "muted",
+              "style": {
+                "color": "#6c5c48",
+                "fontSize": 18
+              }
+            },
+            "children": [
+              {
+                "kind": "text",
+                "value": "This example uses"
+              },
+              {
+                "kind": "element",
+                "tag": "strong",
+                "props": {},
+                "children": [
+                  {
+                    "kind": "text",
+                    "value": "@adaptivejs/web"
+                  }
+                ]
+              },
+              {
+                "kind": "text",
+                "value": "as the unified web target for UI and SSR."
+              }
+            ]
+          },
+          {
+            "kind": "element",
+            "tag": "container",
+            "props": {
+              "className": "grid",
+              "style": {
+                "gap": 20
+              }
+            },
+            "children": [
+              {
+                "kind": "element",
+                "tag": "container",
+                "props": {
+                  "className": "card",
+                  "style": {
+                    "padding": 24,
+                    "borderRadius": 24,
+                    "border": "1px solid #d8cdb8",
+                    "backgroundColor": "#fbf7ef"
+                  }
+                },
+                "children": [
+                  {
+                    "kind": "element",
+                    "tag": "heading",
+                    "props": {
+                      "level": 3
+                    },
+                    "children": [
+                      {
+                        "kind": "text",
+                        "value": "TSX Components"
+                      }
+                    ]
+                  },
+                  {
+                    "kind": "element",
+                    "tag": "text",
+                    "props": {
+                      "className": "muted",
+                      "style": {
+                        "color": "#6c5c48"
+                      }
+                    },
+                    "children": [
+                      {
+                        "kind": "text",
+                        "value": "Pages are regular TSX functions."
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "kind": "element",
+                "tag": "container",
+                "props": {
+                  "className": "card",
+                  "style": {
+                    "padding": 24,
+                    "borderRadius": 24,
+                    "border": "1px solid #d8cdb8",
+                    "backgroundColor": "#fbf7ef"
+                  }
+                },
+                "children": [
+                  {
+                    "kind": "element",
+                    "tag": "heading",
+                    "props": {
+                      "level": 3
+                    },
+                    "children": [
+                      {
+                        "kind": "text",
+                        "value": "SSR Router"
+                      }
+                    ]
+                  },
+                  {
+                    "kind": "element",
+                    "tag": "text",
+                    "props": {
+                      "className": "muted",
+                      "style": {
+                        "color": "#6c5c48"
+                      }
+                    },
+                    "children": [
+                      {
+                        "kind": "text",
+                        "value": "Routes are resolved from src/pages on the server."
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "kind": "element",
+                "tag": "container",
+                "props": {
+                  "className": "card",
+                  "style": {
+                    "padding": 24,
+                    "borderRadius": 24,
+                    "border": "1px solid #d8cdb8",
+                    "backgroundColor": "#fbf7ef"
+                  }
+                },
+                "children": [
+                  {
+                    "kind": "element",
+                    "tag": "heading",
+                    "props": {
+                      "level": 3
+                    },
+                    "children": [
+                      {
+                        "kind": "text",
+                        "value": "Page IR"
+                      }
+                    ]
+                  },
+                  {
+                    "kind": "element",
+                    "tag": "text",
+                    "props": {
+                      "className": "muted",
+                      "style": {
+                        "color": "#6c5c48"
+                      }
+                    },
+                    "children": [
+                      {
+                        "kind": "text",
+                        "value": "Each route can now produce its own IR artifact during build."
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "kind": "element",
+                "tag": "container",
+                "props": {
+                  "className": "card",
+                  "style": {
+                    "padding": 24,
+                    "borderRadius": 24,
+                    "border": "1px solid #d8cdb8",
+                    "backgroundColor": "#fbf7ef"
+                  }
+                },
+                "children": [
+                  {
+                    "kind": "element",
+                    "tag": "heading",
+                    "props": {
+                      "level": 3
+                    },
+                    "children": [
+                      {
+                        "kind": "text",
+                        "value": "No Vite Core"
+                      }
+                    ]
+                  },
+                  {
+                    "kind": "element",
+                    "tag": "text",
+                    "props": {
+                      "className": "muted",
+                      "style": {
+                        "color": "#6c5c48"
+                      }
+                    },
+                    "children": [
+                      {
+                        "kind": "text",
+                        "value": "This setup runs without a Vite dependency."
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "kind": "element",
+            "tag": "container",
+            "props": {
+              "action": "/_action/subscribe",
+              "method": "post",
+              "style": {
+                "gap": 16
+              }
+            },
+            "children": [
+              {
+                "kind": "element",
+                "tag": "text",
+                "props": {
+                  "for": "email",
+                  "style": {
+                    "fontSize": 18
+                  }
+                },
+                "children": [
+                  {
+                    "kind": "text",
+                    "value": "Subscribe demo action"
+                  }
+                ]
+              },
+              {
+                "kind": "element",
+                "tag": "input",
+                "props": {
+                  "id": "email",
+                  "name": "email",
+                  "type": "email",
+                  "placeholder": "you@example.com",
+                  "style": {
+                    "width": "100%",
+                    "padding": 16,
+                    "borderRadius": 16,
+                    "border": "1px solid #d8cdb8",
+                    "backgroundColor": "#fffdf8"
+                  }
+                },
+                "children": []
+              },
+              {
+                "kind": "element",
+                "tag": "button",
+                "props": {
+                  "type": "submit",
+                  "style": {
+                    "width": "100%",
+                    "padding": 16,
+                    "borderRadius": 16,
+                    "backgroundColor": "#1f7b6d",
+                    "color": "#ffffff"
+                  },
+                  "label": "Send"
+                },
+                "children": [
+                  {
+                    "kind": "text",
+                    "value": "Send"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "mappings": "AAIA,OAAO,MAAMA,MAAsB,EACjC,cAAsB;AACpB,OAAM,IAAI,MACR,oIACD;GAEJ",
+  "names": [
+    "App: AdaptiveAppApi"
+  ],
+  "sources": [
+    "D:\\projetos\\Adaptive\\common\\src\\apis\\app.ts"
+  ],
+  "sourcesContent": [
+    "export interface AdaptiveAppApi {\n  getPlatform(): string;\n}\n\nexport const App: AdaptiveAppApi = {\n  getPlatform(): string {\n    throw new Error(\n      \"Adaptive platform API is not implemented in @adaptivejs/common. Use a target package like @adaptivejs/web or @adaptivejs/desktop.\"\n    );\n  }\n};\n"
+  ],
+  "version": 3
+}

@@ -1,0 +1,33 @@
+{
+  "name": "@adaptivejs/common",
+  "version": "0.1.8",
+  "description": "Common platform wrappers shared across Adaptive targets.",
+  "license": "MIT",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./app": {
+      "types": "./dist/apis/app.d.ts",
+      "import": "./dist/apis/app.js"
+    }
+  },
+  "scripts": {
+    "build": "node ../scripts/build-package.mjs common && tsc -p tsconfig.json --emitDeclarationOnly",
+    "dev": "node ../scripts/build-package.mjs common",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "devDependencies": {
+    "typescript": "^5.8.2"
+  }
+}

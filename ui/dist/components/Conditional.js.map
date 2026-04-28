@@ -1,0 +1,11 @@
+{
+  "mappings": "AAAA,SAAS,wBAA8C;AACvD,SAAS,oBAAoB;AAE7B,OAAO,SAAS,YACd,WACA,UACA,WACiB;AACjB,KAAI,UAAW,QAAO,aAAa,UAAU,CAAC;AAC9C,KAAI,UAAW,QAAO,aAAa,WAAW,CAAC;AAC/C,QAAO,kBAAkB",
+  "names": [],
+  "sources": [
+    "D:\\projetos\\Adaptive\\ui\\src\\components\\Conditional.ts"
+  ],
+  "sourcesContent": [
+    "import { adaptiveFragment, type AdaptiveUIChild } from \"../primitives.js\";\nimport { adaptiveWrap } from \"../internal/shared.js\";\n\r\nexport function Conditional(\r\n  condition: boolean,\r\n  whenTrue: () => AdaptiveUIChild,\n  whenFalse?: () => AdaptiveUIChild\n): AdaptiveUIChild {\n  if (condition) return adaptiveWrap(whenTrue());\r\n  if (whenFalse) return adaptiveWrap(whenFalse());\r\n  return adaptiveFragment();\r\n}\r\n"
+  ],
+  "version": 3
+}

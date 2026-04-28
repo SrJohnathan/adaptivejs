@@ -1,0 +1,11 @@
+{
+  "mappings": "AAAA,SAAS,6BAA+F;AACxG,SAAS,kBAAkB;AAQ3B,OAAO,SAAS,KAAK,OAAe,OAAkB,QAAyB,EAAE,EAAmB;AAClG,QAAO,sBACL,QACA,WAAW,OAAO,EAAE,OAAO,CAAC,EAC5B,MACD",
+  "names": [],
+  "sources": [
+    "D:\\projetos\\Adaptive\\ui\\src\\components\\Link.ts"
+  ],
+  "sourcesContent": [
+    "import { adaptiveCreateElement, type AdaptiveUIChild, type AdaptiveUIProps, type AdaptiveUIStyle } from \"../primitives.js\";\nimport { mergeProps } from \"../internal/shared.js\";\r\n\r\nexport type LinkProps = AdaptiveUIProps & {\r\n  href: string;\r\n  external?: boolean;\r\n  onPress?: (...args: any[]) => void;\r\n};\r\n\r\nexport function Link(label: string, props: LinkProps, style: AdaptiveUIStyle = {}): AdaptiveUIChild {\n  return adaptiveCreateElement(\r\n    \"link\",\r\n    mergeProps(props, { style }),\r\n    label\r\n  );\r\n}\r\n"
+  ],
+  "version": 3
+}

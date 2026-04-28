@@ -1,0 +1,63 @@
+type Cleanup = void | (() => void);
+type EffectFn = () => Cleanup;
+type DependencyList = any[];
+type EffectPhase = "layout" | "effect";
+type EffectScope = {
+    id: number;
+    label?: string;
+};
+export declare const isSSR: () => boolean;
+declare class EffectSystem {
+    private currentEffect;
+    private currentScope;
+    private cleanups;
+    private dependencies;
+    private layoutQueue;
+    private effectQueue;
+    private pending;
+    private flushing;
+    private nextScopeId;
+    private effectScopes;
+    getCurrentEffect(): EffectFn | null;
+    setCurrentEffect(effect: EffectFn | null): void;
+    createScope(label?: string): EffectScope;
+    runWithScope<T>(scope: EffectScope, fn: () => T): T;
+    registerEffectScope(effect: EffectFn): void;
+    runCleanup(effect: EffectFn): void;
+    registerCleanup(effect: EffectFn, cleanup: Cleanup): void;
+    haveDepsChanged(effect: EffectFn, deps: DependencyList): boolean;
+    setDependencies(effect: EffectFn, deps: DependencyList): void;
+    schedule(effect: EffectFn, phase?: EffectPhase): void;
+    flush(): void;
+    run(effect: EffectFn): void;
+    cleanupScope(scope: EffectScope): void;
+    cleanupAll(): void;
+}
+export declare const getEffectSystem: () => EffectSystem;
+export declare class AdaptiveObserver<T = any> {
+    private value;
+    private subscribers;
+    constructor(value: T);
+    get(): T;
+    set(nextValue: T): void;
+    update(updater: (current: T) => T): void;
+}
+export declare function useState<T>(initialValue: T): [() => T, (value: T | ((prev: T) => T)) => void];
+export declare const useReactive: typeof useState;
+export declare function createStore<T extends Record<string, any>>(initialState: T): { [K in keyof T]: [() => T[K], (value: T[K] | ((prev: T[K]) => T[K])) => void]; };
+export declare const useReactiveStore: typeof createStore;
+export declare const useStateAlt: typeof createStore;
+export declare const TSX5Observer: typeof AdaptiveObserver;
+export declare function useEffect(effect: EffectFn, deps?: DependencyList): void;
+export declare function useLayoutEffect(effect: EffectFn, deps?: DependencyList): void;
+export declare function useEffectWithDeps(effect: EffectFn, deps: DependencyList, phase?: EffectPhase): void;
+export declare const useEffectDep: typeof useEffectWithDeps;
+export declare function useDOMEffect(effect: EffectFn): void;
+export declare function useMemo<T>(compute: () => T, deps: DependencyList): () => T;
+export declare function useClientEffect(effect: EffectFn, deps?: DependencyList): void;
+export declare function batch(fn: () => void): void;
+export declare function createEffectScope(label?: string): EffectScope;
+export declare function runWithEffectScope<T>(scope: ReturnType<typeof createEffectScope>, fn: () => T): T;
+export declare function cleanupEffectScope(scope: ReturnType<typeof createEffectScope>): void;
+export declare function cleanupAllEffects(): void;
+export {};

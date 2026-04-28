@@ -1,0 +1,11 @@
+{
+  "mappings": "AAAA,SAAS,6BAAyE;AAQlF,OAAO,SAAS,OAAO,OAAwB,IAAI,QAAyB,EAAE,EAAmB;AAC/F,QAAO,sBAAsB,UAAU;EACrC,GAAG;EACH;EACD,CAAC;;AAGJ,OAAO,SAAS,UAAU,QAAqB,EAAE,EAAmB;CAClE,MAAM,EACJ,MACA,QAAQ,MACR,SAAS,KACT,GAAG,SACD;AAEJ,QAAO,sBAAsB,UAAU;EACrC,GAAG;EACH,GAAI,SAAS,YAAY,EAAE,MAAM,GAAG,EAAE;EACtC,GAAI,UAAU,YAAY,EAAE,OAAO,GAAG,EAAE;EACxC,GAAI,WAAW,YAAY,EAAE,QAAQ,GAAG,EAAE;EAC3C,CAAC;;AAGJ,eAAe",
+  "names": [],
+  "sources": [
+    "D:\\projetos\\Adaptive\\ui\\src\\components\\Spacer.ts"
+  ],
+  "sourcesContent": [
+    "import { adaptiveCreateElement, type AdaptiveUIChild, type AdaptiveUIProps } from \"../primitives.js\";\n\r\nexport type SpacerProps = AdaptiveUIProps & {\r\n  size?: number | string;\r\n  width?: number | string;\r\n  height?: number | string;\r\n};\r\n\r\nexport function Spacer(size: number | string = 16, props: AdaptiveUIProps = {}): AdaptiveUIChild {\n  return adaptiveCreateElement(\"spacer\", {\r\n    ...props,\r\n    size\r\n  });\r\n}\r\n\r\nexport function SpacerBox(props: SpacerProps = {}): AdaptiveUIChild {\n  const {\r\n    size,\r\n    width = size,\r\n    height = size,\r\n    ...rest\r\n  } = props;\r\n\r\n  return adaptiveCreateElement(\"spacer\", {\r\n    ...rest,\r\n    ...(size !== undefined ? { size } : {}),\r\n    ...(width !== undefined ? { width } : {}),\r\n    ...(height !== undefined ? { height } : {})\r\n  });\r\n}\r\n\r\nexport default Spacer;\r\n"
+  ],
+  "version": 3
+}

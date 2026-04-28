@@ -1,0 +1,11 @@
+{
+  "mappings": "AACA,SAAS,oBAAoB;AAE7B,SAAS,oBAAoB;AAE7B,OAAO,SAAS,OAAO,IAA4C;AACjE,QAAO,aAAa,IAAI,CAAC",
+  "names": [],
+  "sources": [
+    "D:\\projetos\\Adaptive\\ui\\src\\components\\render.ts"
+  ],
+  "sourcesContent": [
+    "import type { AdaptiveUIChild } from \"../primitives.js\";\nimport { adaptiveWrap } from \"../internal/shared.js\";\r\n\r\nexport { adaptiveWrap } from \"../internal/shared.js\";\r\n\r\nexport function render(ui: () => AdaptiveUIChild): AdaptiveUIChild {\n  return adaptiveWrap(ui());\r\n}\r\n"
+  ],
+  "version": 3
+}

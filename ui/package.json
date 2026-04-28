@@ -1,0 +1,32 @@
+{
+  "name": "@adaptivejs/ui",
+  "version": "0.1.8",
+  "description": "Shared declarative UI primitives for Adaptive.",
+  "license": "MIT",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "node ../scripts/build-package.mjs ui && tsc -p tsconfig.json --emitDeclarationOnly",
+    "dev": "node ../scripts/build-package.mjs ui",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "dependencies": {
+    "@adaptivejs/core": "^0.1.8"
+  },
+  "devDependencies": {
+    "typescript": "^5.8.2"
+  }
+}

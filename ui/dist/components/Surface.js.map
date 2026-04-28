@@ -1,0 +1,11 @@
+{
+  "mappings": "AAAA,SAAS,6BAA+F;AACxG,SAAS,kBAAkB;AAS3B,OAAO,SAAS,QACd,UACA,QAAsB,EAAE,EACxB,QAAyB,EAAE,EACV;AACjB,QAAO,sBACL,WACA,WAAW,OAAO;EAChB,SAAS,MAAM,WAAW;EAC1B;EACD,CAAC,EACF,GAAG,UAAU,CACd",
+  "names": [],
+  "sources": [
+    "D:\\projetos\\Adaptive\\ui\\src\\components\\Surface.ts"
+  ],
+  "sourcesContent": [
+    "import { adaptiveCreateElement, type AdaptiveUIChild, type AdaptiveUIProps, type AdaptiveUIStyle } from \"../primitives.js\";\nimport { mergeProps } from \"../internal/shared.js\";\r\n\r\nexport type UIChildrenFactory = () => AdaptiveUIChild[];\n\r\nexport type SurfaceProps = AdaptiveUIProps & {\r\n  padding?: number | string;\r\n  variant?: string;\r\n};\r\n\r\nexport function Surface(\r\n  children: UIChildrenFactory,\r\n  props: SurfaceProps = {},\r\n  style: AdaptiveUIStyle = {}\r\n): AdaptiveUIChild {\n  return adaptiveCreateElement(\r\n    \"surface\",\r\n    mergeProps(props, {\r\n      padding: props.padding ?? 16,\r\n      style\r\n    }),\r\n    ...children()\r\n  );\r\n}\r\n"
+  ],
+  "version": 3
+}

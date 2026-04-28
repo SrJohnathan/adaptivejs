@@ -1,0 +1,41 @@
+{
+  "name": "adaptive",
+  "private": true,
+  "version": "0.1.8",
+  "bin": {
+    "adaptive": "./scripts/adaptive-cli.mjs"
+  },
+  "workspaces": [
+    "cli",
+    "core",
+    "common",
+    "ui",
+    "web",
+    "ft",
+    "ssr",
+    "static",
+    "example",
+    "create-adaptive-app",
+    "plugins/*",
+    "mobile-android",
+    "desktop-rust"
+  ],
+  "scripts": {
+    "build": "npm run build --workspaces",
+    "build:public": "node scripts/npm-release.mjs check",
+    "adaptive:build:example": "node scripts/adaptive-cli.mjs build example",
+    "adaptive:run:example": "node scripts/adaptive-cli.mjs run example",
+    "dev:example": "npm run build --workspace @adaptivejs/ft && node scripts/sync-ft-to-example.mjs && npm run dev --workspace @adaptivejs/example",
+    "dev:ssr": "npm run build --workspace @adaptivejs/ft && npm run dev --workspace @adaptivejs/ssr",
+    "dev:ft": "npm run dev --workspace @adaptivejs/ft",
+    "typecheck": "npm run typecheck --workspaces",
+    "release:check": "node scripts/npm-release.mjs check",
+    "release:pack": "node scripts/npm-release.mjs pack",
+    "release:publish": "node scripts/npm-release.mjs publish"
+  },
+  "devDependencies": {
+    "esbuild": "^0.27.4",
+    "oxc-parser": "^0.89.0",
+    "oxc-transform": "^0.89.0"
+  }
+}

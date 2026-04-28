@@ -1,0 +1,11 @@
+{
+  "mappings": "AAAA,SAAS,6BAA+F;AACxG,SAAS,kBAAkB;AAQ3B,OAAO,SAAS,OACd,UACA,QAAqB,EAAE,EACvB,QAAyB,EAAE,EACV;AACjB,QAAO,sBACL,UACA,WAAW,OAAO;EAChB,SAAS,MAAM,WAAW;EAC1B;EACD,CAAC,EACF,GAAG,UAAU,CACd",
+  "names": [],
+  "sources": [
+    "D:\\projetos\\Adaptive\\ui\\src\\components\\Column.ts"
+  ],
+  "sourcesContent": [
+    "import { adaptiveCreateElement, type AdaptiveUIChild, type AdaptiveUIProps, type AdaptiveUIStyle } from \"../primitives.js\";\nimport { mergeProps } from \"../internal/shared.js\";\n\r\nexport type ColumnProps = AdaptiveUIProps & {\r\n  spacing?: number;\r\n};\r\n\r\nexport type UIChildrenFactory = () => AdaptiveUIChild[];\n\r\nexport function Column(\r\n  children: UIChildrenFactory,\r\n  props: ColumnProps = {},\r\n  style: AdaptiveUIStyle = {}\r\n): AdaptiveUIChild {\n  return adaptiveCreateElement(\r\n    \"column\",\r\n    mergeProps(props, {\r\n      spacing: props.spacing ?? 8,\r\n      style\r\n    }),\r\n    ...children()\r\n  );\r\n}\r\n"
+  ],
+  "version": 3
+}

@@ -1,0 +1,11 @@
+{
+  "mappings": "AAAA,cAAc",
+  "names": [],
+  "sources": [
+    "D:\\projetos\\Adaptive\\core\\src\\jsx-dev-runtime.ts"
+  ],
+  "sourcesContent": [
+    "export * from \"./jsx-runtime.js\";\n"
+  ],
+  "version": 3
+}

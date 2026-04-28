@@ -1,0 +1,38 @@
+{
+  "name": "@adaptivejs/static",
+  "version": "0.1.8",
+  "description": "Static server and build target for Adaptive using Vinxi and Nitro.",
+  "license": "MIT",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "node ../scripts/build-package.mjs static && tsc -p tsconfig.json --emitDeclarationOnly --declarationDir dist --incremental false",
+    "dev": "tsx watch src/index.ts",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "dependencies": {
+    "@adaptivejs/web": "^0.1.8",
+    "h3": "^1.15.0",
+    "nitropack": "^2.13.3",
+    "vinxi": "^0.5.11"
+  },
+  "devDependencies": {
+    "@types/node": "^24.6.0",
+    "tsx": "^4.20.6",
+    "typescript": "^5.8.2"
+  }
+}

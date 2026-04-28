@@ -1,0 +1,25 @@
+{
+  "name": "@adaptivejs/example",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node ../scripts/adaptive-cli.mjs dev",
+    "build": "node ../scripts/adaptive-cli.mjs build",
+    "build:static": "node ../scripts/adaptive-cli.mjs build --preset static",
+    "build:vercel": "node ../scripts/adaptive-cli.mjs build --preset vercel",
+    "build:netlify": "node ../scripts/adaptive-cli.mjs build --preset netlify",
+    "build:node": "node ../scripts/adaptive-cli.mjs build --preset node",
+    "start": "node ../scripts/adaptive-cli.mjs start",
+    "desktop": "node ../scripts/adaptive-cli.mjs desktop",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@adaptivejs/desktop": "^0.1.3",
+    "@adaptivejs/ui": "^0.1.3",
+    "@adaptivejs/web": "^0.1.3"
+  },
+  "devDependencies": {
+    "tsx": "^4.20.6",
+    "typescript": "^5.8.2"
+  }
+}

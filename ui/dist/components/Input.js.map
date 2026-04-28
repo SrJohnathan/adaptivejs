@@ -1,0 +1,11 @@
+{
+  "mappings": "AAAA,SACE,6BAIK;AACP,SAAS,kBAAkB;AAW3B,OAAO,SAAS,MACd,QAAoB,EAAE,EACtB,QAAyB,EAAE,EACV;AACjB,QAAO,sBAAsB,SAAS,WAAW,OAAO,EAAE,OAAO,CAAC,CAAC",
+  "names": [],
+  "sources": [
+    "D:\\projetos\\Adaptive\\ui\\src\\components\\Input.ts"
+  ],
+  "sourcesContent": [
+    "import {\n  adaptiveCreateElement,\n  type AdaptiveUIChild,\n  type AdaptiveUIProps,\n  type AdaptiveUIStyle\n} from \"../primitives.js\";\nimport { mergeProps } from \"../internal/shared.js\";\r\n\r\nexport type InputProps = AdaptiveUIProps & {\r\n  value?: string;\r\n  placeholder?: string;\r\n  disabled?: boolean;\r\n  type?: string;\r\n  onInput?: (...args: any[]) => void;\r\n  onChange?: (...args: any[]) => void;\r\n};\r\n\r\nexport function Input(\r\n  props: InputProps = {},\r\n  style: AdaptiveUIStyle = {}\r\n): AdaptiveUIChild {\n  return adaptiveCreateElement(\"input\", mergeProps(props, { style }));\r\n}\r\n"
+  ],
+  "version": 3
+}

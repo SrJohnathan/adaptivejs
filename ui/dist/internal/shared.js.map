@@ -1,0 +1,11 @@
+{
+  "mappings": "AAAA,SACE,wBAGK;AAIP,OAAO,SAAS,WACd,OACA,WACG;CACH,MAAM,cAAc;EAClB,GAAI,MAAM,SAAS,EAAE;EACrB,GAAI,UAAU,SAAS,EAAE;EAC1B;CAED,MAAM,YAAY;EAChB,GAAG;EACH,GAAG;EACH,OAAO;EACR;AAED,KAAI,OAAO,KAAK,YAAY,CAAC,WAAW,GAAG;AACzC,SAAQ,UAAsC;;AAGhD,QAAO;;AAGT,OAAO,SAAS,aAAa,OAAyC;AACpE,KAAI,SAAS,QAAQ,UAAU,OAAO;AACpC,SAAO,kBAAkB;;AAG3B,KAAI,MAAM,QAAQ,MAAM,EAAE;AACxB,SAAO,iBAAiB,MAAM;;AAGhC,QAAO",
+  "names": [],
+  "sources": [
+    "D:\\projetos\\Adaptive\\ui\\src\\internal\\shared.ts"
+  ],
+  "sourcesContent": [
+    "import {\n  adaptiveFragment,\n  type AdaptiveUIChild,\n  type AdaptiveUIProps\n} from \"../primitives.js\";\n\nexport type UIChildrenFactory = () => AdaptiveUIChild[];\n\r\nexport function mergeProps<T extends AdaptiveUIProps>(\r\n  props: T,\r\n  additions: AdaptiveUIProps\r\n): T {\r\n  const mergedStyle = {\r\n    ...(props.style ?? {}),\r\n    ...(additions.style ?? {})\r\n  };\r\n\r\n  const nextProps = {\r\n    ...props,\r\n    ...additions,\r\n    style: mergedStyle\r\n  };\r\n\r\n  if (Object.keys(mergedStyle).length === 0) {\r\n    delete (nextProps as Record<string, unknown>).style;\r\n  }\r\n\r\n  return nextProps as T;\r\n}\r\n\r\nexport function adaptiveWrap(value: AdaptiveUIChild): AdaptiveUIChild {\n  if (value == null || value === false) {\r\n    return adaptiveFragment();\r\n  }\r\n\r\n  if (Array.isArray(value)) {\r\n    return adaptiveFragment(value);\r\n  }\r\n\r\n  return value;\r\n}\r\n"
+  ],
+  "version": 3
+}

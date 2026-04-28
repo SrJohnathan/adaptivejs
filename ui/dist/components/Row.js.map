@@ -1,0 +1,11 @@
+{
+  "mappings": "AAAA,SAAS,6BAA+F;AACxG,SAAS,kBAA0C;AAEnD,OAAO,SAAS,IACd,UACA,QAAyB,EAAE,EAC3B,QAAyB,EAAE,EACV;AACjB,QAAO,sBACL,OACA,WAAW,OAAO;EAChB,SAAS,MAAM,WAAW;EAC1B;EACD,CAAC,EACF,GAAG,UAAU,CACd",
+  "names": [],
+  "sources": [
+    "D:\\projetos\\Adaptive\\ui\\src\\components\\Row.ts"
+  ],
+  "sourcesContent": [
+    "import { adaptiveCreateElement, type AdaptiveUIChild, type AdaptiveUIProps, type AdaptiveUIStyle } from \"../primitives.js\";\nimport { mergeProps, type UIChildrenFactory } from \"../internal/shared.js\";\n\r\nexport function Row(\r\n  children: UIChildrenFactory,\r\n  props: AdaptiveUIProps = {},\r\n  style: AdaptiveUIStyle = {}\r\n): AdaptiveUIChild {\n  return adaptiveCreateElement(\r\n    \"row\",\r\n    mergeProps(props, {\r\n      spacing: props.spacing ?? 8,\r\n      style\r\n    }),\r\n    ...children()\r\n  );\r\n}\r\n"
+  ],
+  "version": 3
+}

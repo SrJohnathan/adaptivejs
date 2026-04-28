@@ -1,0 +1,13 @@
+{
+  "mappings": "AAEA,OAAO,MAAMA,MAAsB,EACjC,cAAsB;AACpB,QAAO;GAEV",
+  "names": [
+    "App: AdaptiveAppApi"
+  ],
+  "sources": [
+    "D:\\projetos\\Adaptive\\web\\src\\apis\\app.ts"
+  ],
+  "sourcesContent": [
+    "import type { AdaptiveAppApi } from \"@adaptivejs/common/app\";\n\nexport const App: AdaptiveAppApi = {\n  getPlatform(): string {\n    return \"web\";\n  }\n};\n"
+  ],
+  "version": 3
+}

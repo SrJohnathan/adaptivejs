@@ -1,0 +1,11 @@
+{
+  "mappings": "AAAA,SACE,kBACA,0BACK;AAEP,SACE,WACK",
+  "names": [],
+  "sources": [
+    "D:\\projetos\\Adaptive\\common\\src\\index.ts"
+  ],
+  "sourcesContent": [
+    "export {\n  AdaptiveFormData,\n  isAdaptiveFormData\n} from \"./adaptive-form-data.js\";\n\nexport {\n  App\n} from \"./apis/app.js\";\n\nexport type {\n  AdaptiveFormDataEntryValue\n} from \"./adaptive-form-data.js\";\n\nexport type {\n  AdaptiveAppApi\n} from \"./apis/app.js\";\n"
+  ],
+  "version": 3
+}

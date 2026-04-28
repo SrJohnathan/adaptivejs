@@ -1,0 +1,24 @@
+/node_modules/
+**/node_modules/
+/package-lock.json
+
+# Adaptive temporary build workspace
+/.adaptive-temp/
+
+# Adaptive generated output in apps/examples
+**/.adaptivejs/
+**/dist/
+
+# Local deploy tool folders
+**/.netlify/
+**/.vercel/
+
+# Desktop / Rust build output
+/desktop-rust/target/
+
+# IDE / local tooling
+/.idea/
+
+# Accidental generated folders from older preset experiments
+/--preset/
+**/--preset/

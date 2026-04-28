@@ -1,0 +1,31 @@
+{
+  "name": "@adaptivejs/cli",
+  "version": "0.1.8",
+  "description": "Adaptive command-line interface for building and running web projects.",
+  "license": "MIT",
+  "type": "module",
+  "bin": {
+    "adaptive": "./adaptive-cli.mjs"
+  },
+  "files": [
+    "README.md",
+    "adaptive-cli.mjs",
+    "build-app.mjs",
+    "env-loader.mjs"
+  ],
+  "scripts": {
+    "build": "node -e \"process.exit(0)\"",
+    "typecheck": "node -e \"process.exit(0)\""
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "dependencies": {
+    "@adaptivejs/core": "^0.1.8",
+    "@adaptivejs/ft": "^0.1.8",
+    "@adaptivejs/web": "^0.1.8",
+    "@adaptivejs/static": "^0.1.8",
+    "esbuild": "^0.27.4",
+    "oxc-transform": "^0.89.0"
+  }
+}

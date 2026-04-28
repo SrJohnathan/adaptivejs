@@ -1,0 +1,11 @@
+{
+  "mappings": "AAAA,SAA0B,OAAO,mBAAmB,uBAAuB;AAK3E,OAAO,SAAS,eAAe,QAAwB;AACrD,iBAAgB,OAAO;;AAGzB,OAAO,SAAS,SAAS,QAAkB,MAA4B;AACrE,mBAAkB,QAAQ,KAAK;;AAGjC,OAAO,SAAS,QAAQ,QAAwB;AAC9C,KAAI,OAAO,CAAE;CACb,MAAM,YAAY;EAChB,MAAM,UAAU,QAAQ;AACxB,MAAI,OAAO,YAAY,WAAY,UAAS;;AAG9C,KAAI,SAAS,eAAe,WAAW;AACrC,WAAS,iBAAiB,oBAAoB,KAAK,EAAE,MAAM,MAAM,CAAC;QAC7D;AACL,OAAK",
+  "names": [],
+  "sources": [
+    "D:\\projetos\\Adaptive\\ft\\src\\reactive.ts"
+  ],
+  "sourcesContent": [
+    "import { getEffectSystem, isSSR, useEffectWithDeps, useLayoutEffect } from \"./state.js\";\n\ntype EffectFn = () => void | (() => void);\ntype DependencyList = any[];\n\nexport function onLayoutEffect(effect: EffectFn): void {\n  useLayoutEffect(effect);\n}\n\nexport function onEffect(effect: EffectFn, deps: DependencyList): void {\n  useEffectWithDeps(effect, deps);\n}\n\nexport function onStart(effect: EffectFn): void {\n  if (isSSR()) return;\n  const run = () => {\n    const cleanup = effect();\n    if (typeof cleanup === \"function\") cleanup();\n  };\n\n  if (document.readyState === \"loading\") {\n    document.addEventListener(\"DOMContentLoaded\", run, { once: true });\n  } else {\n    run();\n  }\n}\n"
+  ],
+  "version": 3
+}

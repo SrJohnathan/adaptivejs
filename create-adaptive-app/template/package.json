@@ -1,0 +1,25 @@
+{
+  "name": "__APP_NAME__",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "__ADAPTIVE_DEV__",
+    "build": "__ADAPTIVE_BUILD__",
+    "build:netlify": "__ADAPTIVE_BUILD_NETLIFY__",
+    "preview:netlify": "__ADAPTIVE_PREVIEW_NETLIFY__",
+    "start": "__ADAPTIVE_START__",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@adaptivejs/ft": "__FT_DEP__",
+    "@adaptivejs/ui": "__UI_DEP__",
+    "@adaptivejs/web": "__WEB_DEP__"
+  },
+  "devDependencies": {
+    __CLI_DEPENDENCY__
+    __STATIC_DEPENDENCY__
+    "@types/node": "^24.6.0",
+    "tsx": "^4.20.6",
+    "typescript": "^5.8.2"
+  }
+}

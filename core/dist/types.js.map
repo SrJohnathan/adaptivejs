@@ -1,0 +1,11 @@
+{
+  "mappings": "",
+  "names": [],
+  "sources": [
+    "D:\\projetos\\Adaptive\\core\\src\\types.ts"
+  ],
+  "sourcesContent": [
+    "export type AdaptiveChild =\n  | string\n  | number\n  | boolean\n  | null\n  | undefined\n  | Node\n  | AdaptiveType\n  | AdaptiveChild[]\n  | (() => AdaptiveChild);\n\nexport interface AdaptiveType {\n  tag: string | Function;\n  props?: Record<string, any>;\n  children?: AdaptiveChild[];\n}\n\nexport type AdaptiveNode = AdaptiveType | Promise<AdaptiveType>;\nexport type ReactiveNode = AdaptiveNode;\nexport type ReactiveElement = AdaptiveType;\n\nexport interface Ref<T> {\n  current: T | null;\n}\n\nexport interface Context<T> {\n  Provider: (props: ProviderProps<T>) => AdaptiveNode;\n  useContext: () => { current: T };\n  displayName?: string;\n}\n\nexport interface ProviderProps<T> {\n  value: T;\n  children?: AdaptiveNode | AdaptiveNode[];\n}\n\nexport interface Box<T> {\n  children?: AdaptiveNode | AdaptiveNode[];\n}\n\nexport interface ChangeEvent<T extends EventTarget = HTMLInputElement> extends Event {\n  target: T;\n}\n"
+  ],
+  "version": 3
+}

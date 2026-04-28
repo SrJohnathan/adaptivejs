@@ -1,0 +1,11 @@
+{
+  "mappings": "AAAA,SAAS,eAAe,UAAU,QAAQ,sBAAsB;AAChE,SACE,UACA,cACA,SACA,aACA,aACA,OACA,mBACA,cACA,WACA,iBACA,cACA,aACK;AACP,SAAS,YAAY,sBAAsB;AAC3C,SACE,QACA,eACA,WACA,cACA,qBACA,4BACK;AACP,SAAS,eAAe,kBAAkB;AAC1C,SAAS,YAAY,mBAAmB,oBAAoB,qBAAqB;AACjF,SAAS,SAAS,OAAO,aAAa,sBAAsB;AAC5D,SAAS,cAAc,QAAQ,QAAQ,gBAAgB;AACvD,SAAS,sBAAsB;AAC/B,SAAS,cAAc,kBAAkB;AACzC,SAAS,mBAAmB;AAC5B,SAAS,kBAAkB;AAC3B,cAAc;AACd,SAAS,UAAU,gBAAgB,eAAe",
+  "names": [],
+  "sources": [
+    "D:\\projetos\\Adaptive\\ft\\src\\index.ts"
+  ],
+  "sourcesContent": [
+    "export { createElement, Fragment, useRef, useRefReactive } from \"./jsx-runtime.js\";\nexport {\n  useState,\n  TSX5Observer,\n  useMemo,\n  useStateAlt,\n  createStore,\n  batch,\n  cleanupAllEffects,\n  useEffectDep,\n  useEffect,\n  useClientEffect,\n  useDOMEffect,\n  isSSR\n} from \"./state.js\";\nexport { matchRoute, parseRoutePath } from \"./matchRoute.js\";\nexport {\n  render,\n  useNavigation,\n  useRouter,\n  createRouter,\n  createRouterHidrate,\n  registerRouteModules\n} from \"./createRoute.js\";\nexport { createContext, useContext } from \"./context-vanilla.js\";\nexport { hydrateApp, hydrateNavigation, popStateNavigation, backHydration } from \"./hidrate_app.js\";\nexport { hydrate, mount, renderToDOM, appendChildren } from \"./hidrate.js\";\nexport { setupLogging, logger, config, LogLevel } from \"./logging_configuration.js\";\nexport { renderToString } from \"./renderToString.js\";\nexport { ComponentRef, onFunction } from \"./core/ComponentRef.js\";\nexport { useCallback } from \"./hks/useCallback.js\";\nexport { useVirtual } from \"./hks/useVirtualScroll.js\";\nexport * from \"./declarative/compose.js\";\nexport { onEffect, onLayoutEffect, onStart } from \"./reactive.js\";\n\nexport type { Ref } from \"./interface/Ref.js\";\nexport type { Context, ProviderProps, Box } from \"./interface/Context.js\";\nexport type { AdaptiveNode, AdaptiveType, AdaptiveChild, TSX5Node } from \"./global\";\n"
+  ],
+  "version": 3
+}

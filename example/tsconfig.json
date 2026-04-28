@@ -1,0 +1,24 @@
+{
+  "extends": "../tsconfig.base.json",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "jsx": "react-jsx",
+    "jsxImportSource": "@adaptivejs/web",
+    "paths": {
+      "@adaptivejs/core": ["../core/src/index.ts"],
+      "@adaptivejs/core/jsx-runtime": ["../core/src/jsx-runtime.ts"],
+      "@adaptivejs/core/jsx-dev-runtime": ["../core/src/jsx-dev-runtime.ts"],
+      "@adaptivejs/ui": ["../ui/src/index.ts"],
+      "@adaptivejs/web": ["../web/src/index.ts"],
+      "@adaptivejs/web/server": ["../web/src/server.ts"],
+      "@adaptivejs/web/jsx-runtime": ["../web/src/jsx-runtime.ts"],
+      "@adaptivejs/web/jsx-dev-runtime": ["../web/src/jsx-dev-runtime.ts"]
+    },
+    "types": ["node"]
+  },
+  "include": [
+    "server.ts",
+    "src",
+    "../ft/src/global.d.ts"
+  ]
+}

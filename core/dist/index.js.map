@@ -1,0 +1,11 @@
+{
+  "mappings": "AAAA,SACE,eACA,UACA,KACA,MACA,QACA,QACA,sBACK;AAEP,SACE,cACA,iBACA,kBACA,iBACA,sBACA,yBACA,eACA,aACA,yBACA,kCACK",
+  "names": [],
+  "sources": [
+    "D:\\projetos\\Adaptive\\core\\src\\index.ts"
+  ],
+  "sourcesContent": [
+    "export {\n  createElement,\n  Fragment,\n  jsx,\n  jsxs,\n  jsxDEV,\n  useRef,\n  useRefReactive\n} from \"./jsx-runtime.js\";\n\nexport {\n  createIRText,\n  createIRDynamic,\n  createIRFragment,\n  createIRElement,\n  createIRPageDocument,\n  createIRDesktopDocument,\n  normalizeToIR,\n  serializeIR,\n  serializeIRPageDocument,\n  serializeIRDesktopDocument\n} from \"./ir.js\";\n\nexport type {\n  IRScalar,\n  IRValue,\n  IRDynamicValue,\n  IREventValue,\n  IRTextNode,\n  IRDynamicNode,\n  IRFragmentNode,\n  IRElementNode,\n  IRNode,\n  IRStateDefinition,\n  IRStateBinding,\n  IRStateAction,\n  IRLifecycleEffect,\n  IRComponentBinding,\n  IRComponentAction,\n  IRPageDocument,\n  IRDesktopDocument,\n  IRDesktopPageDocument,\n  IRPageManifestEntry,\n  NormalizeToIROptions\n} from \"./ir.js\";\n\nexport type {\n  AdaptiveChild,\n  AdaptiveNode,\n  AdaptiveType,\n  ReactiveElement,\n  ReactiveNode,\n  Ref,\n  Context,\n  ProviderProps,\n  Box\n} from \"./types.js\";\n"
+  ],
+  "version": 3
+}

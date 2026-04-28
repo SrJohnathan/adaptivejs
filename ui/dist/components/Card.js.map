@@ -1,0 +1,11 @@
+{
+  "mappings": "AACA,SAAS,eAAkC;AAS3C,OAAO,SAAS,KACd,UACA,QAAmB,EAAE,EACrB,QAAyB,EAAE,EACV;CACjB,MAAM,EACJ,WAAW,OACX,UAAU,WAAW,aAAa,UAClC,GAAG,iBACD;AAEJ,QAAO,QACL,UACA;EACE,GAAG;EACH;EACA,SAAS,aAAa,WAAW;EAClC,EACD,MACD",
+  "names": [],
+  "sources": [
+    "D:\\projetos\\Adaptive\\ui\\src\\components\\Card.ts"
+  ],
+  "sourcesContent": [
+    "import type { AdaptiveUIChild, AdaptiveUIStyle } from \"../primitives.js\";\nimport { Surface, type SurfaceProps } from \"./Surface.js\";\r\n\r\nexport type CardProps = SurfaceProps & {\r\n  elevated?: boolean;\r\n  variant?: \"default\" | \"outlined\" | \"elevated\";\r\n};\r\n\r\nexport type UIChildrenFactory = () => AdaptiveUIChild[];\n\r\nexport function Card(\r\n  children: UIChildrenFactory,\r\n  props: CardProps = {},\r\n  style: AdaptiveUIStyle = {}\r\n): AdaptiveUIChild {\n  const {\r\n    elevated = false,\r\n    variant = elevated ? \"elevated\" : \"default\",\r\n    ...surfaceProps\r\n  } = props;\r\n\r\n  return Surface(\r\n    children,\r\n    {\r\n      ...surfaceProps,\r\n      variant,\r\n      padding: surfaceProps.padding ?? 16\r\n    },\r\n    style\r\n  );\r\n}\r\n"
+  ],
+  "version": 3
+}

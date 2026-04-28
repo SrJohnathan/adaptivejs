@@ -1,0 +1,11 @@
+{
+  "mappings": "AACA,SAAS,6BAA6B;AACtC,SAAS,kBAAkB;AAO3B,OAAO,SAAS,KACd,SACA,QAAmB,EAAE,EACrB,QAAyB,EAAE,EACV;AACjB,QAAO,sBACL,QACA,WAAW,OAAO,EAAE,OAAO,CAAC,EAC5B,QACD",
+  "names": [],
+  "sources": [
+    "D:\\projetos\\Adaptive\\ui\\src\\components\\Text.ts"
+  ],
+  "sourcesContent": [
+    "import type { AdaptiveUIChild, AdaptiveUIProps, AdaptiveUIStyle } from \"../primitives.js\";\nimport { adaptiveCreateElement } from \"../primitives.js\";\r\nimport { mergeProps } from \"../internal/shared.js\";\r\n\r\nexport type TextProps = AdaptiveUIProps & {\r\n  selectable?: boolean;\r\n  variant?: string;\r\n};\r\n\r\nexport function Text(\r\n  content: string,\r\n  props: TextProps = {},\r\n  style: AdaptiveUIStyle = {}\r\n): AdaptiveUIChild {\n  return adaptiveCreateElement(\r\n    \"text\",\r\n    mergeProps(props, { style }),\r\n    content\r\n  );\r\n}\r\n"
+  ],
+  "version": 3
+}

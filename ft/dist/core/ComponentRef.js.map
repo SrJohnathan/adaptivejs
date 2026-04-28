@@ -1,0 +1,11 @@
+{
+  "mappings": ";;;;;;AAWA,OAAO,SAAS,aAAmB,UAA+C;AAC9E,SAAQ,UAA0C;;EAE9C,MAAM,MAAM,MAAM,OAAO,EAAE,SAAS,MAAM;AAC1C,SAAO,SAAS,OAAO,IAAI;;;;;;;;;AAWnC,OAAO,SAAS,WAAc,KAAa,aAA4B;AACnE,KAAI,KAAK;AACL,MAAI,UAAU,aAAa",
+  "names": [],
+  "sources": [
+    "D:\\projetos\\Adaptive\\ft\\src\\core\\ComponentRef.ts"
+  ],
+  "sourcesContent": [
+    "import { Ref } from \"../interface/Ref.js\";\nimport { TSX5Node } from \"../global\";\n\r\n\r\n\r\n/**\r\n * ComponetRef - Função para criar componentes que suportam ref (similar ao forwardRef do React).\r\n *\r\n * @param renderFn - Função que recebe props e uma ref, e retorna um elemento (HTMLElement ou Text)\r\n * @returns Um componente que aceita props e uma ref opcional.\r\n */\r\nexport function ComponentRef<P, R>(renderFn: (props: P, ref: Ref<R>) => TSX5Node) {\r\n    return (props: P & { ref?: Ref<R> }): TSX5Node => {\r\n        // Se uma ref for passada via props, usa-a; caso contrário, cria uma ref padrão com current null\r\n        const ref = props.ref || { current: null };\r\n        return renderFn(props, ref);\r\n    };\r\n}\r\n\r\n\r\n/**\r\n * onFunction - Define o valor exposto pela ref, similar ao useImperativeHandle do React.\r\n *\r\n * @param ref - A referência que receberá o objeto exposto.\r\n * @param createValue - Uma função que retorna o objeto a ser atribuído a ref.current.\r\n */\r\nexport function onFunction<T>(ref: Ref<T>, createValue: () => T): void {\r\n    if (ref) {\r\n        ref.current = createValue();\r\n    }\r\n}\n"
+  ],
+  "version": 3
+}

@@ -1,0 +1,11 @@
+{
+  "mappings": "AAAA,SAAS,kBAAkB,4BAA4B;AACvD,SAAS,aAAa,oBAAoB",
+  "names": [],
+  "sources": [
+    "D:\\projetos\\Adaptive\\ssr\\src\\index.ts"
+  ],
+  "sourcesContent": [
+    "export { matchRouteServer, parseRoutePathServer } from \"./matchRouteServer.js\";\nexport { init_server, createRouter } from \"./serve.js\";\nexport type {\n  ServerOptions,\n  RouteDefinition,\n  AdaptiveRequest,\n  AdaptiveResponse,\n  Plugin,\n  AdaptiveMetadata,\n  AdaptiveMetadataContext,\n  AdaptiveMetadataResolver,\n  AdaptiveOpenGraphMetadata,\n  AdaptiveTwitterMetadata\n} from \"./serve.js\";\n"
+  ],
+  "version": 3
+}

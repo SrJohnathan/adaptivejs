@@ -1,0 +1,11 @@
+{
+  "mappings": "AAAA,SAAS,6BAA+F;AACxG,SAAS,kBAA0C;AAEnD,OAAO,SAAS,KACd,UACA,QAAyB,EAAE,EAC3B,QAAyB,EAAE,EACV;AACjB,QAAO,sBACL,QACA,WAAW,OAAO,EAAE,OAAO,CAAC,EAC5B,GAAG,UAAU,CACd",
+  "names": [],
+  "sources": [
+    "D:\\projetos\\Adaptive\\ui\\src\\components\\Form.ts"
+  ],
+  "sourcesContent": [
+    "import { adaptiveCreateElement, type AdaptiveUIChild, type AdaptiveUIProps, type AdaptiveUIStyle } from \"../primitives.js\";\nimport { mergeProps, type UIChildrenFactory } from \"../internal/shared.js\";\n\nexport function Form(\n  children: UIChildrenFactory,\n  props: AdaptiveUIProps = {},\n  style: AdaptiveUIStyle = {},\n): AdaptiveUIChild {\n  return adaptiveCreateElement(\n    \"form\",\n    mergeProps(props, { style }),\n    ...children(),\n  );\n}\n"
+  ],
+  "version": 3
+}

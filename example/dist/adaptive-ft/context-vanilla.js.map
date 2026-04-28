@@ -1,0 +1,11 @@
+{
+  "mappings": "AAAA,SAAS,gBAAgB;AACzB,SAAS,gBAAgB;AAIzB,OAAO,SAAS,cAAiB,cAA6B;CAC5D,MAAM,CAAC,OAAO,YAAY,SAAc,CAAC,aAAa,CAAC;CAEvD,MAAM,YAAY,EAAE,OAAO,eAA2C;AACpE,WAAS,CAAC,MAAM,CAAC;AACjB,SAAO,SAAS,EAAE,UAAU,CAAC;;CAG/B,MAAM,wBAAwB,EAC5B,IAAI,UAAU;EACZ,MAAM,SAAS,OAAO;AACtB,SAAO,OAAO,OAAO,SAAS;IAEjC;AAED,QAAO;EAAE;EAAU,YAAY;EAAgB;;AAGjD,OAAO,SAAS,WAAc,SAAqC;AACjE,QAAO,QAAQ,YAAY",
+  "names": [],
+  "sources": [
+    "D:\\projetos\\Adaptive\\ft\\src\\context-vanilla.ts"
+  ],
+  "sourcesContent": [
+    "import { Fragment } from \"./jsx-runtime.js\";\nimport { useState } from \"./state.js\";\nimport { Context, ProviderProps } from \"./interface/Context.js\";\nimport { TSX5Node } from \"./global\";\n\nexport function createContext<T>(defaultValue: T): Context<T> {\n  const [stack, setStack] = useState<T[]>([defaultValue]);\n\n  const Provider = ({ value, children }: ProviderProps<T>): TSX5Node => {\n    setStack([value]);\n    return Fragment({ children });\n  };\n\n  const useContextHook = () => ({\n    get current() {\n      const values = stack();\n      return values[values.length - 1];\n    }\n  });\n\n  return { Provider, useContext: useContextHook };\n}\n\nexport function useContext<T>(context: { useContext: () => T }): T {\n  return context.useContext();\n}\n"
+  ],
+  "version": 3
+}
