@@ -1,3 +1,6 @@
+
+<img src="avatar.png" width="120" />
+
 # AdaptiveJS
 
 AdaptiveJS is an experimental TypeScript and TSX framework for server-rendered applications with hydration, file-based routing, and fine-grained reactivity.
@@ -38,15 +41,57 @@ export default function Page() {
   const [count, setCount] = useReactive(0);
 
   return (
-    <Column>
-      <Text>{() => `Count: ${count()}`}</Text>
-      <Button onClick={() => setCount((value) => value + 1)}>
-        Increment
-      </Button>
-    </Column>
+          <Column>
+            <Text>{() => `Count: ${count()}`}</Text>
+            <Button onClick={() => setCount((value) => value + 1)}>
+              Increment
+            </Button>
+          </Column>
   );
 }
 ```
+
+## Client and Hydrate Components
+
+AdaptiveJS supports two execution modes for client-side behavior:
+
+### "hydrate"
+
+Keeps the HTML generated on the server and injects JavaScript behavior on the client.
+
+- Uses SSR HTML as-is
+- Attaches events, refs, and reactivity via hydration manifest
+- Does not recreate DOM
+- Removes temporary markers after hydration
+
+```tsx
+"hydrate";
+
+export default function Counter() {
+  return <button onClick={() => console.log("clicked")}>Click</button>;
+}
+```
+
+### "client"
+
+Creates and mounts the component directly on the client.
+
+- DOM is generated in the browser
+- Does not rely on existing SSR structure
+- Used for client-only components
+
+```tsx
+"client";
+
+export default function Widget() {
+  return <div>Client only</div>;
+}
+```
+
+### Summary
+
+- "hydrate" → server HTML + JS binding
+- "client" → client-side rendering
 
 ## Architecture
 
@@ -78,6 +123,7 @@ Current working surface:
 - dynamic routes such as `[slug].tsx`
 - SSR and hydration
 - client components via `"client";`
+- hydrate components via `"hydrate";`
 - server modules via `"server";`
 - `useReactive`
 - `useEffect`
@@ -159,3 +205,4 @@ That combination is the main identity of the project today.
 AdaptiveJS is still experimental, but the current web stack is already usable for real SSR projects and deploy-preset workflows.
 
 The broader multi-target architecture is under active development.
+
