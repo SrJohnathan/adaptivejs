@@ -206,3 +206,8 @@ AdaptiveJS is still experimental, but the current web stack is already usable fo
 
 The broader multi-target architecture is under active development.
 
+
+## License
+
+MIT
+
