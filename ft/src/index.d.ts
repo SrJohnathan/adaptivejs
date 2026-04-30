@@ -1,6 +1,7 @@
 export { createElement, Fragment, useRef, useRefReactive } from "./jsx-runtime.js";
 export { callServerAction } from "./server-actions.js";
 export { createClientComponent, hydrateClientComponents, getClientComponentMetadata, isClientComponent } from "./client-component.js";
+export { createHydrateComponent } from "./hydrate-component.js";
 export { AdaptiveObserver, useReactive, useState, useMemo, useReactiveStore, createStore, batch, cleanupAllEffects, useEffectDep, useEffect, useLayoutEffect, useClientEffect, useDOMEffect, isSSR } from "./state.js";
 export { matchRoute, parseRoutePath } from "./matchRoute.js";
 export { render, useNavigation, useRouter, createRouter, createRouterHidrate, registerRouteModules } from "./createRoute.js";
@@ -18,4 +19,4 @@ export { onEffect, onLayoutEffect, onStart } from "./reactive.js";
 export type { Ref } from "./interface/Ref.js";
 export type { Context, ProviderProps, Box } from "./interface/Context.js";
 export type { AdaptiveNode, AdaptiveType, AdaptiveChild, ReactiveNode, ReactiveElement } from "./global";
-export type { AdaptiveHydrationMismatch } from "./hidrate.js";
+export type { AdaptiveHydrationMismatch, HydrateOptions, HydrationInstruction } from "./hidrate.js";

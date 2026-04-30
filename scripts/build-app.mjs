@@ -125,7 +125,8 @@ async function buildServerFile(sourcePath, outputPath, options) {
         await fs.readFile(sourcePath, "utf8"),
     );
 
-    if (hasClientDirective(sourceText)) {
+    const componentDirective = getHydratableDirective(sourceText);
+    if (componentDirective) {
         const moduleId = normalizeEntryId(
             path.relative(options.srcRoot, sourcePath),
         );
@@ -134,7 +135,7 @@ async function buildServerFile(sourcePath, outputPath, options) {
             sourcePath,
             ssrModulePath,
             options.cwd,
-            stripClientDirective(sourceText),
+            stripHydratableDirective(sourceText),
         );
         await fs.writeFile(
             outputPath,
@@ -142,6 +143,7 @@ async function buildServerFile(sourcePath, outputPath, options) {
                 sourceText,
                 moduleId,
                 `./${path.basename(ssrModulePath)}`,
+                componentDirective,
             ),
             "utf8",
         );
@@ -265,15 +267,15 @@ async function bundleClientEntries({
         sourcemap: dev ? "inline" : false,
         jsx: "automatic",
         jsxImportSource: "@adaptivejs/web",
-        treeShaking: true,
-        legalComments: "none",
-        define,
-        metafile: true,
-        entryNames: "[name]-[hash]",
-        chunkNames: "chunks/[name]-[hash]",
-        loader: {
-            ".ts": "ts",
-            ".tsx": "tsx",
+    treeShaking: true,
+    legalComments: "none",
+    define,
+    metafile: true,
+    entryNames: "assets/entry-[hash]",
+    chunkNames: "assets/chunk-[hash]",
+    loader: {
+      ".ts": "ts",
+      ".tsx": "tsx",
         },
         plugins: [commonToWebAliasPlugin(appDir), serverOnlyProxyPlugin(srcDir)],
     });
@@ -323,7 +325,7 @@ async function collectExplicitClientEntries(clientSrcDir) {
 
         for (const file of candidateFiles) {
             const source = await fs.readFile(file, "utf8");
-            if (!hasClientDirective(source)) continue;
+            if (!getHydratableDirective(source)) continue;
             entries.push({
                 file,
                 id: normalizeEntryId(path.relative(clientSrcDir, file)),
@@ -354,7 +356,7 @@ async function createClientComponentWrappers({ appDir, srcDir, tempDir }) {
         }
 
         const source = await fs.readFile(file, "utf8");
-        if (!hasClientDirective(source)) continue;
+        if (!getHydratableDirective(source)) continue;
 
         const moduleId = normalizeEntryId(relativePath);
         const wrapperPath = path.join(
@@ -406,6 +408,18 @@ function hasClientDirective(source) {
     );
 }
 
+function hasHydrateDirective(source) {
+    return /^\s*(?:(?:\/\*[\s\S]*?\*\/|\/\/[^\n]*\n)\s*)*["'](?:hydrate|use hydrate)["']\s*;?/.test(
+        source,
+    );
+}
+
+function getHydratableDirective(source) {
+    if (hasClientDirective(source)) return "client";
+    if (hasHydrateDirective(source)) return "hydrate";
+    return null;
+}
+
 function hasServerDirective(source) {
     return /^\s*(?:(?:\/\*[\s\S]*?\*\/|\/\/[^\n]*\n)\s*)*["'](?:server|use server)["']\s*;?/.test(
         source,
@@ -419,22 +433,33 @@ function stripClientDirective(source) {
     );
 }
 
+function stripHydratableDirective(source) {
+    return source.replace(
+        /^\s*(?:(?:\/\*[\s\S]*?\*\/|\/\/[^\n]*\n)\s*)*["'](?:client|use client|hydrate|use hydrate)["']\s*;?\s*/,
+        "",
+    );
+}
+
 function normalizeEntryId(relativePath) {
     return relativePath.replace(/\.(ts|tsx|js|jsx)$/, "").replace(/\\/g, "/");
 }
 
-function createServerClientStub(sourceText, moduleId, ssrImportPath) {
+function createServerClientStub(sourceText, moduleId, ssrImportPath, componentDirective = "client") {
     const { namedExports } = extractExports(sourceText);
+    const factoryName =
+        componentDirective === "hydrate"
+            ? "createHydrateComponent"
+            : "createClientComponent";
     const lines = [
         `import * as serverModule from ${JSON.stringify(ssrImportPath)};`,
-        `import { createClientComponent } from "@adaptivejs/ft";`,
-        `export default createClientComponent(${JSON.stringify(moduleId)}, "default", typeof serverModule.default === "function" ? serverModule.default : undefined);`,
+        `import { ${factoryName} } from "@adaptivejs/ft";`,
+        `export default ${factoryName}(${JSON.stringify(moduleId)}, "default", typeof serverModule.default === "function" ? serverModule.default : undefined);`,
     ];
 
     for (const exportName of namedExports) {
         if (exportName === "default") continue;
         lines.push(
-            `export const ${exportName} = createClientComponent(${JSON.stringify(moduleId)}, ${JSON.stringify(exportName)}, typeof serverModule[${JSON.stringify(exportName)}] === "function" ? serverModule[${JSON.stringify(exportName)}] : undefined);`,
+            `export const ${exportName} = ${factoryName}(${JSON.stringify(moduleId)}, ${JSON.stringify(exportName)}, typeof serverModule[${JSON.stringify(exportName)}] === "function" ? serverModule[${JSON.stringify(exportName)}] : undefined);`,
         );
     }
 
@@ -571,7 +596,15 @@ async function compressAssets(dir) {
 
         if (!/\.(js|css|html|svg|json)$/.test(entry.name)) continue;
 
-        const content = await fs.readFile(fullPath);
+        let content;
+        try {
+            content = await fs.readFile(fullPath);
+        } catch (error) {
+            if (error?.code === "ENOENT") {
+                continue;
+            }
+            throw error;
+        }
         const gzip = gzipSync(content, { level: 9 });
         const brotli = brotliCompressSync(content, {
             params: {
@@ -579,6 +612,7 @@ async function compressAssets(dir) {
             },
         });
 
+        await fs.mkdir(path.dirname(fullPath), { recursive: true });
         await fs.writeFile(`${fullPath}.gz`, gzip);
         await fs.writeFile(`${fullPath}.br`, brotli);
     }

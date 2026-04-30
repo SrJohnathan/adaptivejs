@@ -3,6 +3,7 @@ import { renderToDOM } from "./hidrate.js";
 import { backHydration, hydrateNavigation } from "./hidrate_app.js";
 import { createElement } from "./jsx-runtime.js";
 import { matchRoute, parseRoutePath } from "./matchRoute.js";
+import { createStore } from "./state.js";
 
 export type RouteComponent = (props?: { params?: Record<string, string> }) => TSX5Node;
 export type RouteDefinition = {
@@ -11,8 +12,19 @@ export type RouteDefinition = {
 };
 
 export type RouteModuleMap = Record<string, { default: RouteComponent } | RouteComponent>;
+export type RouterQueryValue = string | number | boolean | null | undefined;
+export type RouterQueryPatch = Record<string, RouterQueryValue>;
 
 let routeModules: RouteModuleMap = {};
+const routerRuntimeStore = createStore({
+  pathname: "/",
+  search: "",
+  query: {} as Record<string, string>
+});
+
+if (typeof window !== "undefined") {
+  syncRouterRuntimeStore();
+}
 
 export function registerRouteModules(modules: RouteModuleMap) {
   routeModules = modules;
@@ -23,6 +35,7 @@ export const render = async (root: HTMLElement, modules?: RouteModuleMap) => {
 
   function renderApp() {
     if (!root) return;
+    syncRouterRuntimeStore();
     root.replaceChildren(renderToDOM(renderCurrentRoute()));
   }
 
@@ -41,10 +54,83 @@ export const useNavigation = () => {
 export const useRouter = () => ({
   fast_push: (path: string) => hydrateNavigation(path),
   push: (path: string) => {
+    if (typeof window === "undefined") return;
     window.location.href = path;
   },
-  back: () => window.history.back(),
-  fast_back: () => backHydration()
+  back: () => {
+    if (typeof window === "undefined") return;
+    window.history.back();
+  },
+  fast_back: () => {
+    if (typeof window === "undefined") return;
+    backHydration();
+  },
+  query: () => {
+    return routerRuntimeStore.query[0]();
+  },
+  get_query: (key: string) => {
+    return routerRuntimeStore.query[0]()[key] ?? null;
+  },
+  set_query: (key: string, value: RouterQueryValue, options: { replace?: boolean } = {}) => {
+    if (typeof window === "undefined") return "";
+    const url = new URL(window.location.href);
+
+    if (value === undefined || value === null || value === "") {
+      url.searchParams.delete(key);
+    } else {
+      url.searchParams.set(key, String(value));
+    }
+
+    if (options.replace) {
+      window.history.replaceState({}, "", url.toString());
+    } else {
+      window.history.pushState({}, "", url.toString());
+    }
+
+    syncRouterRuntimeStore();
+
+    return url.toString();
+  },
+  patch_query: (patch: RouterQueryPatch, options: { replace?: boolean } = {}) => {
+    if (typeof window === "undefined") return "";
+    const url = new URL(window.location.href);
+
+    for (const [key, value] of Object.entries(patch)) {
+      if (value === undefined || value === null || value === "") {
+        url.searchParams.delete(key);
+      } else {
+        url.searchParams.set(key, String(value));
+      }
+    }
+
+    if (options.replace) {
+      window.history.replaceState({}, "", url.toString());
+    } else {
+      window.history.pushState({}, "", url.toString());
+    }
+
+    syncRouterRuntimeStore();
+
+    return url.toString();
+  },
+  remove_query: (keys: string | string[], options: { replace?: boolean } = {}) => {
+    if (typeof window === "undefined") return "";
+    const url = new URL(window.location.href);
+
+    for (const key of Array.isArray(keys) ? keys : [keys]) {
+      url.searchParams.delete(key);
+    }
+
+    if (options.replace) {
+      window.history.replaceState({}, "", url.toString());
+    } else {
+      window.history.pushState({}, "", url.toString());
+    }
+
+    syncRouterRuntimeStore();
+
+    return url.toString();
+  }
 });
 
 export function createRouterHidrate(modules?: RouteModuleMap) {
@@ -83,9 +169,34 @@ export function createRouter(options: { test?: boolean; modules?: RouteModuleMap
 
   function navigateTo(path: string) {
     window.history.pushState({}, "", path);
+    syncRouterRuntimeStore();
   }
 
   return { routes, renderCurrentRoute, navigateTo };
+}
+
+function syncRouterRuntimeStore() {
+  const state = readRouterRuntimeState();
+  routerRuntimeStore.pathname[1](state.pathname);
+  routerRuntimeStore.search[1](state.search);
+  routerRuntimeStore.query[1](state.query);
+}
+
+function readRouterRuntimeState() {
+  if (typeof window === "undefined") {
+    return {
+      pathname: "/",
+      search: "",
+      query: {}
+    };
+  }
+
+  const url = new URL(window.location.href);
+  return {
+    pathname: url.pathname,
+    search: url.search,
+    query: Object.fromEntries(url.searchParams.entries())
+  };
 }
 
 function createRoutesFromModules(modules: RouteModuleMap): RouteDefinition[] {

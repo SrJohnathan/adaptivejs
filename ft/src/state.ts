@@ -1,14 +1,39 @@
 type Subscriber = () => void;
 type Cleanup = void | (() => void);
-type EffectFn = () => Cleanup;
-type DependencyList = any[];
+export type EffectFn = () => Cleanup;
+export type DependencyList = any[];
 type EffectPhase = "layout" | "effect";
 type EffectScope = {
   id: number;
   label?: string;
 };
+type HydrationCollectionState = {
+  unsupportedFeatures: Set<string>;
+  effectInstructions: Array<{
+    kind: "layout-effect" | "effect";
+    effect: EffectFn;
+    deps?: DependencyList;
+  }>;
+};
 
 export const isSSR = (): boolean => typeof window === "undefined";
+let activeHydrationCollection: HydrationCollectionState | null = null;
+
+function isAdaptiveHydrationDebugEnabled() {
+  if (typeof window !== "undefined" && (window as any).__ADAPTIVE_DEBUG_HYDRATION__ === true) {
+    return true;
+  }
+
+  return (globalThis as any)?.process?.env?.ADAPTIVE_PUBLIC_DEBUG_HYDRATION === "true";
+}
+
+function debugSignalLog(...args: any[]) {
+  if (!isAdaptiveHydrationDebugEnabled()) {
+    return;
+  }
+
+  console.log(...args);
+}
 
 class EffectSystem {
   private currentEffect: EffectFn | null = null;
@@ -164,6 +189,7 @@ export class AdaptiveObserver<T = any> {
 
   get(): T {
     const currentEffect = effectSystem.getCurrentEffect();
+    debugSignalLog("[signal:get]", Boolean(currentEffect));
     if (currentEffect) {
       this.subscribers.add(currentEffect);
     }
@@ -173,6 +199,7 @@ export class AdaptiveObserver<T = any> {
   set(nextValue: T) {
     if (Object.is(this.value, nextValue)) return;
     this.value = nextValue;
+    debugSignalLog("[signal:set]", nextValue, this.subscribers.size);
     for (const subscriber of this.subscribers) {
       effectSystem.schedule(subscriber);
     }
@@ -217,6 +244,14 @@ export const useStateAlt = createStore;
 export const TSX5Observer = AdaptiveObserver;
 
 export function useEffect(effect: EffectFn, deps?: DependencyList): void {
+  if (activeHydrationCollection) {
+    activeHydrationCollection.effectInstructions.push({
+      kind: "effect",
+      effect,
+      deps
+    });
+    return;
+  }
   if (isSSR()) return;
 
   if (deps) {
@@ -228,6 +263,14 @@ export function useEffect(effect: EffectFn, deps?: DependencyList): void {
 }
 
 export function useLayoutEffect(effect: EffectFn, deps?: DependencyList): void {
+  if (activeHydrationCollection) {
+    activeHydrationCollection.effectInstructions.push({
+      kind: "layout-effect",
+      effect,
+      deps
+    });
+    return;
+  }
   if (isSSR()) return;
 
   if (deps) {
@@ -239,6 +282,14 @@ export function useLayoutEffect(effect: EffectFn, deps?: DependencyList): void {
 }
 
 export function useEffectWithDeps(effect: EffectFn, deps: DependencyList, phase: EffectPhase = "effect"): void {
+  if (activeHydrationCollection) {
+    activeHydrationCollection.effectInstructions.push({
+      kind: phase === "layout" ? "layout-effect" : "effect",
+      effect,
+      deps
+    });
+    return;
+  }
   if (isSSR()) return;
   const resolvedDeps = deps.map((dep) => (typeof dep === "function" ? dep() : dep));
   if (effectSystem.haveDepsChanged(effect, resolvedDeps)) {
@@ -250,6 +301,13 @@ export function useEffectWithDeps(effect: EffectFn, deps: DependencyList, phase:
 export const useEffectDep = useEffectWithDeps;
 
 export function useDOMEffect(effect: EffectFn): void {
+  if (activeHydrationCollection) {
+    activeHydrationCollection.effectInstructions.push({
+      kind: "effect",
+      effect
+    });
+    return;
+  }
   if (isSSR()) return;
   const run = () => effectSystem.schedule(effect);
   if (document.readyState === "loading") {
@@ -291,4 +349,30 @@ export function cleanupEffectScope(scope: ReturnType<typeof createEffectScope>) 
 
 export function cleanupAllEffects() {
   effectSystem.cleanupAll();
+}
+
+export function runHydrationCollection<T>(fn: () => T): {
+  value: T;
+  unsupportedFeatures: string[];
+  effectInstructions: Array<{
+    kind: "layout-effect" | "effect";
+    effect: EffectFn;
+    deps?: DependencyList;
+  }>;
+} {
+  const previousCollection = activeHydrationCollection;
+  const state: HydrationCollectionState = {
+    unsupportedFeatures: new Set<string>(),
+    effectInstructions: []
+  };
+  activeHydrationCollection = state;
+  try {
+    return {
+      value: fn(),
+      unsupportedFeatures: Array.from(state.unsupportedFeatures),
+      effectInstructions: [...state.effectInstructions]
+    };
+  } finally {
+    activeHydrationCollection = previousCollection;
+  }
 }

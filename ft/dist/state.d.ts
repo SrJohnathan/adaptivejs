@@ -1,6 +1,6 @@
 type Cleanup = void | (() => void);
-type EffectFn = () => Cleanup;
-type DependencyList = any[];
+export type EffectFn = () => Cleanup;
+export type DependencyList = any[];
 type EffectPhase = "layout" | "effect";
 type EffectScope = {
     id: number;
@@ -60,4 +60,13 @@ export declare function createEffectScope(label?: string): EffectScope;
 export declare function runWithEffectScope<T>(scope: ReturnType<typeof createEffectScope>, fn: () => T): T;
 export declare function cleanupEffectScope(scope: ReturnType<typeof createEffectScope>): void;
 export declare function cleanupAllEffects(): void;
+export declare function runHydrationCollection<T>(fn: () => T): {
+    value: T;
+    unsupportedFeatures: string[];
+    effectInstructions: Array<{
+        kind: "layout-effect" | "effect";
+        effect: EffectFn;
+        deps?: DependencyList;
+    }>;
+};
 export {};

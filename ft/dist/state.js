@@ -1,4 +1,17 @@
 export const isSSR = () => typeof window === "undefined";
+let activeHydrationCollection = null;
+function isAdaptiveHydrationDebugEnabled() {
+	if (typeof window !== "undefined" && window.__ADAPTIVE_DEBUG_HYDRATION__ === true) {
+		return true;
+	}
+	return globalThis?.process?.env?.ADAPTIVE_PUBLIC_DEBUG_HYDRATION === "true";
+}
+function debugSignalLog(...args) {
+	if (!isAdaptiveHydrationDebugEnabled()) {
+		return;
+	}
+	console.log(...args);
+}
 class EffectSystem {
 	currentEffect = null;
 	currentScope = null;
@@ -135,6 +148,7 @@ export class AdaptiveObserver {
 	}
 	get() {
 		const currentEffect = effectSystem.getCurrentEffect();
+		debugSignalLog("[signal:get]", Boolean(currentEffect));
 		if (currentEffect) {
 			this.subscribers.add(currentEffect);
 		}
@@ -143,6 +157,7 @@ export class AdaptiveObserver {
 	set(nextValue) {
 		if (Object.is(this.value, nextValue)) return;
 		this.value = nextValue;
+		debugSignalLog("[signal:set]", nextValue, this.subscribers.size);
 		for (const subscriber of this.subscribers) {
 			effectSystem.schedule(subscriber);
 		}
@@ -178,6 +193,14 @@ export const useReactiveStore = createStore;
 export const useStateAlt = createStore;
 export const TSX5Observer = AdaptiveObserver;
 export function useEffect(effect, deps) {
+	if (activeHydrationCollection) {
+		activeHydrationCollection.effectInstructions.push({
+			kind: "effect",
+			effect,
+			deps
+		});
+		return;
+	}
 	if (isSSR()) return;
 	if (deps) {
 		useEffectWithDeps(effect, deps);
@@ -186,6 +209,14 @@ export function useEffect(effect, deps) {
 	effectSystem.schedule(effect);
 }
 export function useLayoutEffect(effect, deps) {
+	if (activeHydrationCollection) {
+		activeHydrationCollection.effectInstructions.push({
+			kind: "layout-effect",
+			effect,
+			deps
+		});
+		return;
+	}
 	if (isSSR()) return;
 	if (deps) {
 		useEffectWithDeps(effect, deps, "layout");
@@ -194,6 +225,14 @@ export function useLayoutEffect(effect, deps) {
 	effectSystem.schedule(effect, "layout");
 }
 export function useEffectWithDeps(effect, deps, phase = "effect") {
+	if (activeHydrationCollection) {
+		activeHydrationCollection.effectInstructions.push({
+			kind: phase === "layout" ? "layout-effect" : "effect",
+			effect,
+			deps
+		});
+		return;
+	}
 	if (isSSR()) return;
 	const resolvedDeps = deps.map((dep) => typeof dep === "function" ? dep() : dep);
 	if (effectSystem.haveDepsChanged(effect, resolvedDeps)) {
@@ -203,6 +242,13 @@ export function useEffectWithDeps(effect, deps, phase = "effect") {
 }
 export const useEffectDep = useEffectWithDeps;
 export function useDOMEffect(effect) {
+	if (activeHydrationCollection) {
+		activeHydrationCollection.effectInstructions.push({
+			kind: "effect",
+			effect
+		});
+		return;
+	}
 	if (isSSR()) return;
 	const run = () => effectSystem.schedule(effect);
 	if (document.readyState === "loading") {
@@ -237,6 +283,23 @@ export function cleanupEffectScope(scope) {
 }
 export function cleanupAllEffects() {
 	effectSystem.cleanupAll();
+}
+export function runHydrationCollection(fn) {
+	const previousCollection = activeHydrationCollection;
+	const state = {
+		unsupportedFeatures: new Set(),
+		effectInstructions: []
+	};
+	activeHydrationCollection = state;
+	try {
+		return {
+			value: fn(),
+			unsupportedFeatures: Array.from(state.unsupportedFeatures),
+			effectInstructions: [...state.effectInstructions]
+		};
+	} finally {
+		activeHydrationCollection = previousCollection;
+	}
 }
 
 //# sourceMappingURL=state.js.map

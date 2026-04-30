@@ -19,7 +19,8 @@ export function renderToString(node) {
 	if (node.tag === "Fragment") {
 		return renderToString(node.children ?? []);
 	}
-	const { tag, props = {}, children = [] } = node;
+	const { tag, props = {} } = node;
+	const children = node.children ?? props.children ?? [];
 	let propsString = "";
 	for (const [key, value] of Object.entries(props)) {
 		if (key === "children" || key === "ref" || value == null) continue;

@@ -9,6 +9,8 @@ export type RouteDefinition = {
 export type RouteModuleMap = Record<string, {
     default: RouteComponent;
 } | RouteComponent>;
+export type RouterQueryValue = string | number | boolean | null | undefined;
+export type RouterQueryPatch = Record<string, RouterQueryValue>;
 export declare function registerRouteModules(modules: RouteModuleMap): void;
 export declare const render: (root: HTMLElement, modules?: RouteModuleMap) => Promise<void>;
 export declare const useNavigation: () => {
@@ -20,6 +22,19 @@ export declare const useRouter: () => {
     push: (path: string) => void;
     back: () => void;
     fast_back: () => void;
+    query: () => {
+        [k: string]: string;
+    };
+    get_query: (key: string) => string | null;
+    set_query: (key: string, value: RouterQueryValue, options?: {
+        replace?: boolean;
+    }) => string;
+    patch_query: (patch: RouterQueryPatch, options?: {
+        replace?: boolean;
+    }) => string;
+    remove_query: (keys: string | string[], options?: {
+        replace?: boolean;
+    }) => string;
 };
 export declare function createRouterHidrate(modules?: RouteModuleMap): {
     routes: RouteDefinition[];

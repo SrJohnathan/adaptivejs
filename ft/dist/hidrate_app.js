@@ -1,6 +1,6 @@
 import { createRouterHidrate } from "./createRoute.js";
 import { cleanupClientComponentScopes } from "./client-component.js";
-import { hydrate } from "./hidrate.js";
+import { hydrateLegacyVDOM } from "./hidrate.js";
 import { createElement } from "./jsx-runtime.js";
 import { cleanupEffectScope, createEffectScope, runWithEffectScope } from "./state.js";
 import { config, logger } from "./logging_configuration.js";
@@ -22,7 +22,7 @@ export const hydrateApp = () => {
 			cleanupClientComponentScopes(mountRoot);
 			cleanupEffectScope(activeHydrationScope);
 			activeHydrationScope = createEffectScope(`route:${path}`);
-			runWithEffectScope(activeHydrationScope, () => hydrate(mountRoot, () => vnode));
+			runWithEffectScope(activeHydrationScope, () => hydrateLegacyVDOM(mountRoot, () => vnode));
 			logger.info("Adaptive hydration completed");
 		} catch (error) {
 			logger.error("Adaptive hydration failed", error);
@@ -60,7 +60,7 @@ async function navigateAndHydrate(path) {
 	cleanupClientComponentScopes(mountRoot);
 	cleanupEffectScope(activeHydrationScope);
 	activeHydrationScope = createEffectScope(`route:${parsed.route}`);
-	runWithEffectScope(activeHydrationScope, () => hydrate(mountRoot, () => vnode));
+	runWithEffectScope(activeHydrationScope, () => hydrateLegacyVDOM(mountRoot, () => vnode));
 	window.history.pushState({}, "", path);
 }
 export const hydrateNavigation = navigateAndHydrate;

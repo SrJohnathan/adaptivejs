@@ -6,6 +6,7 @@ export {
   getClientComponentMetadata,
   isClientComponent
 } from "./client-component.js";
+export { createHydrateComponent } from "./hydrate-component.js";
 export {
   AdaptiveObserver,
   useReactive,
@@ -35,6 +36,8 @@ export { createContext, useContext } from "./context-vanilla.js";
 export { hydrateApp, hydrateNavigation, popStateNavigation, backHydration } from "./hidrate_app.js";
 export {
   hydrate,
+  hydrateLegacyVDOM,
+  hydrateLegacyVDOMBetweenMarkers,
   mount,
   renderToDOM,
   appendChildren,
@@ -53,4 +56,4 @@ export { onEffect, onLayoutEffect, onStart } from "./reactive.js";
 export type { Ref } from "./interface/Ref.js";
 export type { Context, ProviderProps, Box } from "./interface/Context.js";
 export type { AdaptiveNode, AdaptiveType, AdaptiveChild, ReactiveNode, ReactiveElement } from "./global";
-export type { AdaptiveHydrationMismatch } from "./hidrate.js";
+export type { AdaptiveHydrationMismatch, HydrateOptions, HydrationInstruction } from "./hidrate.js";

@@ -1,18 +1,17 @@
-import { Fragment } from "./jsx-runtime.js";
 import { useState } from "./state.js";
 export function createContext(defaultValue) {
-	const [stack, setStack] = useState([defaultValue]);
+	const [current, setCurrent] = useState(defaultValue);
 	const Provider = ({ value, children }) => {
-		setStack([value]);
-		return Fragment({ children });
+		setCurrent(value);
+		return {
+			tag: "Fragment",
+			props: {},
+			children: Array.isArray(children) ? children : children ? [children] : []
+		};
 	};
-	const useContextHook = () => ({ get current() {
-		const values = stack();
-		return values[values.length - 1];
-	} });
 	return {
 		Provider,
-		useContext: useContextHook
+		useContext: () => ({ current: current() })
 	};
 }
 export function useContext(context) {
