@@ -1,7 +1,7 @@
 {
   "name": "@adaptivejs/components",
   "version": "0.0.1",
-  "description": "High performance UI primitives for AdaptiveJS",
+  "description": "High-performance UI primitives for AdaptiveJS.",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

@@ -1,7 +1,7 @@
 {
   "name": "@adaptivejs/shared",
   "version": "0.0.1",
-  "description": "",
+  "description": "Shared runtime helpers used across AdaptiveJS packages.",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

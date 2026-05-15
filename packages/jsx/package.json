@@ -1,7 +1,7 @@
 {
   "name": "@adaptivejs/jsx",
   "version": "0.0.1",
-  "description": "",
+  "description": "JSX runtime and TSX typing surface for AdaptiveJS.",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

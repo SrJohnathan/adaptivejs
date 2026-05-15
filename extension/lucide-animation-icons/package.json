@@ -1,7 +1,7 @@
 {
   "name": "@adaptivejs/lucide-animation-icons",
   "version": "0.0.1",
-  "description": "Animated Lucide-style icons for AdaptiveJS applications.",
+  "description": "Animated Lucide-style icon components for AdaptiveJS applications.",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -12,8 +12,7 @@
     }
   },
   "scripts": {
-    "build": "tsc -p tsconfig.json",
-    "convert": "node ./scripts/conver"
+    "build": "tsc -p tsconfig.json"
   },
   "license": "MIT",
   "publishConfig": {

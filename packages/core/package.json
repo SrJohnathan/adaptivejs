@@ -1,7 +1,7 @@
 {
   "name": "@adaptivejs/core",
   "version": "0.0.1",
-  "description": "",
+  "description": "Core SSR, routing and framework primitives for AdaptiveJS.",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

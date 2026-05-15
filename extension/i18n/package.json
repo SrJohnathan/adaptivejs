@@ -1,7 +1,7 @@
 {
   "name": "@adaptivejs/i18n",
   "version": "0.0.1",
-  "description": "Reactive i18n utilities for AdaptiveJS applications.",
+  "description": "Reactive internationalization utilities for AdaptiveJS applications.",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

@@ -1,7 +1,7 @@
 {
   "name": "@adaptivejs/web",
   "version": "0.0.1",
-  "description": "",
+  "description": "Web runtime, hydration and reactivity for AdaptiveJS applications.",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

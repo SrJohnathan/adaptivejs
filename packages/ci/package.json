@@ -1,7 +1,7 @@
 {
   "name": "@adaptivejs/ci",
   "version": "0.0.1",
-  "description": "",
+  "description": "Build and development tooling for AdaptiveJS applications.",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
