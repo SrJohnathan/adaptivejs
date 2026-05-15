@@ -5,7 +5,10 @@
   "scripts": {
     "build": "npm run build --workspaces",
     "publish:lib": "npm run build && npm publish --workspace @adaptivejs/core --access public && npm publish --workspace @adaptivejs/shared --access public && npm publish --workspace @adaptivejs/jsx --access public && npm publish --workspace @adaptivejs/web --access public && npm publish --workspace @adaptivejs/i18n --access public && npm publish --workspace @adaptivejs/adapter-nitro --access public && npm publish --workspace @adaptivejs/ci --access public && npm publish --workspace @adaptivejs/components --access public && npm publish --workspace @adaptivejs/lucide-animation-icons --access public",
-    "publish:scaffold": "npm publish --workspace create-adaptive-app --access public"
+    "publish:scaffold": "npm publish --workspace create-adaptive-app --access public",
+    "release:check": "node scripts/npm-release.mjs check",
+    "release:pack": "node scripts/npm-release.mjs pack",
+    "release:publish": "node scripts/npm-release.mjs publish"
   },
   "workspaces": [
     "packages/*",
