@@ -1,0 +1,23 @@
+{
+  "name": "hello-beer",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node ../../packages/ci/dist/index.js dev .",
+    "build": "node ../../packages/ci/dist/index.js build .",
+    "preview": "node ../../packages/ci/dist/index.js preview .",
+    "start": "node ../../packages/ci/dist/index.js start .",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@adaptivejs/adapter-nitro": "file:../../packages/adapter-nitro",
+    "@adaptivejs/ci": "file:../../packages/ci",
+    "@adaptivejs/web": "file:../../packages/web",
+    "beercss": "^4.0.21",
+    "material-dynamic-colors": "^1.1.4"
+  },
+  "devDependencies": {
+    "tsx": "^4.21.0",
+    "typescript": "^6.0.3"
+  }
+}

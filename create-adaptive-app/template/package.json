@@ -1,0 +1,21 @@
+{
+  "name": "__APP_NAME__",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "__ADAPTIVE_DEV__",
+    "build": "__ADAPTIVE_BUILD__",
+    "preview": "__ADAPTIVE_PREVIEW__",
+    "start": "__ADAPTIVE_START__",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@adaptivejs/ci": "__CI_DEP__",
+    "@adaptivejs/web": "__WEB_DEP__",
+    "@adaptivejs/adapter-nitro": "__NITRO_ADAPTER_DEP__"__STYLE_RUNTIME_DEPENDENCIES__
+  },
+  "devDependencies": {
+    "tsx": "^4.21.0",
+    "typescript": "^6.0.3"__STYLE_DEV_DEPENDENCIES__
+  }
+}

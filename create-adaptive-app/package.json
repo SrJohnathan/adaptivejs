@@ -1,0 +1,22 @@
+{
+  "name": "create-adaptive-app",
+  "version": "0.1.8",
+  "description": "Scaffold a new Adaptive application.",
+  "license": "MIT",
+  "type": "module",
+  "bin": {
+    "create-adaptive-app": "./index.mjs"
+  },
+  "scripts": {
+    "build": "node -e \"process.exit(0)\"",
+    "typecheck": "node -e \"process.exit(0)\""
+  },
+  "files": [
+    "index.mjs",
+    "README.md",
+    "template"
+  ],
+  "publishConfig": {
+    "access": "public"
+  }
+}

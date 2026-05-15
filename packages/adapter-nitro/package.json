@@ -1,0 +1,31 @@
+{
+  "name": "@adaptivejs/adapter-nitro",
+  "version": "0.0.1",
+  "description": "Nitro adapter for AdaptiveJS. Enables server-side rendering and deployment in serverless and edge environments powered by Nitro.",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json"
+  },
+  "license": "MIT",
+  "publishConfig": {
+    "access": "public"
+  },
+  "dependencies": {
+    "@adaptivejs/core": "0.0.1",
+    "h3": "^2.0.1-rc.21",
+    "nitropack": "^2.13.4",
+    "vinxi": "^0.0.10"
+  },
+  "devDependencies": {
+    "@types/node": "^25.6.0",
+    "typescript": "^6.0.3"
+  }
+}

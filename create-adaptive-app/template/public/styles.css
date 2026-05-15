@@ -1,0 +1,218 @@
+:root {
+  --site-bg: #081120;
+  --site-bg-soft: #0d1729;
+  --site-panel: rgba(13, 23, 41, 0.82);
+  --site-panel-strong: #111c31;
+  --site-border: rgba(95, 179, 255, 0.18);
+  --site-border-strong: rgba(95, 179, 255, 0.34);
+  --site-text: #eef4ff;
+  --site-text-soft: #afbdd6;
+  --site-brand: #5fd4ff;
+  --site-brand-strong: #8ef1ff;
+  --site-shadow: 0 24px 80px rgba(1, 8, 20, 0.42);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at top left, rgba(95, 212, 255, 0.14), transparent 30%),
+    radial-gradient(circle at bottom right, rgba(142, 241, 255, 0.12), transparent 28%),
+    linear-gradient(180deg, var(--site-bg) 0%, #050b15 100%);
+  color: var(--site-text);
+  font-family: "Segoe UI", Inter, system-ui, sans-serif;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.welcome-shell {
+  width: min(1120px, calc(100% - 32px));
+  margin: 0 auto;
+  padding: 48px 0 72px;
+}
+
+.welcome-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(280px, 380px);
+  gap: 24px;
+  align-items: stretch;
+}
+
+.welcome-copy,
+.welcome-panel,
+.welcome-card {
+  border: 1px solid var(--site-border);
+  background: var(--site-panel);
+  backdrop-filter: blur(14px);
+  box-shadow: var(--site-shadow);
+}
+
+.welcome-copy {
+  padding: 36px;
+  border-radius: 28px;
+}
+
+.welcome-kicker,
+.welcome-card-label,
+.welcome-panel-header {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.22em;
+  font-size: 12px;
+  color: var(--site-brand);
+}
+
+.welcome-copy h1 {
+  margin: 18px 0 18px;
+  font-size: clamp(2.8rem, 6vw, 5rem);
+  line-height: 0.95;
+  letter-spacing: -0.05em;
+}
+
+.welcome-copy p {
+  max-width: 60ch;
+  margin: 0;
+  color: var(--site-text-soft);
+  font-size: 1.05rem;
+  line-height: 1.85;
+}
+
+.welcome-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin-top: 28px;
+}
+
+.welcome-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 48px;
+  padding: 0 18px;
+  border-radius: 999px;
+  border: 1px solid var(--site-border-strong);
+  background: rgba(255, 255, 255, 0.02);
+  color: var(--site-text);
+  transition: transform 160ms ease, border-color 160ms ease, background 160ms ease;
+}
+
+.welcome-button:hover {
+  transform: translateY(-1px);
+  border-color: var(--site-brand-strong);
+  background: rgba(95, 212, 255, 0.08);
+}
+
+.welcome-button-primary {
+  background: linear-gradient(135deg, rgba(95, 212, 255, 0.18), rgba(142, 241, 255, 0.12));
+}
+
+.welcome-panel {
+  padding: 24px;
+  border-radius: 24px;
+}
+
+.welcome-panel-header {
+  justify-content: space-between;
+  width: 100%;
+  margin-bottom: 18px;
+}
+
+.welcome-terminal {
+  padding: 18px;
+  border-radius: 18px;
+  border: 1px solid rgba(95, 212, 255, 0.12);
+  background: rgba(2, 8, 19, 0.8);
+}
+
+.welcome-terminal p {
+  margin: 0;
+  color: var(--site-text-soft);
+  font-family: "Consolas", "Courier New", monospace;
+  line-height: 1.9;
+}
+
+.welcome-terminal strong {
+  color: var(--site-brand-strong);
+  font-weight: 600;
+}
+
+.welcome-points {
+  margin: 18px 0 0;
+  padding-left: 18px;
+  color: var(--site-text-soft);
+  line-height: 1.9;
+}
+
+.welcome-points li + li {
+  margin-top: 8px;
+}
+
+.welcome-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+  margin-top: 24px;
+}
+
+.welcome-card {
+  padding: 22px;
+  border-radius: 22px;
+}
+
+.welcome-card h2 {
+  margin: 14px 0 10px;
+  font-size: 1.35rem;
+  line-height: 1.2;
+}
+
+.welcome-card p {
+  margin: 0;
+  color: var(--site-text-soft);
+  line-height: 1.8;
+}
+
+@media (max-width: 920px) {
+  .welcome-hero,
+  .welcome-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .welcome-copy {
+    padding: 28px;
+  }
+}
+
+@media (max-width: 640px) {
+  .welcome-shell {
+    width: min(100% - 20px, 1120px);
+    padding: 24px 0 48px;
+  }
+
+  .welcome-copy,
+  .welcome-panel,
+  .welcome-card {
+    border-radius: 20px;
+  }
+
+  .welcome-actions {
+    flex-direction: column;
+  }
+
+  .welcome-button {
+    width: 100%;
+  }
+}

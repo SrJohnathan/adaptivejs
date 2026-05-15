@@ -1,0 +1,18 @@
+{
+  "name": "adaptive",
+  "private": true,
+  "version": "0.0.1",
+  "scripts": {
+    "build": "npm run build --workspaces",
+    "publish:lib": "npm run build && npm publish --workspace @adaptivejs/core --access public && npm publish --workspace @adaptivejs/shared --access public && npm publish --workspace @adaptivejs/jsx --access public && npm publish --workspace @adaptivejs/web --access public && npm publish --workspace @adaptivejs/i18n --access public && npm publish --workspace @adaptivejs/adapter-nitro --access public && npm publish --workspace @adaptivejs/ci --access public && npm publish --workspace @adaptivejs/components --access public && npm publish --workspace @adaptivejs/lucide-animation-icons --access public",
+    "publish:scaffold": "npm publish --workspace create-adaptive-app --access public"
+  },
+  "workspaces": [
+    "packages/*",
+    "examples/*",
+    "create-adaptive-app",
+    "extension/*"
+
+
+  ]
+}

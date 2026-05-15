@@ -1,0 +1,56 @@
+{
+  "name": "@adaptivejs/components",
+  "version": "0.0.1",
+  "description": "High performance UI primitives for AdaptiveJS",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./list": {
+      "types": "./dist/list/index.d.ts",
+      "import": "./dist/list/index.js"
+    },
+    "./list-canvas": {
+      "types": "./dist/list/canvas.d.ts",
+      "import": "./dist/list/canvas.js"
+    },
+    "./list-virtual": {
+      "types": "./dist/list/virtual.d.ts",
+      "import": "./dist/list/virtual.js"
+    },
+    "./table-canvas": {
+      "types": "./dist/table/canvas.d.ts",
+      "import": "./dist/table/canvas.js"
+    },
+    "./table-virtual": {
+      "types": "./dist/table/virtual.d.ts",
+      "import": "./dist/table/virtual.js"
+    },
+    "./table": {
+      "types": "./dist/table/index.d.ts",
+      "import": "./dist/table/index.js"
+    },
+    "./table-shared": {
+      "types": "./dist/table/shared.d.ts",
+      "import": "./dist/table/shared.js"
+    },
+    "./item": {
+      "types": "./dist/list/item.d.ts",
+      "import": "./dist/list/item.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json"
+  },
+  "license": "MIT",
+  "publishConfig": {
+    "access": "public"
+  },
+  "dependencies": {
+    "@adaptivejs/web": "0.0.1"
+  }
+}
