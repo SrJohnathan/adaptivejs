@@ -1,5 +1,5 @@
 'hydrate'
-import {useHandler, useReactive} from "@adaptivejs/web";
+import {useHandler, useReactive} from "@adaptive-js/web";
 
 /*
  * Copyright (c) 2026 Antonio Johnathan

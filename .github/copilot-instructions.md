@@ -16,7 +16,7 @@ Purpose: help an AI contributor be productive quickly in this monorepo.
 
 - **Build / dev workflow (exact):**
   - Build all workspaces: run `npm run build` at repo root. This triggers `tsc -p tsconfig.json` in each package.
-  - Build a single package: `npm --workspace @adaptivejs/ci run build` (or `npm --prefix packages/ci run build`).
+  - Build a single package: `npm --workspace @adaptive-js/ci run build` (or `npm --prefix packages/ci run build`).
   - Examples rely on the built CI package: after building, run an example from its folder (or via prefix):
     - `cd examples/hello2 && npm run dev` (this runs `node ../../packages/ci/dist/index.js dev .` as defined in that example's `package.json`).
   - Typecheck inside any package: `tsc -p tsconfig.json --noEmit`.

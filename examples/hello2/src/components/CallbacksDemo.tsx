@@ -1,6 +1,6 @@
 'hydrate'
 
-import { useReactive } from "@adaptivejs/web";
+import { useReactive } from "@adaptive-js/web";
 
 export const CallbacksDemo = () => {
     const [inputValue, setInputValue] = useReactive("");

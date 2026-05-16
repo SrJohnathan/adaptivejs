@@ -1,4 +1,4 @@
-import { createElement as ce, Fragment as F } from "@adaptivejs/jsx";
+import { createElement as ce, Fragment as F } from "@adaptive-js/jsx";
 
 export type AdaptiveChild =
   | string

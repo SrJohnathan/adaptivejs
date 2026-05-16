@@ -11,7 +11,7 @@ import {
 
   readBody,
 } from "h3";
-import { createRouter ,handle_actions_request } from "@adaptivejs/core";
+import { createRouter ,handle_actions_request } from "@adaptive-js/core";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import {createReadStream, existsSync} from "node:fs";

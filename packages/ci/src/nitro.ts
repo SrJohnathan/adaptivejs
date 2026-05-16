@@ -12,7 +12,7 @@ export async function buildNitroIfNeeded(
     try {
         await buildApp();
 
-        const { buildAdaptive } = await import("@adaptivejs/adapter-nitro");
+        const { buildAdaptive } = await import("@adaptive-js/adapter-nitro");
 
         await buildAdaptive({
             appDir: args.targetDir,
@@ -26,7 +26,7 @@ export async function buildNitroIfNeeded(
 export async function previewNitro(appDir: string): Promise<void> {
     const port = Number(process.env.PORT || "3000");
 
-    const { previewAdaptive } = await import("@adaptivejs/adapter-nitro");
+    const { previewAdaptive } = await import("@adaptive-js/adapter-nitro");
 
     await previewAdaptive({
         appDir,

@@ -1,5 +1,5 @@
 {
-  "name": "hello-beer",
+  "name": "@adaptive-js/hello-beer",
   "private": true,
   "type": "module",
   "scripts": {
@@ -10,9 +10,9 @@
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
-    "@adaptivejs/adapter-nitro": "file:../../packages/adapter-nitro",
-    "@adaptivejs/ci": "file:../../packages/ci",
-    "@adaptivejs/web": "file:../../packages/web",
+    "@adaptive-js/adapter-nitro": "file:../../packages/adapter-nitro",
+    "@adaptive-js/ci": "file:../../packages/ci",
+    "@adaptive-js/web": "file:../../packages/web",
     "beercss": "^4.0.21",
     "material-dynamic-colors": "^1.1.4"
   },

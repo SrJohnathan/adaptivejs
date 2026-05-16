@@ -1,7 +1,7 @@
 'hydrate';
 
-import { useLayoutEffect, useRef } from "@adaptivejs/web";
-import type { RefObject } from "@adaptivejs/web";
+import { useLayoutEffect, useRef } from "@adaptive-js/web";
+import type { RefObject } from "@adaptive-js/web";
 
 export type BaseDivProps = {
   className?: string;

@@ -5,7 +5,7 @@
  * See LICENSE file in the project root for full license information.
  */
 
-import { CONTEXT_PROVIDER_TAG, runWithServerContext } from "@adaptivejs/shared";
+import { CONTEXT_PROVIDER_TAG, runWithServerContext } from "@adaptive-js/shared";
 import {
   CLIENT_BOUNDARY_END,
   CLIENT_BOUNDARY_MODE_CLIENT,
@@ -139,10 +139,19 @@ function safePreview(fn: () => any) {
 }
 
 function renderNode(node: any, context: RenderContext): string {
+  if (node == null || node === false) return "";
+
+  // 1. PRIMEIRA DEFESA: Se for um objeto VNode e a tag ou props indicarem uma Client Boundary,
+  // nós isolamos IMEDIATAMENTE antes de tentar executar qualquer função!
+  if (node && typeof node === "object") {
+    const props = node.props ?? {};
+    if (isClientBoundaryTag(node.tag) || props["data-adaptive-client-module"]) {
+      return renderClientBoundary(node, context);
+    }
+  }
+
+  // 2. Se for uma função pura do servidor (ex: componentes de estrutura/layout SSR), aí sim executamos
   if (typeof node === "function") {
-
-
-
     const preview = safePreview(node);
     const localReactiveId = context.hydrateReactiveCounter
         ? String(context.hydrateReactiveCounter.value++)
@@ -167,10 +176,8 @@ function renderNode(node: any, context: RenderContext): string {
     const startMarker = reactiveId == null ? markerPair.start : `${markerPair.start}:${reactiveId}`;
     const endMarker = reactiveId == null ? markerPair.end : `${markerPair.end}:${reactiveId}`;
 
-    return `<!--${startMarker}-->${renderNode(resolveReactivePreviewForSSR(preview), context)}<!--${endMarker}-->`;
+    return `${renderNode(resolveReactivePreviewForSSR(preview), context)}`;
   }
-
-  if (node == null || node === false) return "";
 
   if (typeof node === "string" || typeof node === "number" || typeof node === "boolean") {
     return String(node);
@@ -182,13 +189,20 @@ function renderNode(node: any, context: RenderContext): string {
 
   if (node.tag === CONTEXT_PROVIDER_TAG) {
     return runWithServerContext(
-      node.props.context.id,
-      node.props.value,
-      () => renderNode(node.children ?? [], context)
+        node.props.context.id,
+        node.props.value,
+        () => renderNode(node.children ?? [], context)
     );
   }
 
+  // Se for uma função de componente padrão que passou pelas defesas anteriores
   if (typeof node.tag === "function") {
+    // Verificação dupla para garantir que stubs de componentes clientes gerados pelo transpiler não vazem aqui
+    const compProps = node.props ?? {};
+    if (compProps["data-adaptive-client-module"]) {
+      return renderClientBoundary(node, context);
+    }
+
     const result = node.tag(resolveComponentProps(node));
     return renderNode(result, context);
   }
@@ -197,12 +211,9 @@ function renderNode(node: any, context: RenderContext): string {
     return renderNode(getVNodeChildren(node), context);
   }
 
+  // Mantido por redundância segura
   if (isHydrateSlotTag(node.tag)) {
     return renderHydrateSlot(node, context);
-  }
-
-  if (isClientBoundaryTag(node.tag)) {
-    return renderClientBoundary(node, context);
   }
 
   const { tag, props = {} } = node;
@@ -224,12 +235,10 @@ function renderNode(node: any, context: RenderContext): string {
     if (key.startsWith("on") && typeof value === "function") continue;
 
     const attrKey = resolveAttributeName(key, isSvgTag);
-
     const resolved = typeof value === "function" ? value() : value;
 
     if (key === "style" && typeof resolved === "object" && resolved !== null) {
       const styleString = serializeStyleLike(resolved as Record<string, any>);
-
       propsString += ` style="${escapeAttribute(styleString)}"`;
       continue;
     }
@@ -238,20 +247,7 @@ function renderNode(node: any, context: RenderContext): string {
   }
 
   const selfClosingTags = new Set([
-    "area",
-    "base",
-    "br",
-    "col",
-    "embed",
-    "hr",
-    "img",
-    "input",
-    "link",
-    "meta",
-    "param",
-    "source",
-    "track",
-    "wbr"
+    "area", "base", "br", "col", "embed", "hr", "img", "input", "link", "meta", "param", "source", "track", "wbr"
   ]);
 
   if (selfClosingTags.has(tag)) {

@@ -1,5 +1,5 @@
 {
-  "name": "hello2",
+  "name": "@adaptive-js/hello2",
   "private": true,
   "type": "module",
   "scripts": {
@@ -10,10 +10,10 @@
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
-    "@adaptivejs/ci": "file:../../packages/ci",
-    "@adaptivejs/web": "file:../../packages/web",
-    "@adaptivejs/adapter-nitro": "file:../../packages/adapter-nitro",
-    "@adaptivejs/components": "file:../../packages/components"
+    "@adaptive-js/ci": "file:../../packages/ci",
+    "@adaptive-js/web": "file:../../packages/web",
+    "@adaptive-js/adapter-nitro": "file:../../packages/adapter-nitro",
+    "@adaptive-js/components": "file:../../packages/components"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.1.7",

@@ -6,8 +6,8 @@
  * See LICENSE file in the project root for full license information.
  */
 
-import type {AdaptiveNode} from "@adaptivejs/web/jsx-runtime";
-import { useLayoutEffect, useReactive, useRef} from "@adaptivejs/web";
+import type {AdaptiveNode} from "@adaptive-js/web/jsx-runtime";
+import { useLayoutEffect, useReactive, useRef} from "@adaptive-js/web";
 
 export type ListVirtualProps<T> = {
     items: T[];

@@ -1,5 +1,5 @@
 {
-  "name": "@adaptivejs/jsx",
+  "name": "@adaptive-js/jsx",
   "version": "0.0.1",
   "description": "JSX runtime and TSX typing surface for AdaptiveJS.",
   "type": "module",
@@ -26,7 +26,5 @@
   "publishConfig": {
     "access": "public"
   },
-  "dependencies": {
-
-  }
+  "dependencies": {}
 }

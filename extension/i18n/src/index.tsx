@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useReactive } from "@adaptivejs/web";
+import { createContext, useContext, useEffect, useReactive } from "@adaptive-js/web";
 
 export const DEFAULT_I18N_LANGUAGE = "en";
 

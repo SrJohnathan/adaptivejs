@@ -1,5 +1,5 @@
 {
-  "name": "@adaptivejs/ci",
+  "name": "@adaptive-js/ci",
   "version": "0.0.1",
   "description": "Build and development tooling for AdaptiveJS applications.",
   "type": "module",
@@ -22,10 +22,10 @@
     "access": "public"
   },
   "dependencies": {
-    "@adaptivejs/core": "0.0.1",
-    "@adaptivejs/shared": "0.0.1",
-    "@adaptivejs/jsx": "0.0.1",
-    "@adaptivejs/adapter-nitro": "0.0.1",
+    "@adaptive-js/core": "0.0.1",
+    "@adaptive-js/shared": "0.0.1",
+    "@adaptive-js/jsx": "0.0.1",
+    "@adaptive-js/adapter-nitro": "0.0.1",
     "esbuild": "^0.28.0",
     "h3": "^2.0.1-rc.21",
     "oxc-transform": "^0.128.0"

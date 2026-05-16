@@ -1,5 +1,5 @@
 {
-  "name": "@adaptivejs/adapter-nitro",
+  "name": "@adaptive-js/adapter-nitro",
   "version": "0.0.1",
   "description": "Nitro adapter for AdaptiveJS. Enables server-side rendering and deployment in serverless and edge environments powered by Nitro.",
   "type": "module",
@@ -19,7 +19,7 @@
     "access": "public"
   },
   "dependencies": {
-    "@adaptivejs/core": "0.0.1",
+    "@adaptive-js/core": "0.0.1",
     "h3": "^2.0.1-rc.21",
     "nitropack": "^2.13.4",
     "vinxi": "^0.0.10"

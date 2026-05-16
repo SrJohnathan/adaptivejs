@@ -1,6 +1,6 @@
 'hydrate'
 
-import { TableCanvas, TableVirtual, type TableColumn } from "@adaptivejs/components";
+import { TableCanvas, TableVirtual, type TableColumn } from "@adaptive-js/components";
 
 type UserRow = {
     id: number;

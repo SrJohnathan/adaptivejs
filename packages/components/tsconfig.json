@@ -8,7 +8,7 @@
     "target": "ES2022",
     "lib": ["ES2022", "DOM", "DOM.Iterable"],
     "jsx": "react-jsx",
-    "jsxImportSource": "@adaptivejs/web"
+    "jsxImportSource": "@adaptive-js/web"
   },
   "include": ["src"]
 }

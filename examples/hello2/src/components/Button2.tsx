@@ -1,5 +1,5 @@
 'hydrate'
-import {createHandler, createStore} from "@adaptivejs/web";
+import {createHandler, createStore} from "@adaptive-js/web";
 /*
  * Copyright (c) 2026 Antonio Johnathan
  *

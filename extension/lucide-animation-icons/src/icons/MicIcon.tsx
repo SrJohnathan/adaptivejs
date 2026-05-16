@@ -6,7 +6,7 @@
  * See LICENSE file in the project root for full license information.
  */
 
-import { useRef } from "@adaptivejs/web";
+import { useRef } from "@adaptive-js/web";
 import {
     AnimatedIconController,
     cn,

@@ -1,5 +1,5 @@
 {
-  "name": "@adaptivejs/components",
+  "name": "@adaptive-js/components",
   "version": "0.0.1",
   "description": "High-performance UI primitives for AdaptiveJS.",
   "type": "module",
@@ -51,6 +51,6 @@
     "access": "public"
   },
   "dependencies": {
-    "@adaptivejs/web": "0.0.1"
+    "@adaptive-js/web": "0.0.1"
   }
 }

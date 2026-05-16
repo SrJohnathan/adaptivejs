@@ -68,7 +68,8 @@ export function createHandler<TPayload = any>(
 
     if (isDispatchingHandler) {
         throw new Error(
-            `[Adaptive Handler] createHandler("${id}") não pode ser chamado dentro de outro handler. Registre handlers no corpo do componente.`
+            `[Adaptive Handler] createHandler("${id}") não pode ser chamado dentro de outro handler.`
+
         );
     }
 

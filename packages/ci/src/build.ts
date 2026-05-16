@@ -82,7 +82,7 @@ export async function buildApp(
             options.publicEnv ?? getPublicEnv(),
         ),
     });
-    console.log("5");
+
 
     await writeBuildMetadata(clientDistDir, { dev: isDev });
 
@@ -91,7 +91,7 @@ export async function buildApp(
         await compressAssets(clientDistDir);
     }
 
-    console.log("6");
+
     await rmWithRetries(tempDir);
 }
 
@@ -157,6 +157,10 @@ async function buildTree(
     });
 
     for (const entry of entries) {
+        if (entry.name.endsWith('~') || entry.name.endsWith('.swp') || entry.name.startsWith('._')) {
+            continue;
+        }
+
         const sourcePath = path.join(fromDir, entry.name);
         const targetPath = path.join(toDir, entry.name);
 
@@ -166,14 +170,23 @@ async function buildTree(
             continue;
         }
 
-        if (/\.(ts|tsx)$/.test(entry.name) && !entry.name.endsWith(".d.ts")) {
-            await buildServerFile(
-                sourcePath,
-                targetPath.replace(/\.(ts|tsx)$/, ".js"),
-                options,
-            );
-        } else {
-            await fs.copyFile(sourcePath, targetPath);
+        // 2. ADICIONAR UM TRY/CATCH DE TIMING PARA GARANTIR COMPATIBILIDADE COM O WATCHER
+        try {
+            if (/\.(ts|tsx)$/.test(entry.name) && !entry.name.endsWith(".d.ts")) {
+                await buildServerFile(
+                    sourcePath,
+                    targetPath.replace(/\.(ts|tsx)$/, ".js"),
+                    options,
+                );
+            } else {
+                await fs.copyFile(sourcePath, targetPath);
+            }
+        } catch (error: any) {
+            // Se o arquivo sumiu entre o readdir e a execução (clássico em watchers rápidos), ignora suavemente
+            if (error.code === 'ENOENT') {
+                continue;
+            }
+            throw error; // Se for outro erro crítico de permissão ou disco, repassa
         }
     }
 }

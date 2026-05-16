@@ -1,5 +1,5 @@
 {
-  "name": "@adaptivejs/core",
+  "name": "@adaptive-js/core",
   "version": "0.0.1",
   "description": "Core SSR, routing and framework primitives for AdaptiveJS.",
   "type": "module",
@@ -13,7 +13,7 @@
   },
   "license": "MIT",
   "dependencies": {
-    "@adaptivejs/shared": "0.0.1",
+    "@adaptive-js/shared": "0.0.1",
     "fast-glob": "^3.3.3"
   },
   "devDependencies": {

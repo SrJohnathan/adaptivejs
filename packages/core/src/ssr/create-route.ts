@@ -39,6 +39,7 @@ export async function createRouter(
 
 
 
+
     if (routes.length === 0) {
         const modules = await fg(pagePattern, {
             cwd: pagesDir,
@@ -75,6 +76,7 @@ export async function createRouter(
     const routeMatch =
         resolveRoute(routes, pathname, uri.query) ??
         (pathname !== uri.pathname ? resolveRoute(routes, uri.pathname, uri.query) : null);
+
 
 
 

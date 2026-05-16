@@ -4,11 +4,12 @@
   "version": "0.0.1",
   "scripts": {
     "build": "npm run build --workspaces",
-    "publish:lib": "npm run build && npm publish --workspace @adaptivejs/core --access public && npm publish --workspace @adaptivejs/shared --access public && npm publish --workspace @adaptivejs/jsx --access public && npm publish --workspace @adaptivejs/web --access public && npm publish --workspace @adaptivejs/i18n --access public && npm publish --workspace @adaptivejs/adapter-nitro --access public && npm publish --workspace @adaptivejs/ci --access public && npm publish --workspace @adaptivejs/components --access public && npm publish --workspace @adaptivejs/lucide-animation-icons --access public",
+    "publish:lib": "npm run build && npm publish --workspace @adaptive-js/core --access public && npm publish --workspace @adaptive-js/shared --access public && npm publish --workspace @adaptive-js/jsx --access public && npm publish --workspace @adaptive-js/web --access public && npm publish --workspace @adaptive-js/i18n --access public && npm publish --workspace @adaptive-js/adapter-nitro --access public && npm publish --workspace @adaptive-js/ci --access public && npm publish --workspace @adaptive-js/components --access public && npm publish --workspace @adaptive-js/lucide-animation-icons --access public",
     "publish:scaffold": "npm publish --workspace create-adaptive-app --access public",
     "release:check": "node scripts/npm-release.mjs check",
     "release:pack": "node scripts/npm-release.mjs pack",
-    "release:publish": "node scripts/npm-release.mjs publish"
+    "release:publish": "node scripts/npm-release.mjs publish",
+    "scope:check": "node scope.js"
   },
   "workspaces": [
     "packages/*",

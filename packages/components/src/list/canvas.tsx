@@ -1,5 +1,5 @@
-import type { AdaptiveNode } from "@adaptivejs/web/jsx-runtime";
-import { useDOMEffect, useReactive, useRef } from "@adaptivejs/web";
+import type { AdaptiveNode } from "@adaptive-js/web/jsx-runtime";
+import { useDOMEffect, useReactive, useRef } from "@adaptive-js/web";
 import {
     isCustomListItemDescriptor,
     isListItemDescriptor,

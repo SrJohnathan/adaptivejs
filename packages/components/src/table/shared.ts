@@ -1,4 +1,4 @@
-import type { AdaptiveNode } from "@adaptivejs/web/jsx-runtime";
+import type { AdaptiveNode } from "@adaptive-js/web/jsx-runtime";
 
 export type TableColumnAlign = "left" | "center" | "right";
 

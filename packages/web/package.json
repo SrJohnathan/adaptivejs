@@ -1,5 +1,5 @@
 {
-  "name": "@adaptivejs/web",
+  "name": "@adaptive-js/web",
   "version": "0.0.1",
   "description": "Web runtime, hydration and reactivity for AdaptiveJS applications.",
   "type": "module",
@@ -27,8 +27,8 @@
     "access": "public"
   },
   "dependencies": {
-    "@adaptivejs/core": "0.0.1",
-    "@adaptivejs/jsx": "0.0.1",
-    "@adaptivejs/shared": "0.0.1"
+    "@adaptive-js/core": "0.0.1",
+    "@adaptive-js/jsx": "0.0.1",
+    "@adaptive-js/shared": "0.0.1"
   }
 }

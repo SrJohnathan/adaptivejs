@@ -5,4 +5,4 @@
  * See LICENSE file in the project root for full license information.
  */
 
-export * from "@adaptivejs/jsx/jsx-runtime";
+export * from "@adaptive-js/jsx/jsx-runtime";

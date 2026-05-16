@@ -11,7 +11,7 @@ import { toNodeHandler } from "h3/node";
 import path from "node:path";
 import fs from "node:fs/promises";
 import { createReadStream } from "node:fs";
-import { createRouter, handle_actions_request } from "@adaptivejs/core";
+import { createRouter, handle_actions_request } from "@adaptive-js/core";
 import * as http from "node:http";
 
 const ACTION_PATH = "/_action";

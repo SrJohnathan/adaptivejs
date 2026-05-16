@@ -12,7 +12,7 @@ AdaptiveJS is an experimental TypeScript and TSX framework focused on:
 
 The public npm scope is:
 
-- `@adaptivejs/*`
+- `@adaptive-js/*`
 
 ## Status
 
@@ -77,7 +77,7 @@ This is useful for browser-heavy widgets or components that are naturally client
 ## Example
 
 ```tsx
-import { useReactive } from "@adaptivejs/web";
+import { useReactive } from "@adaptive-js/web";
 
 export default function Page() {
   const [count, setCount] = useReactive(0);
@@ -175,26 +175,26 @@ This direction matters a lot to the project. The goal is to preserve server outp
 
 ### Core packages
 
-- `@adaptivejs/core`
+- `@adaptive-js/core`
   - SSR, routing and core framework primitives
-- `@adaptivejs/shared`
+- `@adaptive-js/shared`
   - shared runtime helpers used across packages
-- `@adaptivejs/jsx`
+- `@adaptive-js/jsx`
   - JSX runtime and TSX typing surface
-- `@adaptivejs/web`
+- `@adaptive-js/web`
   - main web runtime, hydration and reactivity
-- `@adaptivejs/adapter-nitro`
+- `@adaptive-js/adapter-nitro`
   - Nitro adapter for SSR/server deployment
-- `@adaptivejs/ci`
+- `@adaptive-js/ci`
   - build and dev tooling for AdaptiveJS apps
-- `@adaptivejs/components`
+- `@adaptive-js/components`
   - high-performance primitives such as virtual/canvas lists and tables
 
 ### Extensions
 
-- `@adaptivejs/i18n`
+- `@adaptive-js/i18n`
   - reactive i18n utilities
-- `@adaptivejs/lucide-animation-icons`
+- `@adaptive-js/lucide-animation-icons`
   - animated icons for AdaptiveJS apps
 
 ### Scaffold
@@ -230,13 +230,7 @@ From the root:
 npm run build
 ```
 
-Release helper:
 
-```bash
-npm run release:check
-npm run release:pack
-npm run release:publish
-```
 
 The release flow is handled by:
 

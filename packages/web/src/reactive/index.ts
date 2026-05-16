@@ -1,4 +1,4 @@
-import { readServerContext } from "@adaptivejs/shared";
+import { readServerContext } from "@adaptive-js/shared";
 
 /*
  * Copyright (c) 2026 Antonio Johnathan

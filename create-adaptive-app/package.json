@@ -1,5 +1,5 @@
 {
-  "name": "create-adaptive-app",
+  "name": "@adaptive-js/create-adaptive-app",
   "version": "0.1.8",
   "description": "Scaffold a new Adaptive application.",
   "license": "MIT",

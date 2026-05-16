@@ -80,7 +80,7 @@ export async function bundleClientEntries({
         minify: !dev,
         sourcemap: dev ? "inline" : false,
         jsx: "automatic",
-        jsxImportSource: "@adaptivejs/web",
+        jsxImportSource: "@adaptive-js/web",
         treeShaking: true,
         legalComments: "none",
         define,
@@ -237,7 +237,7 @@ function createClientServerProxyModule(
     const { namedExports, hasDefaultExport } = extractExports(sourceText);
 
     const lines: string[] = [
-        `import { callServerAction } from "@adaptivejs/web";`,
+        `import { callServerAction } from "@adaptive-js/web";`,
     ];
 
     if (hasDefaultExport) {
@@ -398,7 +398,7 @@ async function createClientComponentWrappers({
 
         const wrapperSource = `
 import * as clientModule from ${JSON.stringify(importPath)};
-import { hydrateClientComponents } from "@adaptivejs/web";
+import { hydrateClientComponents } from "@adaptive-js/web";
 
 hydrateClientComponents(${JSON.stringify(moduleId)}, clientModule);
 export {};

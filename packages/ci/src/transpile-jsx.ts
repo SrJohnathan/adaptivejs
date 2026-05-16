@@ -62,7 +62,7 @@ async function buildTransformedFile(sourcePath:string, outputPath:string, cwd:an
         target: ["es2022", "node20"],
         jsx: {
             runtime: "automatic",
-            importSource: "@adaptivejs/web",
+            importSource: "@adaptive-js/web",
         },
         typescript: {
             rewriteImportExtensions: "rewrite",
@@ -103,7 +103,7 @@ function createServerClientStub(sourceText:string, moduleId:any, ssrImportPath:a
             : "createClientComponent";
     const lines = [
         `import * as serverModule from ${JSON.stringify(ssrImportPath)};`,
-        `import { ${factoryName} } from "@adaptivejs/web";`,
+        `import { ${factoryName} } from "@adaptive-js/web";`,
         `export default ${factoryName}(${JSON.stringify(moduleId)}, "default", typeof serverModule.default === "function" ? serverModule.default : undefined);`,
     ];
 
@@ -120,7 +120,7 @@ function createServerClientStub(sourceText:string, moduleId:any, ssrImportPath:a
 
 function normalizePublicJsxImports(code: string) {
     return code
-        .replace(/(["'])@adaptivejs\/jsx\/jsx-runtime\1/g, `$1@adaptivejs/web/jsx-runtime$1`)
-        .replace(/(["'])@adaptivejs\/jsx\/jsx-dev-runtime\1/g, `$1@adaptivejs/web/jsx-dev-runtime$1`)
-        .replace(/(["'])@adaptivejs\/jsx\1/g, `$1@adaptivejs/web$1`);
+        .replace(/(["'])@adaptivejs\/jsx\/jsx-runtime\1/g, `$1@adaptive-js/web/jsx-runtime$1`)
+        .replace(/(["'])@adaptivejs\/jsx\/jsx-dev-runtime\1/g, `$1@adaptive-js/web/jsx-dev-runtime$1`)
+        .replace(/(["'])@adaptivejs\/jsx\1/g, `$1@adaptive-js/web$1`);
 }

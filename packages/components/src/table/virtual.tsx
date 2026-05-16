@@ -1,4 +1,4 @@
-import type { AdaptiveNode } from "@adaptivejs/web/jsx-runtime";
+import type { AdaptiveNode } from "@adaptive-js/web/jsx-runtime";
 import { ListVirtual } from "../list/virtual.js";
 import {
     normalizeCssSize,

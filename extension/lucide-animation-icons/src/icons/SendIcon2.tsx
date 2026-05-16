@@ -7,7 +7,7 @@
 
 'hydrate';
 
-import { useRef } from "@adaptivejs/web";
+import { useRef } from "@adaptive-js/web";
 import {
     AnimatedIconController,
     cn,

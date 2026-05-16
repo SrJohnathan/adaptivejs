@@ -3,7 +3,7 @@
 
 
 
-import {convertItemNode, ItemList, ListCanvas} from "@adaptivejs/components";
+import {convertItemNode, ItemList, ListCanvas} from "@adaptive-js/components";
 
 const rows = Array.from({ length: 1_000_000 }, (_, index) => ({
     id: index + 1,
@@ -34,7 +34,7 @@ export const ListDemo = () => {
             </div>
 
             <p className="max-w-2xl text-sm leading-7 text-slate-300">
-                Esta lista usa o pacote <code className="rounded bg-white/10 px-2 py-1 text-cyan-200">@adaptivejs/components</code> e desenha os itens em canvas, sem criar DOM por linha.
+                Esta lista usa o pacote <code className="rounded bg-white/10 px-2 py-1 text-cyan-200">@adaptive-js/components</code> e desenha os itens em canvas, sem criar DOM por linha.
             </p>
 
             <ListCanvas

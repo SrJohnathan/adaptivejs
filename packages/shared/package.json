@@ -1,5 +1,5 @@
 {
-  "name": "@adaptivejs/shared",
+  "name": "@adaptive-js/shared",
   "version": "0.0.1",
   "description": "Shared runtime helpers used across AdaptiveJS packages.",
   "type": "module",
@@ -18,7 +18,5 @@
   "publishConfig": {
     "access": "public"
   },
-  "dependencies": {
-
-  }
+  "dependencies": {}
 }

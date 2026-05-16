@@ -5,13 +5,13 @@
  * See LICENSE file in the project root for full license information.
  */
 
-export * from "@adaptivejs/jsx/jsx-dev-runtime";
+export * from "@adaptive-js/jsx/jsx-dev-runtime";
 
 
-export type { AdaptiveNode } from "@adaptivejs/jsx";
+export type { AdaptiveNode } from "@adaptive-js/jsx";
 
 export namespace JSX {
-    export type Element = import("@adaptivejs/jsx").AdaptiveNode;
+    export type Element = import("@adaptive-js/jsx").AdaptiveNode;
     export type MaybeSignal<T> = T | (() => T);
     export type AdaptiveStyleValue = string | number | boolean | null | undefined;
     export type AdaptiveStyleObject = Record<string, AdaptiveStyleValue>;

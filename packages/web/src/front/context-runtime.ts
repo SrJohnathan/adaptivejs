@@ -1,5 +1,5 @@
-export { CONTEXT_PROVIDER_TAG } from "@adaptivejs/shared";
-import { CONTEXT_PROVIDER_TAG } from "@adaptivejs/shared";
+export { CONTEXT_PROVIDER_TAG } from "@adaptive-js/shared";
+import { CONTEXT_PROVIDER_TAG } from "@adaptive-js/shared";
 import { readContext } from "../reactive/index.js";
 
 export type AdaptiveContext<T> = {

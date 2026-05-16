@@ -5,7 +5,7 @@
  * See LICENSE file in the project root for full license information.
  */
 
-import { createElement } from "@adaptivejs/jsx";
+import { createElement } from "@adaptive-js/jsx";
 import {
   applyHydrationInstructions,
   applyHydrationInstructionsBetweenMarkers,

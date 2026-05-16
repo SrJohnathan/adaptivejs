@@ -1,5 +1,5 @@
 'hydrate'
-import { useReactive } from "@adaptivejs/web";
+import { useReactive } from "@adaptive-js/web";
 
 export const CounterBeer = () => {
     const [count, setCount] = useReactive(0);
