@@ -8,11 +8,10 @@
 import {
   runWithContext,
   useEffect,
-  useLayoutEffect,
-  useReactiveEffect,
   type ReactiveSource,
-  untrack
+  untrack, createReactiveEffect, createEffectScope, runWithEffectScope, cleanupEffectScope
 } from "../reactive/index.js";
+import { resolveStyleEntries, serializeStyleLike, toCssPropertyName } from "./style-shared.js";
 import {
   CLIENT_BOUNDARY_END,
   CLIENT_BOUNDARY_START_PREFIX,
@@ -49,15 +48,15 @@ export type HydrateOptions = {
 };
 
 export type HydrationInstruction =
-  | { kind: "event"; id: string; event: string; handler: EventListener }
-  | { kind: "ref"; id: string; ref: any }
-  | { kind: "reactive-range"; id: string; getter: () => any }
-  | { kind: "reactive-struct"; id: string; render: () => any }
-  | { kind: "reactive-list"; id: string; getter: () => any[] }
-  | { kind: "reactive-async"; id: string; getter: () => Promise<any> | any }
-  | { kind: "dynamic-prop"; id: string; prop: string; getter: () => any }
-  | { kind: "layout-effect"; effect: () => void | (() => void); deps?: any[]; ignoredSources?: ReactiveSource[] }
-  | { kind: "effect"; effect: () => void | (() => void); deps?: any[]; ignoredSources?: ReactiveSource[] };
+    | { kind: "event"; id: string; event: string; handler: EventListener }
+    | { kind: "ref"; id: string; ref: any }
+    | { kind: "reactive-range"; id: string; getter: () => any }
+    | { kind: "reactive-struct"; id: string; render: () => any }
+    | { kind: "reactive-list"; id: string; getter: () => any[] }
+    | { kind: "reactive-async"; id: string; getter: () => Promise<any> | any }
+    | { kind: "dynamic-prop"; id: string; prop: string; getter: () => any }
+    | { kind: "layout-effect"; effect: () => void | (() => void); deps?: any[]; ignoredSources?: ReactiveSource[] }
+    | { kind: "effect"; effect: () => void | (() => void); deps?: any[]; ignoredSources?: ReactiveSource[] };
 
 const HYDRATION_ATTR = "data-aid";
 
@@ -143,9 +142,17 @@ export function renderToDOM(vnode: any, namespace: string | null = null): Node {
     fragment.appendChild(start);
     fragment.appendChild(end);
 
-    useLayoutEffect(() => {
+    let currentScope: ReturnType<typeof createEffectScope> | null = null;
+
+    createReactiveEffect(() => {
       const parent = start.parentNode;
       if (!parent) return;
+
+      // Limpa efeitos associados ao conteúdo anterior (subtree entre os marcadores)
+      if (currentScope) {
+        cleanupEffectScope(currentScope);
+        currentScope = null;
+      }
 
       let current = start.nextSibling;
 
@@ -155,13 +162,11 @@ export function renderToDOM(vnode: any, namespace: string | null = null): Node {
         current = next;
       }
 
-      const rendered = renderToDOM(vnode(), namespace);
+      // Cria um novo escopo para todos os efeitos gerados durante este render
+      currentScope = createEffectScope("reactive-block");
+      const rendered = runWithEffectScope(currentScope, () => renderToDOM(vnode(), namespace));
 
-      if (rendered instanceof DocumentFragment) {
-        parent.insertBefore(rendered, end);
-      } else {
-        parent.insertBefore(rendered, end);
-      }
+      parent.insertBefore(rendered, end);
     });
 
     return fragment;
@@ -197,8 +202,8 @@ export function renderToDOM(vnode: any, namespace: string | null = null): Node {
 
   const nextNamespace = resolveChildNamespace(vnode.tag, namespace);
   const el = nextNamespace
-    ? document.createElementNS(nextNamespace, vnode.tag)
-    : document.createElement(vnode.tag);
+      ? document.createElementNS(nextNamespace, vnode.tag)
+      : document.createElement(vnode.tag);
   const props: Record<string, any> = vnode.props ?? {};
 
   for (const [key, value] of Object.entries(props)) {
@@ -217,22 +222,72 @@ export function renderToDOM(vnode: any, namespace: string | null = null): Node {
       continue;
     }
 
+    // className reativo
     if (key === "className") {
-      el.setAttribute("class", value as string);
+      if (typeof value === "function") {
+       createReactiveEffect(() => {
+          el.setAttribute("class", value() ?? "");
+        });
+      } else {
+        el.setAttribute("class", value as string);
+      }
       continue;
     }
 
+    // eventos nunca são reativos
     if (key.startsWith("on") && typeof value === "function") {
       el.addEventListener(key.slice(2).toLowerCase(), value as EventListener);
       continue;
     }
 
-    if (key === "style" && typeof value === "object" && value !== null) {
-      applyStyleObject(el as HTMLElement, value as Record<string, any>);
+    // style como função () => ({...}) ou objeto com valores reativos
+    if (key === "style") {
+      if (typeof value === "function") {
+        // style={() => ({ transform: "..." })} — objeto inteiro reativo
+        createReactiveEffect(() => {
+          applyStyleObject(el as HTMLElement, value());
+        });
+      } else if (typeof value === "object" && value !== null) {
+        // style={{ transform: $s`...`, color: () => x() }} — propriedades individuais reativas
+        for (const [styleKey, styleValue] of Object.entries(value as Record<string, any>)) {
+          if (typeof styleValue === "function") {
+            createReactiveEffect(() => {
+              const resolved = styleValue();
+              const cssKey = styleKey.replace(/([A-Z])/g, "-$1").toLowerCase();
+              if (resolved == null || resolved === false) {
+                el.style.removeProperty(cssKey);
+              } else {
+                (el.style as any)[styleKey] = resolved;
+              }
+            });
+          } else {
+            if (styleValue != null && styleValue !== false) {
+              (el.style as any)[styleKey] = styleValue;
+            }
+          }
+        }
+      }
       continue;
     }
 
     if (value === false || value == null) continue;
+
+    // qualquer outro prop como função — reativo
+    if (typeof value === "function") {
+      createReactiveEffect(() => {
+        const resolved = value();
+        if (resolved === false || resolved == null) {
+          el.removeAttribute(resolveDomAttributeName(key, nextNamespace));
+          return;
+        }
+        if (shouldAssignAsProperty(el, nextNamespace, key)) {
+          (el as any)[key] = resolved;
+        } else {
+          el.setAttribute(resolveDomAttributeName(key, nextNamespace), String(resolved));
+        }
+      },  "layout" );
+      continue;
+    }
 
     if (shouldAssignAsProperty(el, nextNamespace, key)) {
       (el as any)[key] = value;
@@ -307,9 +362,9 @@ export function applyHydrationInstructions(root: ParentNode, instructions: Hydra
     }
     debugHydrationLog("[hydrate:event:bind]", instruction.id, instruction.event, (element as HTMLElement).tagName);
     bindDelegatedEvent(
-      element as HTMLElement,
-      instruction.event,
-      wrapHydrationEventHandler(instruction.id, instruction.event, instruction.handler)
+        element as HTMLElement,
+        instruction.event,
+        wrapHydrationEventHandler(instruction.id, instruction.event, instruction.handler)
     );
   });
   ordered.refs.forEach((instruction) => {
@@ -349,9 +404,9 @@ export function applyHydrationInstructions(root: ParentNode, instructions: Hydra
 }
 
 export function applyHydrationInstructionsBetweenMarkers(
-  start: Comment,
-  end: Comment,
-  instructions: HydrationInstruction[]
+    start: Comment,
+    end: Comment,
+    instructions: HydrationInstruction[]
 ): void {
 
 
@@ -365,9 +420,9 @@ export function applyHydrationInstructionsBetweenMarkers(
     }
     debugHydrationLog("[hydrate:event:bind]", instruction.id, instruction.event, (element as HTMLElement).tagName);
     bindDelegatedEvent(
-      element as HTMLElement,
-      instruction.event,
-      wrapHydrationEventHandler(instruction.id, instruction.event, instruction.handler)
+        element as HTMLElement,
+        instruction.event,
+        wrapHydrationEventHandler(instruction.id, instruction.event, instruction.handler)
     );
   });
   ordered.refs.forEach((instruction) => {
@@ -600,69 +655,69 @@ function hydrateReactiveRangeInRoot(root: ParentNode, instruction: Extract<Hydra
 }
 
 function hydrateReactiveRangeBetweenMarkers(
-  boundaryStart: Comment,
-  boundaryEnd: Comment,
-  instruction: Extract<HydrationInstruction, { kind: "reactive-range" }>
+    boundaryStart: Comment,
+    boundaryEnd: Comment,
+    instruction: Extract<HydrationInstruction, { kind: "reactive-range" }>
 ) {
   const markers = findReactiveMarkersBetweenMarkers(boundaryStart, boundaryEnd, instruction.id);
   hydrateReactiveRangeWithMarkers(markers.start, markers.end, instruction);
 }
 
 function hydrateReactiveStructInRoot(
-  root: ParentNode,
-  instruction: Extract<HydrationInstruction, { kind: "reactive-struct" }>
+    root: ParentNode,
+    instruction: Extract<HydrationInstruction, { kind: "reactive-struct" }>
 ) {
   const markers = findReactiveStructMarkers(root, instruction.id);
   hydrateReactiveStructWithMarkers(markers.start, markers.end, instruction);
 }
 
 function hydrateReactiveStructBetweenMarkers(
-  boundaryStart: Comment,
-  boundaryEnd: Comment,
-  instruction: Extract<HydrationInstruction, { kind: "reactive-struct" }>
+    boundaryStart: Comment,
+    boundaryEnd: Comment,
+    instruction: Extract<HydrationInstruction, { kind: "reactive-struct" }>
 ) {
   const markers = findReactiveStructMarkersBetweenMarkers(boundaryStart, boundaryEnd, instruction.id);
   hydrateReactiveStructWithMarkers(markers.start, markers.end, instruction);
 }
 
 function hydrateReactiveListInRoot(
-  root: ParentNode,
-  instruction: Extract<HydrationInstruction, { kind: "reactive-list" }>
+    root: ParentNode,
+    instruction: Extract<HydrationInstruction, { kind: "reactive-list" }>
 ) {
   const markers = findReactiveListMarkers(root, instruction.id);
   hydrateReactiveListWithMarkers(markers.start, markers.end, instruction);
 }
 
 function hydrateReactiveListBetweenMarkers(
-  boundaryStart: Comment,
-  boundaryEnd: Comment,
-  instruction: Extract<HydrationInstruction, { kind: "reactive-list" }>
+    boundaryStart: Comment,
+    boundaryEnd: Comment,
+    instruction: Extract<HydrationInstruction, { kind: "reactive-list" }>
 ) {
   const markers = findReactiveListMarkersBetweenMarkers(boundaryStart, boundaryEnd, instruction.id);
   hydrateReactiveListWithMarkers(markers.start, markers.end, instruction);
 }
 
 function hydrateReactiveAsyncInRoot(
-  root: ParentNode,
-  instruction: Extract<HydrationInstruction, { kind: "reactive-async" }>
+    root: ParentNode,
+    instruction: Extract<HydrationInstruction, { kind: "reactive-async" }>
 ) {
   const markers = findReactiveAsyncMarkers(root, instruction.id);
   hydrateReactiveAsyncWithMarkers(markers.start, markers.end, instruction);
 }
 
 function hydrateReactiveAsyncBetweenMarkers(
-  boundaryStart: Comment,
-  boundaryEnd: Comment,
-  instruction: Extract<HydrationInstruction, { kind: "reactive-async" }>
+    boundaryStart: Comment,
+    boundaryEnd: Comment,
+    instruction: Extract<HydrationInstruction, { kind: "reactive-async" }>
 ) {
   const markers = findReactiveAsyncMarkersBetweenMarkers(boundaryStart, boundaryEnd, instruction.id);
   hydrateReactiveAsyncWithMarkers(markers.start, markers.end, instruction);
 }
 
 function hydrateReactiveRangeWithMarkers(
-  start: Comment | null,
-  end: Comment | null,
-  instruction: Extract<HydrationInstruction, { kind: "reactive-range" }>
+    start: Comment | null,
+    end: Comment | null,
+    instruction: Extract<HydrationInstruction, { kind: "reactive-range" }>
 ) {
   if (!start || !end) {
     warnMismatch({
@@ -689,12 +744,12 @@ function hydrateReactiveRangeWithMarkers(
 }
 
 function createHydratedReactiveTextBinding(
-  textNode: Text,
-  instruction: Extract<HydrationInstruction, { kind: "reactive-range" }>
+    textNode: Text,
+    instruction: Extract<HydrationInstruction, { kind: "reactive-range" }>
 ) {
   debugHydrationLog("[hydrate:range:bind]", instruction.id, textNode.data);
 
-  useLayoutEffect(() => {
+  createReactiveEffect(() => {
 
 
 
@@ -756,9 +811,9 @@ function findReactiveAsyncMarkersBetweenMarkers(start: Comment, end: Comment, id
 }
 
 function hydrateReactiveStructWithMarkers(
-  start: Comment | null,
-  end: Comment | null,
-  instruction: Extract<HydrationInstruction, { kind: "reactive-struct" }>
+    start: Comment | null,
+    end: Comment | null,
+    instruction: Extract<HydrationInstruction, { kind: "reactive-struct" }>
 ) {
   hydrateReactiveContentWithMarkers(start, end, {
     id: instruction.id,
@@ -768,9 +823,9 @@ function hydrateReactiveStructWithMarkers(
 }
 
 function hydrateReactiveListWithMarkers(
-  start: Comment | null,
-  end: Comment | null,
-  instruction: Extract<HydrationInstruction, { kind: "reactive-list" }>
+    start: Comment | null,
+    end: Comment | null,
+    instruction: Extract<HydrationInstruction, { kind: "reactive-list" }>
 ) {
   hydrateReactiveContentWithMarkers(start, end, {
     id: instruction.id,
@@ -780,9 +835,9 @@ function hydrateReactiveListWithMarkers(
 }
 
 function hydrateReactiveAsyncWithMarkers(
-  start: Comment | null,
-  end: Comment | null,
-  instruction: Extract<HydrationInstruction, { kind: "reactive-async" }>
+    start: Comment | null,
+    end: Comment | null,
+    instruction: Extract<HydrationInstruction, { kind: "reactive-async" }>
 ) {
   hydrateReactiveContentWithMarkers(start, end, {
     id: instruction.id,
@@ -792,13 +847,13 @@ function hydrateReactiveAsyncWithMarkers(
 }
 
 function hydrateReactiveContentWithMarkers(
-  start: Comment | null,
-  end: Comment | null,
-  config: {
-    id: string;
-    kind: "reactive-struct" | "reactive-list" | "reactive-async";
-    getter: () => any;
-  }
+    start: Comment | null,
+    end: Comment | null,
+    config: {
+      id: string;
+      kind: "reactive-struct" | "reactive-list" | "reactive-async";
+      getter: () => any;
+    }
 ) {
   if (!start || !end) {
     warnMismatch({
@@ -823,8 +878,13 @@ function hydrateReactiveContentWithMarkers(
 
   let initialized = false;
   let pendingToken = 0;
+  // Escopo de efeitos para o conteúdo entre os marcadores. A cada atualização,
+  // limpamos o escopo anterior e criamos um novo, garantindo que efeitos de
+  // props reativas e closures criadas durante a renderização do subtree sejam
+  // descartados corretamente quando a subtree for trocada.
+  let currentScope: ReturnType<typeof createEffectScope> | null = null;
 
-  useLayoutEffect(() => {
+  createReactiveEffect(() => {
     const nextValue = config.getter();
     const currentToken = ++pendingToken;
 
@@ -833,7 +893,13 @@ function hydrateReactiveContentWithMarkers(
       if (isPromiseLike(nextValue)) {
         void nextValue.then((resolved) => {
           if (currentToken !== pendingToken) return;
-          replaceReactiveRangeContent(startAnchor, endAnchor, resolved);
+          // Cleanup do escopo anterior antes de inserir novo conteúdo
+          if (currentScope) {
+            cleanupEffectScope(currentScope);
+            currentScope = null;
+          }
+          currentScope = createEffectScope("hydrate-range");
+          replaceReactiveRangeContent(startAnchor, endAnchor, resolved, currentScope);
         });
       }
       return;
@@ -842,16 +908,31 @@ function hydrateReactiveContentWithMarkers(
     if (isPromiseLike(nextValue)) {
       void nextValue.then((resolved) => {
         if (currentToken !== pendingToken) return;
-        replaceReactiveRangeContent(startAnchor, endAnchor, resolved);
+        if (currentScope) {
+          cleanupEffectScope(currentScope);
+          currentScope = null;
+        }
+        currentScope = createEffectScope("hydrate-range");
+        replaceReactiveRangeContent(startAnchor, endAnchor, resolved, currentScope);
       });
       return;
     }
 
-    replaceReactiveRangeContent(startAnchor, endAnchor, nextValue);
+    if (currentScope) {
+      cleanupEffectScope(currentScope);
+      currentScope = null;
+    }
+    currentScope = createEffectScope("hydrate-range");
+    replaceReactiveRangeContent(startAnchor, endAnchor, nextValue, currentScope);
   });
 }
 
-function replaceReactiveRangeContent(start: Node, end: Node, value: any) {
+function replaceReactiveRangeContent(
+    start: Node,
+    end: Node,
+    value: any,
+    scope?: ReturnType<typeof createEffectScope>
+) {
   const parent = start.parentNode;
   if (!parent) return;
 
@@ -862,8 +943,16 @@ function replaceReactiveRangeContent(start: Node, end: Node, value: any) {
     current = next;
   }
 
-  const nextNodes = normalizeToNodes(value);
-  nextNodes.forEach((node) => parent.insertBefore(node, end));
+  const insert = () => {
+    const nextNodes = normalizeToNodes(value);
+    nextNodes.forEach((node) => parent.insertBefore(node, end));
+  };
+
+  if (scope) {
+    runWithEffectScope(scope, insert);
+  } else {
+    insert();
+  }
 }
 
 function normalizeReactiveTextValue(value: any): string {
@@ -882,9 +971,9 @@ function isPromiseLike(value: any): value is PromiseLike<any> {
 
 function isAdaptiveCommentNode(node: Node | null | undefined): node is Comment {
   return Boolean(
-    node &&
-    node.nodeType === Node.COMMENT_NODE &&
-    ((node as Comment).data ?? "").startsWith("adaptive-")
+      node &&
+      node.nodeType === Node.COMMENT_NODE &&
+      ((node as Comment).data ?? "").startsWith("adaptive-")
   );
 }
 
@@ -898,10 +987,10 @@ function isSafeToRemoveAdaptiveComment(node: Node | null | undefined): node is C
 }
 
 function cleanupAdaptiveMarkersInNode(
-  root: ParentNode,
-  options: {
-    boundaryRoot?: ParentNode;
-  } = {}
+    root: ParentNode,
+    options: {
+      boundaryRoot?: ParentNode;
+    } = {}
 ) {
   let current = root.firstChild;
 
@@ -934,14 +1023,14 @@ function cleanupAdaptiveMarkersInNode(
 }
 
 function isNestedClientBoundaryElement(
-  node: Node | null | undefined,
-  boundaryRoot?: ParentNode
+    node: Node | null | undefined,
+    boundaryRoot?: ParentNode
 ): boolean {
   return Boolean(
-    node &&
-    node.nodeType === Node.ELEMENT_NODE &&
-    node !== boundaryRoot &&
-    (node as Element).hasAttribute("data-adaptive-client-module")
+      node &&
+      node.nodeType === Node.ELEMENT_NODE &&
+      node !== boundaryRoot &&
+      (node as Element).hasAttribute("data-adaptive-client-module")
   );
 }
 
@@ -956,172 +1045,129 @@ function isAdaptiveBoundaryComment(node: Node | null | undefined): node is Comme
 
 function isTextReactiveMarker(data: string) {
   return data === REACTIVE_CHILD_START ||
-    data.startsWith(`${REACTIVE_CHILD_START}:`) ||
-    data === REACTIVE_CHILD_END ||
-    data.startsWith(`${REACTIVE_CHILD_END}:`);
+      data.startsWith(`${REACTIVE_CHILD_START}:`) ||
+      data === REACTIVE_CHILD_END ||
+      data.startsWith(`${REACTIVE_CHILD_END}:`);
 }
 
 function isHydrateSlotMarker(data: string) {
   return data === HYDRATE_SLOT_START || data === HYDRATE_SLOT_END;
 }
 
-function matchesCurrentHydratedProp(element: HTMLElement, key: string, nextValue: any) {
-  const namespace = element.namespaceURI;
 
-  if (key === "className" || key === "class") {
-    return element.getAttribute("class") === String(nextValue ?? "");
-  }
-  if (key === "style" && typeof nextValue === "object" && nextValue !== null) {
-    const expected = serializeStyleLike(nextValue);
-    return normalizeInlineStyle(element.getAttribute("style")) === normalizeInlineStyle(expected);
-  }
-  if (key === "dataset" && typeof nextValue === "object" && nextValue !== null) {
-    return Object.entries(nextValue).every(([entryKey, entryValue]) => element.dataset[entryKey] === String(entryValue ?? ""));
-  }
-  if (key === "value" && (element instanceof HTMLInputElement || element instanceof HTMLTextAreaElement)) {
-    return element.value === String(nextValue ?? "");
-  }
-  if (key === "checked" && element instanceof HTMLInputElement) {
-    return element.checked === Boolean(nextValue);
-  }
-  if (key === "disabled" || key === "hidden") {
-    return element.hasAttribute(key) === Boolean(nextValue);
-  }
-  if (key === "title" || key === "id") {
-    return element.getAttribute(key) === String(nextValue ?? "");
-  }
-  if (shouldAssignAsProperty(element, namespace, key)) {
-    return String((element as any)[key] ?? "") === String(nextValue ?? "");
-  }
-  const attrName = resolveDomAttributeName(key, namespace);
-  return element.getAttribute(attrName) === String(nextValue ?? "");
-}
-
-function describeCurrentHydratedProp(element: HTMLElement, key: string) {
-  const namespace = element.namespaceURI;
-
-  if (key === "className" || key === "class") {
-    return element.getAttribute("class") ?? "";
-  }
-  if (key === "style") {
-    return element.getAttribute("style") ?? "";
-  }
-  if (key === "dataset") {
-    return JSON.stringify({ ...element.dataset });
-  }
-  if (key === "value" && (element instanceof HTMLInputElement || element instanceof HTMLTextAreaElement)) {
-    return element.value;
-  }
-  if (key === "checked" && element instanceof HTMLInputElement) {
-    return String(element.checked);
-  }
-  if (key === "disabled" || key === "hidden") {
-    return String(element.hasAttribute(key));
-  }
-  if (key === "title" || key === "id") {
-    return element.getAttribute(key) ?? "";
-  }
-  if (shouldAssignAsProperty(element, namespace, key)) {
-    return String((element as any)[key] ?? "");
-  }
-  const attrName = resolveDomAttributeName(key, namespace);
-  return element.getAttribute(attrName) ?? "";
-}
-
-function describeHydrationValue(value: any) {
-  if (value == null) {
-    return "";
-  }
-  if (typeof value === "object") {
-    if (Array.isArray(value)) {
-      return JSON.stringify(value);
-    }
-    return JSON.stringify(value);
-  }
-  return String(value);
-}
-
-function serializeStyleLike(style: Record<string, any>) {
-  return Object.entries(style)
-    .flatMap(([styleKey, styleValue]) => {
-      const resolved = typeof styleValue === "function" ? styleValue() : styleValue;
-
-      if (resolved == null || resolved === false) {
-        return [];
-      }
-
-      return [`${styleKey.replace(/([A-Z])/g, "-$1").toLowerCase()}:${resolved}`];
-    })
-    .join(";");
-}
 
 function applyStyleObject(element: HTMLElement, style: Record<string, any>) {
   for (const [styleKey, styleValue] of Object.entries(style)) {
-    const resolved = typeof styleValue === "function" ? styleValue() : styleValue;
-    const cssKey = styleKey.replace(/([A-Z])/g, "-$1").toLowerCase();
+    const cssKey = toCssPropertyName(styleKey);
 
-    if (resolved == null || resolved === false) {
-      element.style.removeProperty(cssKey);
-      continue;
+    if (typeof styleValue === "function") {
+      // createReactiveEffect com deps:[] faz tracking automático —
+      // re-executa sempre que qualquer sinal lido dentro mudar
+      createReactiveEffect(() => {
+        const resolved = styleValue();
+        if (resolved == null || resolved === false) {
+          element.style.removeProperty(cssKey);
+        } else {
+          (element.style as any)[styleKey] = resolved;
+        }
+      }, "layout" );
+    } else {
+      if (styleValue == null || styleValue === false) {
+        element.style.removeProperty(cssKey);
+      } else {
+        (element.style as any)[styleKey] = styleValue;
+      }
     }
+  }
 
-    (element.style as any)[styleKey] = resolved;
+  const nextKeys = new Set(resolveStyleEntries(style).map(([styleKey]) => toCssPropertyName(styleKey)));
+  for (let index = element.style.length - 1; index >= 0; index -= 1) {
+    const existingKey = element.style.item(index);
+    if (!nextKeys.has(existingKey)) {
+      element.style.removeProperty(existingKey);
+    }
   }
 }
 
 function normalizeInlineStyle(value: string | null) {
   return (value ?? "")
-    .split(";")
-    .map((part) => part.trim())
-    .filter(Boolean)
-    .sort()
-    .join(";");
+      .split(";")
+      .map((part) => part.trim())
+      .filter(Boolean)
+      .sort()
+      .join(";");
 }
 
 function hydrateDynamicProp(
-  element: HTMLElement,
-  instruction: Extract<HydrationInstruction, { kind: "dynamic-prop" }>
+    el: HTMLElement,
+    instruction: Extract<HydrationInstruction, { kind: "dynamic-prop" }>
 ) {
-  let initialized = false;
-  useLayoutEffect(() => {
-    const nextValue = instruction.getter();
-    if (!initialized) {
-      initialized = true;
-      if (!matchesCurrentHydratedProp(element, instruction.prop, nextValue)) {
-        warnMismatch({
-          path: `hydrate.instruction.dynamic-prop.${instruction.id}.${instruction.prop}`,
-          message: "Dynamic prop SSR value does not match hydrated getter value",
-          expected: describeHydrationValue(nextValue),
-          found: describeCurrentHydratedProp(element, instruction.prop),
-          node: element
-        });
-      }
-      return;
+  // Cria o efeito puro para rodar fora de escopos orfãos de hooks
+  createReactiveEffect(() => {
+    // 1. Lemos o getter() oficial que tu especificaste
+    let rawValue = instruction.getter();
+
+    // 2. Desembrulho recursivo: extrai o valor real computado pelo teu $s`...`
+    while (typeof rawValue === "function") {
+      rawValue = rawValue();
     }
 
-    setProp(element, instruction.prop, nextValue, {
-      hydrating: true,
-      path: `hydrate.dynamic-prop.${instruction.id}.${instruction.prop}`
-    });
-  });
+    const value = rawValue;
+    const name = instruction.prop; // 3. Mapeia para o teu campo 'prop'
+
+    // 4. Aplicação cirúrgica baseada nas chaves resolvidas
+    if (name === "style") {
+      if (typeof value === "object" && value !== null) {
+        applyStyleObject(el, value);
+      } else if (typeof value === "string") {
+        // Se o teu $s devolver a string de transformação, injeta direto via cssText
+        el.style.cssText = value;
+      }
+    }
+    else if (name === "className" || name === "class") {
+      el.className = String(value ?? "");
+    }
+    else if (name in el && !(el instanceof SVGElement)) {
+      (el as any)[name] = value;
+    }
+    else {
+      if (value == null || value === false) {
+        el.removeAttribute(name);
+      } else {
+        el.setAttribute(name, String(value));
+      }
+    }
+  }, "layout"); // Fase de layout evita qualquer flickering visual na tela
 }
 
 function runCollectedEffect(
-  instruction: Extract<HydrationInstruction, { kind: "layout-effect" | "effect" }>,
-  phase: "layout" | "effect"
+    instruction: Extract<HydrationInstruction, { kind: "layout-effect" | "effect" }>,
+    phase: "layout" | "effect"
 ) {
-  useReactiveEffect(instruction.effect, instruction.deps ?? [], {
-    phase,
-    ignore: (instruction.ignoredSources ?? [])
-      .map((source) => ({ __adaptiveSource: source }))
-  });
-}
+  let previousDeps = instruction.deps ? [...instruction.deps] : null;
 
+  // O ignore por source precisa bloquear apenas re-disparos vindos
+  // das sources informadas. O effect continua reativo para os
+  // demais sinais lidos durante sua execucao.
+  const dispose = createReactiveEffect(() => {
+    if (instruction.deps && previousDeps) {
+      const hasChanged = instruction.deps.some((dep, i) => dep !== previousDeps![i]);
+      if (!hasChanged) return;
+      previousDeps = [...instruction.deps];
+    }
+
+    return instruction.effect();
+  }, phase, {
+    ignore: instruction.ignoredSources?.map((source) => ({ __adaptiveSource: source }))
+  });
+
+  return dispose;
+}
 function setProp(
-  element: HTMLElement,
-  key: string,
-  value: any,
-  options: { hydrating: boolean; path: string }
+    element: HTMLElement,
+    key: string,
+    value: any,
+    options: { hydrating: boolean; path: string }
 ) {
   const namespace = element.namespaceURI;
   const attrName = resolveDomAttributeName(key, namespace);
@@ -1130,8 +1176,14 @@ function setProp(
     element.setAttribute("class", value ?? "");
     return;
   }
-  if (key === "style" && typeof value === "object" && value !== null) {
-    applyStyleObject(element, value as Record<string, any>);
+  if (key === "style") {
+    if (typeof value === "function") {
+      createReactiveEffect(() => {
+        applyStyleObject(element, value());
+      });
+    } else if (typeof value === "object" && value !== null) {
+      applyStyleObject(element, value as Record<string, any>);
+    }
     return;
   }
   if (key === "dataset" && typeof value === "object" && value !== null) {
@@ -1177,9 +1229,9 @@ export function collectSiblingNodesBetween(start: Comment, end: Comment) {
 
 function isClientBoundaryStartComment(node: Node | null | undefined): node is Comment {
   return Boolean(
-    node &&
-    node.nodeType === Node.COMMENT_NODE &&
-    (((node as Comment).data ?? "").startsWith(CLIENT_BOUNDARY_START_PREFIX))
+      node &&
+      node.nodeType === Node.COMMENT_NODE &&
+      (((node as Comment).data ?? "").startsWith(CLIENT_BOUNDARY_START_PREFIX))
   );
 }
 
@@ -1319,16 +1371,16 @@ function debugHydrationLog(...args: any[]) {
 }
 
 function applyPropertyValue(
-  element: HTMLElement,
-  key: string,
-  value: any,
-  options: { hydrating: boolean; path: string }
+    element: HTMLElement,
+    key: string,
+    value: any,
+    options: { hydrating: boolean; path: string }
 ) {
   const preserveSelection =
-    options.hydrating &&
-    key === "value" &&
-    (element instanceof HTMLInputElement || element instanceof HTMLTextAreaElement) &&
-    document.activeElement === element;
+      options.hydrating &&
+      key === "value" &&
+      (element instanceof HTMLInputElement || element instanceof HTMLTextAreaElement) &&
+      document.activeElement === element;
 
   const selection = preserveSelection ? captureSelection(element as HTMLInputElement | HTMLTextAreaElement) : null;
   (element as any)[key] = value;
@@ -1347,12 +1399,12 @@ function captureSelection(element: HTMLInputElement | HTMLTextAreaElement) {
 }
 
 function restoreSelection(
-  element: HTMLInputElement | HTMLTextAreaElement,
-  selection: {
-    start: number | null;
-    end: number | null;
-    direction: "forward" | "backward" | "none" | null;
-  }
+    element: HTMLInputElement | HTMLTextAreaElement,
+    selection: {
+      start: number | null;
+      end: number | null;
+      direction: "forward" | "backward" | "none" | null;
+    }
 ) {
   if (selection.start == null || selection.end == null) return;
   try {

@@ -97,20 +97,38 @@ async function buildTransformedFile(sourcePath:string, outputPath:string, cwd:an
 
 function createServerClientStub(sourceText:string, moduleId:any, ssrImportPath:any, componentDirective = "client") {
     const { namedExports } = extractExports(sourceText);
-    const factoryName =
-        componentDirective === "hydrate"
-            ? "createHydrateComponent"
-            : "createClientComponent";
+    const isHydrateDirective = componentDirective === "hydrate";
+    const factoryName = isHydrateDirective
+        ? "createHydrateComponent"
+        : "createClientComponent";
     const lines = [
-        `import * as serverModule from ${JSON.stringify(ssrImportPath)};`,
         `import { ${factoryName} } from "@adaptive-js/web";`,
-        `export default ${factoryName}(${JSON.stringify(moduleId)}, "default", typeof serverModule.default === "function" ? serverModule.default : undefined);`,
     ];
+
+    if (isHydrateDirective) {
+        lines.unshift(`import * as serverModule from ${JSON.stringify(ssrImportPath)};`);
+        lines.push(
+            `export default ${factoryName}(${JSON.stringify(moduleId)}, "default", typeof serverModule.default === "function" ? serverModule.default : undefined);`,
+        );
+    } else {
+        // Pure client boundaries must not execute the component implementation on the server.
+        // Passing a serverRender here would eagerly touch browser-only libraries during SSR.
+        lines.push(
+            `export default ${factoryName}(${JSON.stringify(moduleId)}, "default");`,
+        );
+    }
 
     for (const exportName of namedExports) {
         if (exportName === "default") continue;
+        if (isHydrateDirective) {
+            lines.push(
+                `export const ${exportName} = ${factoryName}(${JSON.stringify(moduleId)}, ${JSON.stringify(exportName)}, typeof serverModule[${JSON.stringify(exportName)}] === "function" ? serverModule[${JSON.stringify(exportName)}] : undefined);`,
+            );
+            continue;
+        }
+
         lines.push(
-            `export const ${exportName} = ${factoryName}(${JSON.stringify(moduleId)}, ${JSON.stringify(exportName)}, typeof serverModule[${JSON.stringify(exportName)}] === "function" ? serverModule[${JSON.stringify(exportName)}] : undefined);`,
+            `export const ${exportName} = ${factoryName}(${JSON.stringify(moduleId)}, ${JSON.stringify(exportName)});`,
         );
     }
 

@@ -13,3 +13,8 @@ export {
   readServerContext,
   runWithServerContext
 } from "./context-runtime.js";
+export {
+  resolveStyleEntries,
+  serializeStyleLike,
+  toCssPropertyName
+} from "./style-shared.js";

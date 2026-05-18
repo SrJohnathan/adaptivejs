@@ -14,7 +14,7 @@ export namespace JSX {
     export type Element = import("@adaptive-js/jsx").AdaptiveNode;
     export type MaybeSignal<T> = T | (() => T);
     export type AdaptiveStyleValue = string | number | boolean | null | undefined;
-    export type AdaptiveStyleObject = Record<string, AdaptiveStyleValue>;
+    export type AdaptiveStyleObject = Record<string, MaybeSignal<AdaptiveStyleValue>>;
 
     export interface HTMLAttributes<T> {
         accessKey?: MaybeSignal<string>;
@@ -120,9 +120,9 @@ export namespace JSX {
         style: HTMLAttributes<HTMLStyleElement>;
         table: HTMLAttributes<HTMLTableElement>;
         tbody: HTMLAttributes<HTMLTableSectionElement>;
-        td: HTMLAttributes<HTMLTableDataCellElement>;
+        td: HTMLAttributes<HTMLTableCellElement>;
         textarea: HTMLAttributes<HTMLTextAreaElement>;
-        th: HTMLAttributes<HTMLTableHeaderCellElement>;
+        th: HTMLAttributes<HTMLTableCellElement>;
         thead: HTMLAttributes<HTMLTableSectionElement>;
         title: HTMLAttributes<HTMLTitleElement>;
         tr: HTMLAttributes<HTMLTableRowElement>;

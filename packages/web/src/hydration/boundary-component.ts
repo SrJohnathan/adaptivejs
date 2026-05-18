@@ -91,7 +91,8 @@ export function createBoundaryComponent({
         "data-adaptive-client-export": exportName,
         "data-adaptive-client-props": serializeClientProps(stripChildrenFromProps(props)),
         "data-adaptive-client-has-children": hasChildren(props) ? "true" : undefined
-      }, typeof serverRender === "function"
+      },
+      mode === CLIENT_BOUNDARY_MODE_HYDRATE && typeof serverRender === "function"
           ? createElement(serverRender, wrapServerProps ? wrapServerProps(props) : props)
           : null)) as ClientComponentFunction;
 
@@ -466,29 +467,10 @@ function collectHydrationBindingsFromNode(
   }
 
   if (typeof node === "function") {
-    const preview = node();
-    const classification = classifyReactivePreview(preview);
+    // Não execute closures reativas durante a coleta: apenas registre o getter.
+    // A classificação e o conteúdo serão resolvidos na hora da hidratação.
     const reactiveKey = nextInstructionKey(state, "reactive");
-
-    if (classification === "range") {
-      state.reactive.set(reactiveKey, node);
-      collectHydrationBindingsFromNode(preview, state);
-      return;
-    }
-
-    if (classification === "list") {
-      state.reactive.set(reactiveKey, node as () => any[]);
-      collectHydrationBindingsFromNode(preview, state);
-      return;
-    }
-
-    if (classification === "async") {
-      state.reactive.set(reactiveKey, node as () => Promise<any> | any);
-      return;
-    }
-
     state.reactive.set(reactiveKey, node);
-    collectHydrationBindingsFromNode(preview, state);
     return;
   }
 

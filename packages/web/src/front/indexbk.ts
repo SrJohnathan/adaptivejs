@@ -17,6 +17,8 @@ type EffectScope = {
     id: number;
     label?: string;
     context?: Map<symbol, any>;
+
+    //REF
     hooks: any[];
     hookIndex: number;
 };
@@ -58,18 +60,21 @@ export const isSSR = (): boolean => typeof window === "undefined";
 let activeHydrationCollection: HydrationCollectionState | null = null;
 
 function isAdaptiveHydrationDebugEnabled() {
-    if (!isSSR() && (window as any).__ADAPTIVE_DEBUG_HYDRATION__ === true) {
+    if (typeof window !== "undefined" && (window as any).__ADAPTIVE_DEBUG_HYDRATION__ === true) {
         return true;
     }
+
     return (globalThis as any)?.process?.env?.ADAPTIVE_PUBLIC_DEBUG_HYDRATION === "true";
 }
 
 function debugSignalLog(...args: any[]) {
-    if (!isAdaptiveHydrationDebugEnabled()) return;
+    if (!isAdaptiveHydrationDebugEnabled()) {
+        return;
+    }
+
     console.log(...args);
 }
 
-// --- SISTEMA DE EFEITOS (ENGINE CENTRAL) ---
 class EffectSystem {
     private currentEffect: EffectFn | null = null;
     private currentScope: EffectScope | null = null;
@@ -205,7 +210,11 @@ class EffectSystem {
 
     shouldIgnoreTrigger(effect: EffectFn, source: ReactiveSource): boolean {
         const ignored = this.ignoredSources.get(effect);
-        return ignored ? ignored.has(source) : false;
+        if (!ignored) {
+            return false;
+        }
+
+        return ignored.has(source);
     }
 
     setEffectPhase(effect: EffectFn, phase: EffectPhase) {
@@ -213,13 +222,25 @@ class EffectSystem {
     }
 
     scheduleFromSource(effect: EffectFn, source: ReactiveSource) {
-        const phase = this.effectPhases.get(effect) ?? "effect";
+        const phase =
+            this.effectPhases.get(effect) ?? "effect";
+
         this.schedule(effect, phase, source);
     }
 
     schedule(effect: EffectFn, phase: EffectPhase = "effect", source?: ReactiveSource) {
         if (isSSR()) return;
         if (this.disposedEffects.has(effect)) return;
+
+        // Effects subscribe to every signal they read while running. If the same
+        // effect later writes back into one of those signals, that source can
+        // schedule the effect again and create a loop:
+        // read -> subscribe -> set -> schedule -> run -> set -> ...
+        //
+        // useReactiveEffect allows a caller to opt into ignoring specific
+        // sources by identity. We only skip the reschedule when the trigger
+        // came from one of those exact sources; every other source and every
+        // other subscriber keeps working normally.
         if (source && this.shouldIgnoreTrigger(effect, source)) return;
 
         this.registerEffectScope(effect);
@@ -303,11 +324,13 @@ class EffectSystem {
 
     cleanupScope(scope: EffectScope) {
         const scopedEffects: EffectFn[] = [];
+
         for (const [effect, effectScope] of this.effectScopes) {
             if (effectScope.id === scope.id) {
                 scopedEffects.push(effect);
             }
         }
+
         for (const effect of scopedEffects) {
             this.disposeEffect(effect);
         }
@@ -330,17 +353,24 @@ class EffectSystem {
         this.batchDepth = 0;
     }
 
+
+    // CONTEXT
+
     getCurrentScope() {
         return this.currentScope;
     }
 
     runWithContext<T>(ctxId: symbol, value: any, fn: () => T): T {
         const scope = this.currentScope;
-        if (!scope) return fn();
+
+        if (!scope) {
+            return fn();
+        }
 
         const previousContext = scope.context;
         const nextContext = new Map(previousContext ?? []);
         nextContext.set(ctxId, value);
+
         scope.context = nextContext;
 
         try {
@@ -352,7 +382,11 @@ class EffectSystem {
 
     readContext<T>(ctxId: symbol, defaultValue: T): T {
         const scope = this.currentScope;
-        if (!scope?.context?.has(ctxId)) return defaultValue;
+
+        if (!scope?.context?.has(ctxId)) {
+            return defaultValue;
+        }
+
         return scope.context.get(ctxId);
     }
 
@@ -369,24 +403,59 @@ class EffectSystem {
             this.currentEffect = previous;
         }
     }
+
+
+
+
 }
 
 const effectSystem = new EffectSystem();
 
-// --- EXPORTS DE CONTEXTO GLOBAL E WRAPPERS ---
 
+// WRAPPER CONTEXT
+
+
+/**
+ * Cria um efeito reativo puro global, ideal para a engine de hidratação ou utilitários.
+ * Não depende de escopo de componentes (hooks) e limpa-se automaticamente quando destruído.
+ */
+/**
+ * Cria um efeito reativo puro global (ideal para engines de hidratação ou utilitários).
+ * Não depende de escopo de componentes (hooks) e limpa as suas subscrições perfeitamente.
+ */
 export function createReactiveEffect(
     effect: EffectFn,
-    phase: EffectPhase = "layout",
-    options: Pick<ReactiveEffectOptions, "ignore"> = {}
+    phase: EffectPhase = "layout"
 ): () => void {
-    const runner: EffectFn = () => effect();
-    effectSystem.setIgnoredSources(runner, resolveIgnoredSources(options.ignore));
+    // 1. Criamos um runner estável que encapsula a execução do efeito
+    const runner: EffectFn = () => {
+        return effect();
+    };
+
+    // 2. Registramos a fase de execução ("layout" ou "effect") no teu sistema
     effectSystem.setEffectPhase(runner, phase);
+
+    // 3. Agendamos a execução inicial imediatamente para colher o primeiro tracking de sinais
     effectSystem.schedule(runner, phase);
 
+    // 4. Retornamos a função de descarte (Disposal)
     return () => {
-        effectSystem.disposeEffect(runner);
+        // Se o teu effectSystem tiver uma função nativa de dispose/cleanup de runner:
+        if (typeof (effectSystem as any).disposeEffect === "function") {
+            (effectSystem as any).disposeEffect(runner);
+        } else if (typeof (effectSystem as any).cleanupEffect === "function") {
+            (effectSystem as any).cleanupEffect(runner);
+        } else {
+            // Caso o effectSystem não exponha um método público direto,
+            // forçamos o flush ou desassociação limpando o agendamento
+            try {
+                // Se o teu sistema tiver uma forma de remover subscribers manualmente,
+                // ela pode ser invocada aqui. Caso contrário, o próprio motor limpa
+                // quando o runner deixa de estar na fila de execução.
+            } catch (e) {
+                console.error("Falha ao limpar o runner do effectSystem:", e);
+            }
+        }
     };
 }
 
@@ -396,28 +465,40 @@ export function runWithContext<T>(ctxId: symbol, value: any, fn: () => T): T {
 
 export function readContext<T>(ctxId: symbol, defaultValue: T): T {
     const value = effectSystem.readContext(ctxId, defaultValue);
-    if (value !== defaultValue) return value;
+
+    if (value !== defaultValue) {
+        return value;
+    }
+
     return readServerContext(ctxId, defaultValue);
 }
 
 function useHookSlot<T>(factory: () => T): T {
     const scope = effectSystem.getCurrentScope();
-    if (!scope) return factory();
+
+    if (!scope) {
+        return factory();
+    }
 
     const index = scope.hookIndex++;
+
     if (!scope.hooks[index]) {
         scope.hooks[index] = factory();
     }
+
     return scope.hooks[index] as T;
 }
 
 export const getEffectSystem = () => effectSystem;
 
+/**
+ * Runs fn without tracking any reactive reads inside it.
+ * Signals read within fn will NOT subscribe the current effect.
+ */
 export function untrack<T>(fn: () => T): T {
     return effectSystem.untrack(fn);
 }
 
-// --- CLASSE OBSERVADORA (FONTES REATIVAS) ---
 export class AdaptiveObserver<T = any> implements ReactiveSource {
     private subscribers = new Set<Subscriber>();
 
@@ -425,10 +506,12 @@ export class AdaptiveObserver<T = any> implements ReactiveSource {
 
     get(): T {
         const currentEffect = effectSystem.getCurrentEffect();
+
         if (currentEffect && !effectSystem.isDisposed(currentEffect)) {
             this.subscribers.add(currentEffect);
             effectSystem.trackSource(currentEffect, this);
         }
+
         return this.value;
     }
 
@@ -463,21 +546,43 @@ function createSignal<T>(initialValue: T): [() => T, ReactiveSetter<T>] {
             observer.set(next);
         }
     };
+    // The setter keeps a pointer to the exact source that owns the signal.
+    // useReactiveEffect can use this metadata to ignore reschedules coming
+    // from that source without affecting any other subscriber.
     setter.__adaptiveSource = observer;
     return [getter, setter];
 }
 
-export function useReactive<T>(initialValue: T) {
+function useState<T>(initialValue: T) {
     return useHookSlot(() => createSignal(initialValue));
 }
 
-export function useRef<T = any>(initialValue: T | null = null): RefObject<T> {
-    return useHookSlot(() => ({ current: initialValue }));
-}
+export const useReactive = useState;
+
 
 export type RefObject<T> = {
     current: T | null;
 };
+
+export function useRef<T = any>(initialValue: T | null = null): RefObject<T> {
+    const scope = effectSystem.getCurrentScope();
+
+    if (!scope) {
+        return { current: initialValue };
+    }
+
+    const index = scope.hookIndex++;
+
+    if (!scope.hooks[index]) {
+        scope.hooks[index] = {
+            current: initialValue
+        };
+    }
+
+    return scope.hooks[index] as RefObject<T>;
+}
+
+
 
 export function createStore<T extends Record<string, any>>(initialState: T) {
     const store: any = {};
@@ -489,14 +594,24 @@ export function createStore<T extends Record<string, any>>(initialState: T) {
     };
 }
 
-// --- GERENCIAMENTO DE HOOKS DE EFEITO COM DEPENDÊNCIAS ---
+
 
 export function useEffect(effect: EffectFn, deps?: DependencyList): void {
-    useEffectWithDeps(effect, deps ?? []);
+    if (deps) {
+        useEffectWithDeps(effect, deps);
+        return;
+    }
+
+    useEffectWithDeps(effect, []);
 }
 
 export function useLayoutEffect(effect: EffectFn, deps?: DependencyList): void {
-    useEffectWithDeps(effect, deps ?? [], "layout");
+    if (deps) {
+        useEffectWithDeps(effect, deps, "layout");
+        return;
+    }
+
+    useEffectWithDeps(effect, [], "layout");
 }
 
 type EffectHookState = {
@@ -507,7 +622,10 @@ type EffectHookState = {
 };
 
 function resolveIgnoredSources(ignore?: ReactiveIgnoreTarget[]): ReactiveSource[] {
-    if (!ignore || ignore.length === 0) return [];
+    if (!ignore || ignore.length === 0) {
+        return [];
+    }
+
     return ignore
         .map((setter) => setter.__adaptiveSource)
         .filter((source): source is ReactiveSource => Boolean(source));
@@ -533,7 +651,9 @@ function useScheduledEffect(
 
     if (isSSR()) return;
 
-    const resolvedDeps = deps.map((dep) => (typeof dep === "function" ? dep() : dep));
+    const resolvedDeps = deps.map((dep) =>
+        typeof dep === "function" ? dep() : dep
+    );
 
     const hook = useHookSlot<EffectHookState>(() => {
         const state: EffectHookState = {
@@ -542,12 +662,16 @@ function useScheduledEffect(
             initialized: false,
             runner: () => state.effect()
         };
+
         return state;
     });
 
     hook.effect = effect;
     effectSystem.setIgnoredSources(hook.runner, ignoredSources);
-    effectSystem.setEffectPhase(hook.runner, phase);
+    effectSystem.setEffectPhase(
+        hook.runner,
+        phase
+    );
 
     const changed =
         !hook.initialized ||
@@ -578,52 +702,52 @@ export function useReactiveEffect(
     deps: DependencyList,
     options: ReactiveEffectOptions = {}
 ): void {
+    // Limitations:
+    // - ignore is source-based, not value-based
+    // - it only skips re-schedules triggered by the listed setters
+    // - reads/writes involving other signals can still re-run the effect
+    // - this is opt-in and does not change useEffect/useLayoutEffect behavior
     useScheduledEffect(effect, deps, options);
 }
 
-// --- DISPARO INICIAL ESTREITO (SEM REATIVIDADE) ---
 export function useDOMEffect(effect: EffectFn): void {
-    if (isSSR()) return;
-
-    // Isola completamente a execução para que sinais lidos lá dentro NÃO assinem o efeito
-    useClientEffect(() => {
+    useEffect(() => {
         if (document.readyState === "loading") {
-            const runner = () => untrack(effect);
-            document.addEventListener("DOMContentLoaded", runner, { once: true });
-            return () => document.removeEventListener("DOMContentLoaded", runner);
+            document.addEventListener("DOMContentLoaded", effect, { once: true });
+
+            return () => {
+                document.removeEventListener("DOMContentLoaded", effect);
+            };
         }
-        return untrack(effect);
-    }, []); // Array vazio garante que corre apenas uma vez no arranque do cliente!
+
+        return effect();
+    }, []);
 }
 
-export function useMemo<T>(compute: () => T, deps?: DependencyList): () => T {
-    // Computed reativo: recalcula quando os sinais lidos dentro de compute() mudarem.
-    // O parâmetro deps é opcional e mantido apenas para compatibilidade; por padrão é ignorado.
+export function useMemo<T>(compute: () => T, deps: DependencyList): () => T {
     const hook = useHookSlot<{
         value: [() => T, (value: T) => void];
+        deps?: DependencyList;
         initialized: boolean;
-        runner?: () => void;
     }>(() => ({
-        value: createSignal(undefined as unknown as T),
+        value: createSignal(compute()),
+        deps: undefined,
         initialized: false
     }));
 
-    if (!hook.initialized) {
+    const resolvedDeps = deps.map((dep) =>
+        typeof dep === "function" ? dep() : dep
+    );
+
+    const changed =
+        !hook.initialized ||
+        !hook.deps ||
+        hook.deps.length !== resolvedDeps.length ||
+        resolvedDeps.some((dep, index) => !Object.is(dep, hook.deps![index]));
+
+    if (changed) {
         hook.initialized = true;
-        // Computa o valor inicial e registra um efeito reativo para mantê-lo atualizado
-        const [get, set] = hook.value;
-        // Inicial
-        set(compute());
-        // Reativo: reexecuta compute quando as leituras internas mudarem
-        hook.runner = createReactiveEffect(() => {
-            set(compute());
-        });
-    } else if (Array.isArray(deps) && deps.length > 0) {
-        // Compatibilidade: se o caller fornecer deps explicitamente, force reavaliação
-        // quando o array resolvido mudar (sem quebrar o rastreamento automático)
-        const resolved = deps.map((d) => (typeof d === "function" ? d() : d));
-        // Recompute imediatamente caso alguma dep mude neste tick
-        // (não guardamos deps anteriores para simplicidade; rely on callers chamarem estavelmente)
+        hook.deps = resolvedDeps;
         hook.value[1](compute());
     }
 
