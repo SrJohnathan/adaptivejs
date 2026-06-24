@@ -192,9 +192,11 @@ This direction matters a lot to the project. The goal is to preserve server outp
 
 ### Extensions
 
-- `@adaptive-js/i18n`
+- `@adaptive-js/extension-auth`
+  - server-first sessions, authorization and reactive client auth state
+- `@adaptive-js/extension-i18n`
   - reactive i18n utilities
-- `@adaptive-js/lucide-animation-icons`
+- `@adaptive-js/extension-lucide-animation-icons`
   - animated icons for AdaptiveJS apps
 
 ### Scaffold

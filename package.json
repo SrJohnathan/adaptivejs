@@ -4,7 +4,7 @@
   "version": "0.0.1",
   "scripts": {
     "build": "npm run build --workspaces",
-    "publish:lib": "npm run build && npm publish --workspace @adaptive-js/core --access public && npm publish --workspace @adaptive-js/shared --access public && npm publish --workspace @adaptive-js/jsx --access public && npm publish --workspace @adaptive-js/web --access public && npm publish --workspace @adaptive-js/i18n --access public && npm publish --workspace @adaptive-js/adapter-nitro --access public && npm publish --workspace @adaptive-js/ci --access public && npm publish --workspace @adaptive-js/components --access public && npm publish --workspace @adaptive-js/lucide-animation-icons --access public",
+    "publish:lib": "npm run build && npm publish --workspace @adaptive-js/core --access public && npm publish --workspace @adaptive-js/shared --access public && npm publish --workspace @adaptive-js/jsx --access public && npm publish --workspace @adaptive-js/web --access public && npm publish --workspace @adaptive-js/extension-i18n --access public && npm publish --workspace @adaptive-js/extension-auth --access public && npm publish --workspace @adaptive-js/adapter-nitro --access public && npm publish --workspace @adaptive-js/ci --access public && npm publish --workspace @adaptive-js/components --access public && npm publish --workspace @adaptive-js/extension-lucide-animation-icons --access public",
     "publish:scaffold": "npm publish --workspace create-adaptive-app --access public",
     "release:check": "node scripts/npm-release.mjs check",
     "release:pack": "node scripts/npm-release.mjs pack",
