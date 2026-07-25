@@ -159,6 +159,51 @@ The mental model is simple:
 - the setter updates the source
 - reactivity activates when the getter is read inside a reactive boundary
 
+## Callbacks between components
+
+For decoupled communication between interactive components, AdaptiveJS provides
+scoped handlers through `createHandler` and `useHandler`.
+
+`createHandler` subscribes the current hydrated component to a named callback.
+`useHandler` returns a function that broadcasts a payload to the handlers with
+that name. Registrations live for the lifetime of their component boundary and
+are cleaned up when that boundary is removed.
+
+```tsx
+import { createHandler, useHandler, useReactive } from "@adaptive-js/web";
+
+function NotificationPanel() {
+  const [message, setMessage] = useReactive("Waiting for an event");
+
+  createHandler<string>("notification", (nextMessage) => {
+    setMessage(nextMessage ?? "New notification");
+  });
+
+  return <p>{message}</p>;
+}
+
+function SaveButton() {
+  const notify = useHandler<string>("notification");
+
+  return (
+    <button onClick={() => notify("Document saved")}>Save</button>
+  );
+}
+
+export default function Page() {
+  return (
+    <main>
+      <SaveButton />
+      <NotificationPanel />
+    </main>
+  );
+}
+```
+
+Handlers are a broadcast mechanism: every mounted component registered with the
+same name receives the payload. Use a unique, feature-level name to avoid
+unintended listeners.
+
 ## Hydration model
 
 AdaptiveJS uses a DOM-first hydration strategy.

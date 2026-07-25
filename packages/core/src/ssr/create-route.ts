@@ -11,7 +11,7 @@ import {pathToFileURL} from "node:url";
 import {renderToString, renderToStringWithMetadata} from "./render-to-string.js";
 import fs from "node:fs/promises";
 import fg from "fast-glob";
-import {AdaptiveMetadata, AdaptiveMetadataContext, AdaptiveMetadataResolver, RouteDefinition} from "./interfaces/index.js";
+import {AdaptiveMetadata, AdaptiveMetadataContext, AdaptiveMetadataResolver, AdaptiveRouteRequest, RouteDefinition} from "./interfaces/index.js";
 import {matchRouteServer, parseRoutePathServer} from "./parse.js";
 
 export async function createRouter(
@@ -23,6 +23,7 @@ export async function createRouter(
         serverBuildDir?: string;
         clientBuildDir?: string;
         freshServerModules?: boolean;
+        request?: AdaptiveRouteRequest;
     }
 ) {
     const isProduction = options?.isProduction ?? process.env.NODE_ENV === "production";
@@ -82,6 +83,7 @@ export async function createRouter(
 
     if (!routeMatch) {
         return {
+            status: 404,
             html: renderToString({ tag: "div", props: {}, children: ["404 - Page not found"] }),
             params: {},
             query: {},
@@ -90,14 +92,29 @@ export async function createRouter(
         };
     }
 
+    const setCookies: string[] = [];
     const element = await routeMatch.component({
         params: routeMatch.params,
-        query: uri.query
+        query: uri.query,
+        request: options?.request,
+        appendSetCookie: (header) => setCookies.push(header)
     });
 
 // 🔥 intercepta redirect
     if (element?.__type === "redirect") {
         return element;
+    }
+
+    if (element?.__type === "not-found") {
+        return {
+            status: 404,
+            html: renderToString({ tag: "div", props: {}, children: ["404 - Page not found"] }),
+            params: {},
+            query: {},
+            clientEntries: Array.from(new Set(globalClientAssets.map((record) => record.script))),
+            clientStyles: Array.from(new Set(globalClientAssets.flatMap((record) => record.styles))),
+            setCookies
+        };
     }
 
     const rendered = renderToStringWithMetadata(element);
@@ -148,6 +165,7 @@ export async function createRouter(
                 ],
             ),
         ),
+        setCookies,
     };
 }
 

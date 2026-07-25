@@ -110,6 +110,10 @@ async function handleSsr(event: any, url: string) {
     sourceDir: appRoot,
     serverBuildDir,
     clientBuildDir,
+    request: {
+      headers: event.node.req.headers,
+      url: `http://${event.node.req.headers.host ?? "localhost"}${url}`
+    }
   });
 
 
@@ -160,8 +164,21 @@ async function handleSsr(event: any, url: string) {
   );
 
   event.node.res.setHeader("content-type", "text/html; charset=utf-8");
+  event.node.res.statusCode = result.status ?? 200;
+  appendSetCookies(event.node.res, result.setCookies ?? []);
   setNoStoreHeaders(event.node.res);
   return html;
+}
+
+function appendSetCookies(response: any, cookies: string[]) {
+  if (cookies.length === 0) return;
+  const existing = response.getHeader("Set-Cookie");
+  const values = existing == null
+    ? cookies
+    : Array.isArray(existing)
+      ? [...existing, ...cookies]
+      : [String(existing), ...cookies];
+  response.setHeader("Set-Cookie", values);
 }
 
 

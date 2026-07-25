@@ -133,6 +133,7 @@ function hydrateClientComponentsNow(moduleId: string, exportsMap: Record<string,
     const previousRecord = clientBoundaryScopes.get(boundary.start);
     if (previousRecord) {
       cleanupEffectScope(previousRecord.scope);
+      cleanupHandlerScope(previousRecord.handlerScope);
     }
 
     const nextScope = createEffectScope(`client:${moduleId}:${boundary.exportName}`);
@@ -271,6 +272,11 @@ function mountClientComponentBetweenMarkers(
       ? Array.from(rendered.childNodes)
       : [rendered];
   parent.insertBefore(rendered, end);
+
+  // Client-only boundaries have no server DOM to preserve. Once their content is
+  // mounted, the transport markers must not remain in the final document.
+  start.remove();
+  end.remove();
   return mountedNodes;
 }
 

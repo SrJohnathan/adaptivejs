@@ -22,6 +22,7 @@ export interface AuthSession<
   data: TData;
   createdAt: Date;
   expiresAt: Date;
+  absoluteExpiresAt: Date;
 }
 
 export interface StoredAuthSession<TData extends AuthSessionData = AuthSessionData> {
@@ -30,6 +31,8 @@ export interface StoredAuthSession<TData extends AuthSessionData = AuthSessionDa
   data: TData;
   createdAt: Date;
   expiresAt: Date;
+  absoluteExpiresAt: Date;
+  csrfToken: string;
 }
 
 export interface AuthAdapter<
@@ -56,6 +59,7 @@ export interface AuthCookieOptions {
 
 export interface AuthRequestLike {
   headers: Headers | Record<string, string | string[] | undefined>;
+  url?: string;
 }
 
 export interface AuthCookieResult {
@@ -67,6 +71,28 @@ export interface AuthCookieResult {
 export interface CreateSessionOptions<TData extends AuthSessionData = AuthSessionData> {
   data?: TData;
   expiresAt?: Date;
+  absoluteExpiresAt?: Date;
+}
+
+export interface AuthCsrfOptions {
+  allowedOrigins?: string[];
+  headerName?: string;
+}
+
+export type AuthAuditEventType =
+  | "session.created"
+  | "session.renewed"
+  | "session.invalidated"
+  | "session.expired"
+  | "session.rejected"
+  | "csrf.rejected";
+
+export interface AuthAuditEvent {
+  type: AuthAuditEventType;
+  sessionId?: string;
+  userId?: string;
+  reason?: string;
+  at: Date;
 }
 
 export interface CreateAuthOptions<
@@ -76,8 +102,11 @@ export interface CreateAuthOptions<
   adapter: AuthAdapter<TUser, TData>;
   cookie?: AuthCookieOptions;
   sessionDuration?: number;
+  absoluteSessionDuration?: number;
   renewBefore?: number;
   generateSessionId?: () => string;
+  csrf?: AuthCsrfOptions;
+  onAuditEvent?: (event: AuthAuditEvent) => MaybePromise<void>;
 }
 
 export interface ReadSessionResult<

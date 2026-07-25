@@ -9,6 +9,7 @@
 
 export type HandlerCallback<TPayload = any> = (payload?: TPayload) => void;
 let isDispatchingHandler = false;
+const missingScopeWarnings = new Set<string>();
 
 export type HandlerScope = {
     id: number;
@@ -74,9 +75,13 @@ export function createHandler<TPayload = any>(
     }
 
     if (!currentHandlerScope) {
-        /*throw new Error(
-            `[Adaptive Handler] createHandler("${id}") precisa ser chamado dentro de um HandlerScope.`
-        );*/
+        if (typeof window !== "undefined" && !missingScopeWarnings.has(id)) {
+            missingScopeWarnings.add(id);
+            console.warn(
+                `[Adaptive Handler] createHandler("${id}") foi ignorado porque não existe um HandlerScope ativo. ` +
+                "Use-o durante a montagem ou hidratação de um componente interativo."
+            );
+        }
 
         return;
     }

@@ -24,6 +24,18 @@ export interface AdaptiveMetadataContext {
     query: Record<string, string>;
 }
 
+export interface AdaptiveRouteRequest {
+    headers: Headers | Record<string, string | string[] | undefined>;
+    url?: string;
+}
+
+export interface AdaptiveRouteContext {
+    params?: Record<string, string>;
+    query?: Record<string, string>;
+    request?: AdaptiveRouteRequest;
+    appendSetCookie?: (header: string) => void;
+}
+
 export interface AdaptiveOpenGraphMetadata {
     title?: string;
     description?: string;
@@ -65,7 +77,7 @@ export type AdaptiveMetadataResolver =
 
 export type RouteDefinition = {
     path: string;
-    component: (props?: { params?: Record<string, string>; query?: Record<string, string> }) => any;
+    component: (props?: AdaptiveRouteContext) => any;
     clientEntry?: string;
     metadata?: AdaptiveMetadataResolver;
 };

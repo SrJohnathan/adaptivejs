@@ -1,6 +1,6 @@
 import type { AuthCookieOptions, AuthCookieResult, AuthRequestLike } from "./types.js";
 
-export const DEFAULT_AUTH_COOKIE_NAME = "adaptive.session";
+export const DEFAULT_AUTH_COOKIE_NAME = "__Host-adaptive-session";
 
 export const DEFAULT_AUTH_COOKIE_OPTIONS: Required<
   Pick<AuthCookieOptions, "path" | "sameSite" | "secure" | "httpOnly">
@@ -80,6 +80,14 @@ export function serializeCookie(name: string, value: string, options: AuthCookie
   const sameSite = options.sameSite ?? DEFAULT_AUTH_COOKIE_OPTIONS.sameSite;
   const secure = options.secure ?? DEFAULT_AUTH_COOKIE_OPTIONS.secure;
   const httpOnly = options.httpOnly ?? DEFAULT_AUTH_COOKIE_OPTIONS.httpOnly;
+
+  if (name.startsWith("__Host-")) {
+    if (options.domain || path !== "/" || !secure) {
+      throw new Error(
+        `Cookie "${name}" uses the __Host- prefix and must use Secure, Path=/, and no Domain attribute.`
+      );
+    }
+  }
   const parts = [`${name}=${encodeURIComponent(value)}`, `Path=${path}`];
 
   if (options.domain) {

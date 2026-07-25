@@ -183,6 +183,10 @@ async function handleSsr(event: any, url: string, dirs: {
         serverBuildDir: dirs.serverBuildDir,
         clientBuildDir: dirs.clientBuildDir,
         freshServerModules: true,
+        request: {
+            headers: event.req.headers,
+            url: event.url.toString()
+        }
     });
 
     if (result?.__type === "redirect") {
@@ -219,6 +223,10 @@ async function handleSsr(event: any, url: string, dirs: {
     );
 
     event.res.headers.set("content-type", "text/html; charset=utf-8");
+    event.res.status = result.status ?? 200;
+    for (const cookie of result.setCookies ?? []) {
+        event.res.headers.append("set-cookie", cookie);
+    }
     setNoStoreHeaders(event.res.headers);
     return html;
 }
