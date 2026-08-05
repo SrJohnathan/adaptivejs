@@ -904,9 +904,42 @@ function readHydrationManifestFromRoot(root: ParentNode, boundaryId?: string) {
   const selector = boundaryId
     ? `script[${HYDRATION_MANIFEST_ATTR}][${HYDRATION_BOUNDARY_ID_ATTR}="${cssEscape(boundaryId)}"]`
     : `script[${HYDRATION_MANIFEST_ATTR}]`;
-  const script = root instanceof Element
+
+  // 1. Tenta encontrar como descendente (comportamento original)
+  let script = root instanceof Element
     ? root.querySelector<HTMLScriptElement>(selector)
     : null;
+
+  // 2. Se não encontrou e o root for um elemento, tenta encontrar como irmão (o script vem logo depois)
+  if (!script && root instanceof Element) {
+    let current: Node | null = root.nextSibling;
+    while (current) {
+      // Se encontrarmos o marcador de fim do boundary atual, paramos a busca nos irmãos
+      if (current.nodeType === Node.COMMENT_NODE && (current as Comment).data === CLIENT_BOUNDARY_END) {
+        break;
+      }
+
+      if (
+          current.nodeType === Node.ELEMENT_NODE &&
+          (current as Element).tagName === "SCRIPT" &&
+          (current as Element).hasAttribute(HYDRATION_MANIFEST_ATTR)
+      ) {
+        const candidateScript = current as HTMLScriptElement;
+        const candidateBoundaryId = candidateScript.getAttribute(HYDRATION_BOUNDARY_ID_ATTR) ?? "";
+        if (!boundaryId || candidateBoundaryId === boundaryId) {
+          script = candidateScript;
+          break;
+        }
+      }
+
+      // Se encontrarmos outro boundary começando, podemos pular seus irmãos se necessário,
+      // mas para simplificar, se não for o nosso script, continuamos olhando os próximos.
+      // O SSR garante que o manifesto do boundary b0 vem logo após o conteúdo de b0.
+
+      current = current.nextSibling;
+    }
+  }
+
   if (!script) {
     return null;
   }

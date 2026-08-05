@@ -1,4 +1,4 @@
-'hydrate';
+'client';
 
 import { useRef } from "@adaptive-js/web";
 import type { AnimatedLucideIconProps } from "../base.js";

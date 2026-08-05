@@ -479,12 +479,13 @@ function findHydrationElementBetweenMarkers(start: Comment, end: Comment, id: st
     }
     if (current.nodeType === Node.ELEMENT_NODE) {
       const element = current as Element;
-      if (isNestedClientBoundaryElement(element)) {
-        current = current.nextSibling;
-        continue;
-      }
       if (element.getAttribute(HYDRATION_ATTR) === id) {
         return element;
+      }
+      // Se este elemento for uma fronteira de outro módulo cliente, não entramos nele.
+      if (element.hasAttribute("data-adaptive-client-module")) {
+        current = current.nextSibling;
+        continue;
       }
       const nested = findHydrationElementInSubtree(element, id, element);
       if (nested) {
@@ -507,12 +508,14 @@ function findHydrationElementInSubtree(root: ParentNode, id: string, boundaryRoo
 
     if (current.nodeType === Node.ELEMENT_NODE) {
       const element = current as Element;
-      if (isNestedClientBoundaryElement(element, boundaryRoot)) {
-        current = current.nextSibling;
-        continue;
-      }
       if (element.getAttribute(HYDRATION_ATTR) === id) {
         return element;
+      }
+      // Se este elemento é uma fronteira de outro módulo cliente, não entramos nele,
+      // a menos que seja a própria raiz da nossa busca atual (o que findHydrationElement já trata).
+      if (element.hasAttribute("data-adaptive-client-module") && element !== boundaryRoot) {
+        current = current.nextSibling;
+        continue;
       }
       const nested = findHydrationElementInSubtree(element, id, boundaryRoot);
       if (nested) {
@@ -533,25 +536,40 @@ function findReactiveMarkers(root: ParentNode, id: string) {
 }
 
 function findMarkerPairInRoot(root: ParentNode, startMarker: string, endMarker: string) {
-  const walker = document.createTreeWalker(root, NodeFilter.SHOW_COMMENT);
-  let start: Comment | null = null;
-  let end: Comment | null = null;
+  let rangeStart: Comment | null = null;
+  let rangeEnd: Comment | null = null;
 
-  let current = walker.nextNode();
-  while (current) {
-    const comment = current as Comment;
-    if (comment.data === startMarker) {
-      start = comment;
-    } else if (comment.data === endMarker) {
-      end = comment;
-      if (start) {
-        break;
+  function search(node: ParentNode): boolean {
+    let current = node.firstChild;
+    while (current) {
+      if (isClientBoundaryStartComment(current)) {
+        const boundaryEnd = findMatchingMarkerEnd(node as Node, current as Comment, CLIENT_BOUNDARY_START_PREFIX, CLIENT_BOUNDARY_END);
+        current = boundaryEnd ? boundaryEnd.nextSibling : current.nextSibling;
+        continue;
       }
+
+      if (current.nodeType === Node.COMMENT_NODE) {
+        const data = (current as Comment).data;
+        if (data === startMarker) {
+          rangeStart = current as Comment;
+        } else if (data === endMarker) {
+          rangeEnd = current as Comment;
+          if (rangeStart) return true;
+        }
+      } else if (current.nodeType === Node.ELEMENT_NODE) {
+        const element = current as Element;
+        // Não entramos em outros módulos clientes para procurar nossos marcadores reativos
+        if (!element.hasAttribute("data-adaptive-client-module")) {
+          if (search(element)) return true;
+        }
+      }
+      current = current.nextSibling;
     }
-    current = walker.nextNode();
+    return false;
   }
 
-  return { start, end };
+  search(root);
+  return { start: rangeStart, end: rangeEnd };
 }
 
 function findReactiveMarkersBetweenMarkers(start: Comment, end: Comment, id: string) {
@@ -586,6 +604,8 @@ function findMarkerPairBetweenMarkers(start: Comment, end: Comment, startMarker:
       }
       if (current.nodeType === Node.ELEMENT_NODE) {
         const child = current as Element;
+        // Se o filho for uma fronteira de módulo cliente, não entramos nele,
+        // pois marcadores reativos dentro de outros módulos pertencem a esses módulos.
         if (!child.hasAttribute("data-adaptive-client-module")) {
           if (searchInElement(child)) return true;
         }
@@ -1003,11 +1023,6 @@ function cleanupAdaptiveMarkersInNode(
       continue;
     }
 
-    if (isNestedClientBoundaryElement(current, options.boundaryRoot)) {
-      current = next;
-      continue;
-    }
-
     if (isSafeToRemoveAdaptiveComment(current)) {
       current.remove();
       current = next;
@@ -1015,24 +1030,18 @@ function cleanupAdaptiveMarkersInNode(
     }
 
     if (current.nodeType === Node.ELEMENT_NODE) {
-      cleanupAdaptiveMarkersInNode(current as unknown as ParentNode, options);
+      const element = current as Element;
+      if (element.hasAttribute("data-adaptive-client-module") && element !== options.boundaryRoot) {
+        current = next;
+        continue;
+      }
+      cleanupAdaptiveMarkersInNode(element as unknown as ParentNode, options);
     }
 
     current = next;
   }
 }
 
-function isNestedClientBoundaryElement(
-    node: Node | null | undefined,
-    boundaryRoot?: ParentNode
-): boolean {
-  return Boolean(
-      node &&
-      node.nodeType === Node.ELEMENT_NODE &&
-      node !== boundaryRoot &&
-      (node as Element).hasAttribute("data-adaptive-client-module")
-  );
-}
 
 function isAdaptiveBoundaryComment(node: Node | null | undefined): node is Comment {
   if (!isAdaptiveCommentNode(node)) {

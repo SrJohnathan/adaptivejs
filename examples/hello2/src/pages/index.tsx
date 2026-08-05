@@ -3,12 +3,14 @@ import {ButtonR} from "../components/Button2";
 import {CallbacksDemo} from "../components/CallbacksDemo";
 import {ListDemo} from "../components/ListDemo";
 import {TableDemo} from "../components/TableDemo";
+import {ThemeController} from "../components/ThemeController";
 
 export default async function HomePage() {
     return (
         <main className="min-h-screen bg-slate-950 px-6 py-16 text-slate-100">
             <section className="mx-auto flex max-w-4xl flex-col gap-8 rounded-3xl border border-white/10 bg-white/5 p-8 shadow-2xl shadow-slate-950/40 backdrop-blur">
                 <div className="flex flex-col gap-3">
+                    <ThemeController/>
                     <span className="w-fit rounded-full border border-cyan-400/30 bg-cyan-400/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.24em] text-cyan-300">
                         Tailwind ligado
                     </span>

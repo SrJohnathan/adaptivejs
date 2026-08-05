@@ -174,7 +174,14 @@ function renderNode(node: any, context: RenderContext): string {
     const startMarker = reactiveId == null ? markerPair.start : `${markerPair.start}:${reactiveId}`;
     const endMarker = reactiveId == null ? markerPair.end : `${markerPair.end}:${reactiveId}`;
 
-    return `<!--${startMarker}-->${renderNode(resolveReactivePreviewForSSR(preview), context)}<!--${endMarker}-->`;
+    const reactiveContext = {
+      ...context,
+      hydrateManifest: undefined,
+      hydrateInstructionCounters: undefined,
+      hydrateAidCounter: undefined
+    };
+
+    return `<!--${startMarker}-->${renderNode(resolveReactivePreviewForSSR(preview), reactiveContext)}<!--${endMarker}-->`;
   }
 
   if (node == null || node === false) return "";
@@ -335,9 +342,10 @@ function renderClientBoundary(node: any, context: RenderContext) {
   const boundaryChildren = getVNodeChildren(node);
   const innerHtml = renderNode(boundaryChildren, boundaryContext);
 
+  const manifestInstructions = boundaryContext.hydrateManifest ?? [];
   const manifestHtml =
-      mode === CLIENT_BOUNDARY_MODE_HYDRATE
-          ? renderHydrationManifest(boundaryId, boundaryContext.hydrateManifest ?? [])
+      mode === CLIENT_BOUNDARY_MODE_HYDRATE && manifestInstructions.length > 0
+          ? renderHydrationManifest(boundaryId, manifestInstructions)
           : "";
 
   const payload = encodeCommentPayload({

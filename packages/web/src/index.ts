@@ -19,3 +19,4 @@ export * from "./reactive/index.js";
 export * from "./front/handler-scope.js";
 export * from "./front/context-runtime.js";
 export * from  "./hydration/templates.js"
+export { callServerAction } from "@adaptive-js/shared";

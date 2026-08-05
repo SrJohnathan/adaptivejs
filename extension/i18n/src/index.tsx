@@ -204,11 +204,30 @@ export function createI18n<TLocale extends string>(config: I18nConfig<TLocale>) 
     });
   }
 
+  const missingProviderApi: I18nApi<any> = {
+    locale: () => DEFAULT_I18N_LANGUAGE,
+    fallbackLocale: () => DEFAULT_I18N_LANGUAGE,
+
+    setLocale: () => {
+      console.warn("[AdaptiveJS i18n] Cannot change locale because no I18nProvider was found.");
+    },
+
+    has: () => false,
+
+    messages: () => ({}),
+
+    t: (key) => `[Missing I18nProvider] ${key}`,
+  };
+
   function useI18n() {
     const api = useContext(I18nContext);
 
     if (!api) {
-      throw new Error("useI18n must be used inside an I18nProvider.");
+      console.warn(
+          "[AdaptiveJS i18n] useI18n() was called outside an I18nProvider."
+      );
+
+      return missingProviderApi;
     }
 
     return api;

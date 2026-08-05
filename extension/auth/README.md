@@ -80,8 +80,9 @@ central list of routes. The wrapper reads the request session before the page
 is rendered and passes the authenticated session to the page.
 
 When there is no valid session — or the required role is missing — it returns a
-real HTTP `404`. No protected page HTML or hydration entry is sent to the
-browser.
+real HTTP `404` via `{ __type: "not-found" }`, which uses the app's
+`src/pages/404.tsx` when present. No protected page HTML or hydration entry is
+sent to the browser.
 
 ```ts
 // src/auth.ts

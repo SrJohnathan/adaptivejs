@@ -117,6 +117,7 @@ Examples:
 
 - `src/pages/index.tsx` -> `/`
 - `src/pages/about.tsx` -> `/about`
+- `src/pages/404.tsx` -> custom HTTP 404 page (not a normal route)
 
 ### `dependency.ts`
 
@@ -268,6 +269,16 @@ Style modes supported by the scaffold:
 - `none`
 
 Only one style path should be chosen per app.
+
+Optional extensions can be selected interactively or via flags:
+
+- `auth` → `@adaptive-js/extension-auth`
+- `i18n` → `@adaptive-js/extension-i18n`
+- `icons` → `@adaptive-js/extension-lucide-animation-icons`
+
+```bash
+node create-adaptive-app/index.mjs my-app --local --style none --extensions auth,i18n,icons
+```
 
 ## Monorepo scripts
 

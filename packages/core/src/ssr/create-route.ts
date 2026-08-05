@@ -14,6 +14,14 @@ import fg from "fast-glob";
 import {AdaptiveMetadata, AdaptiveMetadataContext, AdaptiveMetadataResolver, AdaptiveRouteRequest, RouteDefinition} from "./interfaces/index.js";
 import {matchRouteServer, parseRoutePathServer} from "./parse.js";
 
+type ClientAssetRecord = { script: string; styles: string[]; global: boolean };
+
+type NotFoundPage = {
+    component: RouteDefinition["component"];
+    clientEntry: string;
+    metadata?: AdaptiveMetadataResolver;
+};
+
 export async function createRouter(
     url: string,
     routes: RouteDefinition[] = [],
@@ -39,13 +47,20 @@ export async function createRouter(
 
 
 
-
-
     if (routes.length === 0) {
         const modules = await fg(pagePattern, {
             cwd: pagesDir,
             onlyFiles: true,
-            ignore: ["**/components/**", "**/forms/**", "**/_*.tsx", "**/_*.js",]
+            ignore: [
+                "**/components/**",
+                "**/forms/**",
+                "**/_*.tsx",
+                "**/_*.js",
+                "404.tsx",
+                "404.ts",
+                "404.jsx",
+                "404.js",
+            ]
         });
 
         for (const relativePath of modules) {
@@ -66,6 +81,12 @@ export async function createRouter(
         }
     }
 
+    const notFoundPage = await loadNotFoundPage(
+        pagesDir,
+        isProduction,
+        Boolean(options?.freshServerModules),
+    );
+
     const uri = parseUrl(url);
 
     function normalizeRoutePath(pathname: string) {
@@ -78,18 +99,17 @@ export async function createRouter(
         resolveRoute(routes, pathname, uri.query) ??
         (pathname !== uri.pathname ? resolveRoute(routes, uri.pathname, uri.query) : null);
 
-
-
-
     if (!routeMatch) {
-        return {
-            status: 404,
-            html: renderToString({ tag: "div", props: {}, children: ["404 - Page not found"] }),
-            params: {},
-            query: {},
-            clientEntries: Array.from(new Set(globalClientAssets.map((record) => record.script))),
-            clientStyles: Array.from(new Set(globalClientAssets.flatMap((record) => record.styles))),
-        };
+        return renderNotFoundResponse({
+            notFoundPage,
+            url,
+            pathname: uri.pathname,
+            query: uri.query,
+            request: options?.request,
+            clientManifest,
+            clientAssetManifest,
+            globalClientAssets,
+        });
     }
 
     const setCookies: string[] = [];
@@ -106,15 +126,17 @@ export async function createRouter(
     }
 
     if (element?.__type === "not-found") {
-        return {
-            status: 404,
-            html: renderToString({ tag: "div", props: {}, children: ["404 - Page not found"] }),
-            params: {},
-            query: {},
-            clientEntries: Array.from(new Set(globalClientAssets.map((record) => record.script))),
-            clientStyles: Array.from(new Set(globalClientAssets.flatMap((record) => record.styles))),
-            setCookies
-        };
+        return renderNotFoundResponse({
+            notFoundPage,
+            url,
+            pathname: uri.pathname,
+            query: uri.query,
+            request: options?.request,
+            clientManifest,
+            clientAssetManifest,
+            globalClientAssets,
+            setCookies,
+        });
     }
 
     const rendered = renderToStringWithMetadata(element);
@@ -167,6 +189,144 @@ export async function createRouter(
         ),
         setCookies,
     };
+}
+
+async function renderNotFoundResponse(options: {
+    notFoundPage: NotFoundPage | null;
+    url: string;
+    pathname: string;
+    query: Record<string, string>;
+    request?: AdaptiveRouteRequest;
+    clientManifest: Record<string, string>;
+    clientAssetManifest: Record<string, ClientAssetRecord>;
+    globalClientAssets: ClientAssetRecord[];
+    setCookies?: string[];
+}) {
+    const {
+        notFoundPage,
+        url,
+        pathname,
+        query,
+        request,
+        clientManifest,
+        clientAssetManifest,
+        globalClientAssets,
+    } = options;
+    const setCookies = options.setCookies ?? [];
+
+    if (!notFoundPage) {
+        return createFallbackNotFoundResponse(globalClientAssets, query, setCookies);
+    }
+
+    const element = await notFoundPage.component({
+        params: {},
+        query,
+        request,
+        appendSetCookie: (header) => setCookies.push(header),
+    });
+
+    if (element?.__type === "redirect") {
+        return element;
+    }
+
+    if (element?.__type === "not-found") {
+        return createFallbackNotFoundResponse(globalClientAssets, query, setCookies);
+    }
+
+    const rendered = renderToStringWithMetadata(element);
+    const metadata = await resolveMetadata(notFoundPage.metadata, {
+        url,
+        pathname,
+        params: {},
+        query,
+    });
+
+    const resolvedEntryIds = Array.from(
+        new Set(
+            [
+                notFoundPage.clientEntry,
+                ...rendered.clientModuleIds,
+            ].filter((entry): entry is string => Boolean(entry)),
+        ),
+    );
+
+    return {
+        status: 404,
+        html: rendered.html,
+        params: {},
+        query,
+        metadata,
+        clientEntries: Array.from(
+            new Set(
+                [
+                    ...globalClientAssets.map((record) => record.script),
+                    ...resolvedEntryIds
+                        .map((entryId) => clientManifest[entryId] ?? clientAssetManifest[entryId]?.script ?? null)
+                        .filter((entry): entry is string => Boolean(entry)),
+                ],
+            ),
+        ),
+        clientStyles: Array.from(
+            new Set(
+                [
+                    ...globalClientAssets.flatMap((record) => record.styles),
+                    ...resolvedEntryIds.flatMap((entryId) => clientAssetManifest[entryId]?.styles ?? []),
+                ],
+            ),
+        ),
+        setCookies,
+    };
+}
+
+function createFallbackNotFoundResponse(
+    globalClientAssets: ClientAssetRecord[],
+    query: Record<string, string>,
+    setCookies: string[],
+) {
+    return {
+        status: 404,
+        html: renderToString({ tag: "div", props: {}, children: ["404 - Page not found"] }),
+        params: {},
+        query,
+        clientEntries: Array.from(new Set(globalClientAssets.map((record) => record.script))),
+        clientStyles: Array.from(new Set(globalClientAssets.flatMap((record) => record.styles))),
+        setCookies,
+    };
+}
+
+async function loadNotFoundPage(
+    pagesDir: string,
+    isProduction: boolean,
+    fresh: boolean,
+): Promise<NotFoundPage | null> {
+    const candidates = isProduction
+        ? ["404.js"]
+        : ["404.tsx", "404.ts", "404.jsx", "404.js"];
+
+    for (const relativePath of candidates) {
+        const absolutePath = path.join(pagesDir, relativePath);
+
+        try {
+            await fs.access(absolutePath);
+        } catch {
+            continue;
+        }
+
+        const mod = await importServerRouteModule(absolutePath, fresh);
+        if (typeof mod.default !== "function") {
+            continue;
+        }
+
+        return {
+            component: mod.default,
+            clientEntry: normalizeRouteEntryId(relativePath),
+            metadata: typeof mod.generateMetadata === "function"
+                ? mod.generateMetadata
+                : mod.metadata,
+        };
+    }
+
+    return null;
 }
 
 async function importServerRouteModule(absolutePath: string, fresh: boolean) {
@@ -245,7 +405,7 @@ function resolveRoute(routes: RouteDefinition[], pathname: string, query: Record
 async function loadClientAssetManifest(clientBuildDir: string) {
     try {
         const manifest = await fs.readFile(path.join(clientBuildDir, "asset-manifest.json"), "utf8");
-        return JSON.parse(manifest) as Record<string, { script: string; styles: string[]; global: boolean }>;
+        return JSON.parse(manifest) as Record<string, ClientAssetRecord>;
     } catch {
         return {};
     }

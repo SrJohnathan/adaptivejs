@@ -1,4 +1,4 @@
-'hydrate';
+'client'
 
 import { useRef } from "@adaptive-js/web";
 import type { AnimatedLucideIconProps } from "../base.js";
@@ -38,7 +38,10 @@ export function SunIcon({
   iconRef,
   ...props
 }: SunIconProps) {
-  const controller = useRef(new AnimatedIconController());
+  const controller = useRef<AnimatedIconController | null>(new  AnimatedIconController());
+
+
+
   const isPlaying = useRef(false);
   const resetTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
   const rayRefs = Array.from({ length: SUN_RAYS.length }, () => useRef<SVGPathElement | null>(null));
@@ -90,7 +93,10 @@ export function SunIcon({
     controller.current?.destroy(getTargets());
   };
 
-  useAnimatedIconHandle(iconRef, controller, getTargets, startAnimation, stopAnimation);
+
+    useAnimatedIconHandle(iconRef, controller, getTargets, startAnimation, stopAnimation);
+
+
 
   return (
     <div
@@ -105,6 +111,10 @@ export function SunIcon({
         onMouseEnter?.(event);
       }}
       onMouseLeave={(event: MouseEvent) => {
+        if (animateOnHover) {
+          stopAnimation();
+        }
+
         onMouseLeave?.(event);
       }}
       {...props}
@@ -122,7 +132,7 @@ export function SunIcon({
       >
         <circle cx="12" cy="12" r="4" />
         {SUN_RAYS.map((d, index) => (
-          <path ref={rayRefs[index]} d={d} />
+          <path key={index} ref={rayRefs[index]} d={d} />
         ))}
       </svg>
     </div>

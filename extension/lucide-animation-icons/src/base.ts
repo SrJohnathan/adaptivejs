@@ -1,5 +1,3 @@
-'hydrate';
-
 import { useLayoutEffect, useRef } from "@adaptive-js/web";
 import type { RefObject } from "@adaptive-js/web";
 
@@ -158,7 +156,7 @@ export function createVariantAnimation(
 
 export function useAnimatedIconHandle(
   iconRef: AnimatedLucideIconProps["iconRef"],
-  controller: RefObject<AnimatedIconController>,
+  controller: RefObject<AnimatedIconController | null>,
   getTargets: () => SVGElement[],
   startAnimation: () => void,
   stopAnimation: () => void

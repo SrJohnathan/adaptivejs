@@ -12,7 +12,7 @@
   "dependencies": {
     "@adaptive-js/ci": "__CI_DEP__",
     "@adaptive-js/web": "__WEB_DEP__",
-    "@adaptive-js/adapter-nitro": "__NITRO_ADAPTER_DEP__"__STYLE_RUNTIME_DEPENDENCIES__
+    "@adaptive-js/adapter-nitro": "__NITRO_ADAPTER_DEP__"__STYLE_RUNTIME_DEPENDENCIES____EXTENSION_DEPENDENCIES__
   },
   "devDependencies": {
     "tsx": "^4.21.0",
