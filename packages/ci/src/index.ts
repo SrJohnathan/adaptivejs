@@ -69,10 +69,17 @@ async function runDev(appDir: string): Promise<void> {
     await prepareEnv(appDir, "development");
 
     let building = false;
+    let rebuildPending = false;
+    let debounceTimer: NodeJS.Timeout | null = null;
 
-    async function rebuild() {
-        if (building) return;
+    async function executeRebuild() {
+        if (building) {
+            rebuildPending = true;
+            return;
+        }
+
         building = true;
+        rebuildPending = false;
 
         try {
             console.log("🔁 rebuilding...");
@@ -82,19 +89,33 @@ async function runDev(appDir: string): Promise<void> {
             console.error("❌ build error", err);
         } finally {
             building = false;
+            if (rebuildPending) {
+                rebuildPending = false;
+                scheduleRebuild();
+            }
         }
     }
 
-    await rebuild();
+    function scheduleRebuild() {
+        if (debounceTimer) {
+            clearTimeout(debounceTimer);
+        }
+        debounceTimer = setTimeout(() => {
+            debounceTimer = null;
+            executeRebuild();
+        }, 100);
+    }
+
+    await executeRebuild();
     await startAdaptiveDevServer(appDir);
 
-    fs.watch(path.join(appDir, "src"), { recursive: true }, rebuild);
-    fs.watch(path.join(appDir, "public"), { recursive: true }, rebuild);
-    watchIfExists(path.join(appDir, "index.html"), rebuild);
-    watchIfExists(path.join(appDir, "dependency.ts"), rebuild);
-    watchIfExists(path.join(appDir, "dependency.tsx"), rebuild);
-    watchIfExists(path.join(appDir, "dependency.js"), rebuild);
-    watchIfExists(path.join(appDir, "dependency.jsx"), rebuild);
+    fs.watch(path.join(appDir, "src"), { recursive: true }, scheduleRebuild);
+    fs.watch(path.join(appDir, "public"), { recursive: true }, scheduleRebuild);
+    watchIfExists(path.join(appDir, "index.html"), scheduleRebuild);
+    watchIfExists(path.join(appDir, "dependency.ts"), scheduleRebuild);
+    watchIfExists(path.join(appDir, "dependency.tsx"), scheduleRebuild);
+    watchIfExists(path.join(appDir, "dependency.js"), scheduleRebuild);
+    watchIfExists(path.join(appDir, "dependency.jsx"), scheduleRebuild);
 }
 
 function watchIfExists(targetPath: string, listener: () => void) {

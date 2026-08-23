@@ -164,13 +164,38 @@ export async function bundleClientEntries({
 /* ================= DIRECTIVES ================= */
 
 /**
- * Detecta se um módulo é "use server"
- * (usado para transformar em RPC no client)
+ * Detecta se um módulo possui a diretiva "server" ou "use server"
  */
 function hasServerDirective(source: string): boolean {
     return /^\s*(?:(?:\/\*[\s\S]*?\*\/|\/\/[^\n]*\n)\s*)*["'](?:server|use server)["']\s*;?/.test(
         source
     );
+}
+
+/**
+ * Detecta se um módulo é uma server action:
+ * - Possui a diretiva "server" ou "use server"
+ * - OU está localizado dentro de um diretório "actions" (ex: src/actions/..., src/modules/user/actions/...)
+ */
+export function isServerActionModule(
+    filePath: string,
+    source: string,
+    srcDir?: string,
+): boolean {
+    if (hasServerDirective(source)) {
+        return true;
+    }
+
+    const normalizedPath = filePath.replace(/\\/g, "/");
+
+    if (srcDir) {
+        const rel = path.relative(srcDir, filePath).replace(/\\/g, "/");
+        if (rel.startsWith("actions/") || rel.includes("/actions/")) {
+            return true;
+        }
+    }
+
+    return normalizedPath.includes("/actions/");
 }
 
 
@@ -213,7 +238,7 @@ function serverOnlyProxyPlugin(srcDir: string): Plugin {
             build.onLoad({ filter: /\.[cm]?[jt]sx?$/ }, async (args) => {
                 const source = await fs.readFile(args.path, "utf8");
 
-                if (!hasServerDirective(source)) return null;
+                if (!isServerActionModule(args.path, source, srcDir)) return null;
 
                 return {
                     contents: createClientServerProxyModule(
@@ -259,6 +284,50 @@ function createClientServerProxyModule(
     }
 
     return lines.join("\n");
+}
+
+/**
+ * Coleta módulos que possuem a diretiva "server" / "use server"
+ * ou estão localizados dentro de pastas "actions" e gera o manifesto server-modules.json
+ */
+export async function writeServerModulesManifest(
+    srcDir: string,
+    serverDistDir: string,
+): Promise<string[]> {
+    const files = await collectSourceFiles(srcDir);
+    const serverModules = new Set<string>();
+
+    for (const file of files) {
+        try {
+            const source = await fs.readFile(file, "utf8");
+            if (isServerActionModule(file, source, srcDir)) {
+                const relativePath = path.relative(srcDir, file);
+                serverModules.add(normalizeEntryId(relativePath));
+            }
+        } catch {
+            // ignore read errors
+        }
+    }
+
+    const manifestList = Array.from(serverModules);
+
+    if (!manifestList.includes("actions/index")) {
+        const hasActionsIndex = files.some((f) => {
+            const rel = path.relative(srcDir, f).replace(/\\/g, "/");
+            return /^actions\/index\.(ts|tsx|js|jsx)$/.test(rel);
+        });
+        if (hasActionsIndex) {
+            manifestList.push("actions/index");
+        }
+    }
+
+    await fs.writeFile(
+        path.join(serverDistDir, "server-modules.json"),
+        JSON.stringify(manifestList, null, 2),
+        "utf8",
+    );
+
+    return manifestList;
 }
 
 
@@ -373,16 +442,8 @@ async function createClientComponentWrappers({
 
     for (const file of files) {
         const relativePath = path.relative(srcDir, file);
-
-       /* if (
-            relativePath.startsWith(`pages${path.sep}`) ||
-            relativePath === "layout.ts" ||
-            relativePath === "layout.tsx"
-        ) {
-            continue;
-        }
-*/
         const source = await fs.readFile(file, "utf8");
+        if (isServerActionModule(file, source, srcDir)) continue;
         if (!getHydratableDirective(source)) continue;
 
         const moduleId = normalizeEntryId(relativePath);

@@ -99,16 +99,58 @@ async function loadActionModuleById(options: {
     moduleId: string;
 }) {
     const manifest = await loadServerModuleManifest(options.serverBuildDir);
+    const isRegisteredInManifest = manifest.includes(options.moduleId);
 
-    if (!manifest.includes(options.moduleId)) {
+    let modulePath: string | null = null;
+
+    if (options.isProduction) {
+        const candidate = path.join(options.serverBuildDir, `${options.moduleId}.js`);
+        if (isRegisteredInManifest || (await fileExists(candidate))) {
+            modulePath = candidate;
+        }
+    } else {
+        const extensions = [".ts", ".tsx", ".js", ".jsx", ".mjs"];
+        for (const ext of extensions) {
+            const candidate = path.join(options.sourceDir, `${options.moduleId}${ext}`);
+            if (await fileExists(candidate)) {
+                modulePath = candidate;
+                break;
+            }
+        }
+
+        if (!modulePath) {
+            const candidate = path.join(options.serverBuildDir, `${options.moduleId}.js`);
+            if (await fileExists(candidate)) {
+                modulePath = candidate;
+            }
+        }
+    }
+
+    if (!modulePath) {
         throw new Error(`Server module '${options.moduleId}' is not registered.`);
     }
 
-    const modulePath = options.isProduction
-        ? path.join(options.serverBuildDir, `${options.moduleId}.js`)
-        : path.join(options.sourceDir, `${options.moduleId}.ts`);
+    const moduleUrl = pathToFileURL(modulePath);
 
-    return import(pathToFileURL(modulePath).href);
+    if (!options.isProduction) {
+        try {
+            const stats = await fs.stat(modulePath);
+            moduleUrl.searchParams.set("t", `${stats.mtimeMs}`);
+        } catch {
+            moduleUrl.searchParams.set("t", `${Date.now()}`);
+        }
+    }
+
+    return import(moduleUrl.href);
+}
+
+async function fileExists(filePath: string): Promise<boolean> {
+    try {
+        await fs.access(filePath);
+        return true;
+    } catch {
+        return false;
+    }
 }
 
 async function loadServerModuleManifest(serverBuildDir: string): Promise<string[]> {

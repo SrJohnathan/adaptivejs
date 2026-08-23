@@ -15,7 +15,7 @@ import {
     getPublicEnv,
 } from "./env-loader.js";
 
-import { bundleClientEntries } from "./esm.js";
+import { bundleClientEntries, writeServerModulesManifest } from "./esm.js";
 import { rewriteRelativeImportExtensions } from "./utilly.js";
 import { buildServerFile } from "./transpile-jsx.js";
 
@@ -64,6 +64,8 @@ export async function buildApp(
         srcRoot: srcDir,
     });
 
+    await writeServerModulesManifest(srcDir, serverDistDir);
+
     await copyFileIfExists(
         path.join(appDir, "index.html"),
         path.join(clientDistDir, "index.html"),
@@ -102,49 +104,56 @@ export async function buildAppDev(appDir: string) {
     const serverDistDir = path.join(devRuntimeDir, "server");
     const clientDistDir = path.join(devRuntimeDir, "client");
     const tempDir = path.join(appDir, ".adaptive-temp");
-    const stagedDistDir = path.join(tempDir, "dev-runtime");
+    const uniqueId = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    const stagedDistDir = path.join(tempDir, `dev-runtime-${uniqueId}`);
     const stagedServerDistDir = path.join(stagedDistDir, "server");
     const stagedClientDistDir = path.join(stagedDistDir, "client");
+    const stagedTempDir = path.join(stagedDistDir, "temp");
 
     await rmWithRetries(stagedDistDir);
     await Promise.all([
         fs.mkdir(stagedServerDistDir, { recursive: true }),
         fs.mkdir(stagedClientDistDir, { recursive: true }),
+        fs.mkdir(stagedTempDir, { recursive: true }),
         fs.mkdir(adaptiveDir, { recursive: true }),
         fs.mkdir(tempDir, { recursive: true }),
     ]);
 
-    await buildTree(srcDir, stagedServerDistDir, {
-        cwd: appDir,
-        srcRoot: srcDir,
-    });
+    try {
+        await buildTree(srcDir, stagedServerDistDir, {
+            cwd: appDir,
+            srcRoot: srcDir,
+        });
 
-    await copyFileIfExists(
-        path.join(appDir, "index.html"),
-        path.join(stagedClientDistDir, "index.html"),
-    );
+        await writeServerModulesManifest(srcDir, stagedServerDistDir);
 
-    await copyDir(path.join(appDir, "public"), stagedClientDistDir);
-    await processCssAssets(stagedClientDistDir, appDir);
+        await copyFileIfExists(
+            path.join(appDir, "index.html"),
+            path.join(stagedClientDistDir, "index.html"),
+        );
 
-    await bundleClientEntries({
-        appDir,
-        srcDir,
-        clientDistDir: stagedClientDistDir,
-        tempDir,
-        dev: true,
-    });
+        await copyDir(path.join(appDir, "public"), stagedClientDistDir);
+        await processCssAssets(stagedClientDistDir, appDir);
 
-    const metadata = await writeBuildMetadata(stagedClientDistDir, { dev: true });
-    await appendDevImportVersion(stagedServerDistDir, metadata.buildId);
+        await bundleClientEntries({
+            appDir,
+            srcDir,
+            clientDistDir: stagedClientDistDir,
+            tempDir: stagedTempDir,
+            dev: true,
+        });
 
-    await rmWithRetries(serverDistDir);
-    await rmWithRetries(clientDistDir);
-    await fs.mkdir(devRuntimeDir, { recursive: true });
-    await fs.rename(stagedServerDistDir, serverDistDir);
-    await fs.rename(stagedClientDistDir, clientDistDir);
+        const metadata = await writeBuildMetadata(stagedClientDistDir, { dev: true });
+        await appendDevImportVersion(stagedServerDistDir, metadata.buildId);
 
-    await rmWithRetries(tempDir);
+        await rmWithRetries(serverDistDir);
+        await rmWithRetries(clientDistDir);
+        await fs.mkdir(devRuntimeDir, { recursive: true });
+        await fs.rename(stagedServerDistDir, serverDistDir);
+        await fs.rename(stagedClientDistDir, clientDistDir);
+    } finally {
+        await rmWithRetries(stagedDistDir);
+    }
 }
 
 async function buildTree(
@@ -391,9 +400,15 @@ async function compressAssets(dir: string): Promise<void> {
 }
 
 async function processCssAssets(dir: string, appDir: string): Promise<void> {
-    const entries = await fs.readdir(dir, {
-        withFileTypes: true,
-    });
+    let entries;
+    try {
+        entries = await fs.readdir(dir, {
+            withFileTypes: true,
+        });
+    } catch (error) {
+        if (isErrnoCode(error, "ENOENT")) return;
+        throw error;
+    }
 
     for (const entry of entries) {
         const full = path.join(dir, entry.name);
@@ -407,7 +422,14 @@ async function processCssAssets(dir: string, appDir: string): Promise<void> {
             continue;
         }
 
-        const source = await fs.readFile(full, "utf8");
+        let source: string;
+        try {
+            source = await fs.readFile(full, "utf8");
+        } catch (error) {
+            if (isErrnoCode(error, "ENOENT")) continue;
+            throw error;
+        }
+
         if (!shouldProcessWithTailwind(source)) {
             continue;
         }
@@ -425,7 +447,13 @@ async function processCssAssets(dir: string, appDir: string): Promise<void> {
             to: full,
         });
 
-        await fs.writeFile(full, result.css, "utf8");
+        try {
+            await fs.mkdir(path.dirname(full), { recursive: true });
+            await fs.writeFile(full, result.css, "utf8");
+        } catch (error) {
+            if (isErrnoCode(error, "ENOENT")) continue;
+            throw error;
+        }
     }
 }
 

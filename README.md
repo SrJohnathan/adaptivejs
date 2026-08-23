@@ -102,12 +102,18 @@ my-app/
   public/
     styles.css
   src/
+    actions/
+      feed.ts
     pages/
       index.tsx
   dependency.ts
   index.html
   package.json
 ```
+
+### `src/actions`
+
+Files placed inside `src/actions` (or any nested `actions/` folder) are dedicated server actions. They run exclusively on the server and are automatically converted into RPC proxies on the client without requiring any directive.
 
 ### `src/pages`
 
@@ -204,6 +210,96 @@ export default function Page() {
 Handlers are a broadcast mechanism: every mounted component registered with the
 same name receives the payload. Use a unique, feature-level name to avoid
 unintended listeners.
+
+## Server Actions
+
+Server actions allow client-side and hydrated components to invoke backend logic seamlessly without manually setting up API routes.
+
+### Authoring Server Actions
+
+AdaptiveJS supports two intuitive ways to define server actions:
+
+#### 1. Dedicated `actions/` Folder (Convention-based)
+
+Any file placed inside `src/actions/` (or any subfolder named `actions`, e.g. `src/modules/cart/actions/checkout.ts`) is automatically recognized as a Server Action module. **No `"server"` or `"use server"` directive is required**.
+
+```ts
+// src/actions/feed.ts (no directive needed)
+export async function getFeedItems(limit = 10) {
+  // Runs exclusively on the server (access db, secrets, etc.)
+  return [
+    { id: 1, title: "Getting started with AdaptiveJS" },
+    { id: 2, title: "Server Actions made simple" }
+  ].slice(0, limit);
+}
+
+export async function createPost(title: string) {
+  return { success: true, id: Date.now(), title };
+}
+```
+
+#### 2. Directive-based (`"server"` or `"use server"`)
+
+Any file placed outside the `actions/` directory containing the `"server"` or `"use server"` directive at the top is automatically treated as a server action module.
+
+```ts
+// src/shared/server-actions/feed.ts
+"use server";
+
+export async function likePost(postId: number) {
+  return { postId, likes: 42 };
+}
+```
+
+### Calling Server Actions from Components
+
+Import and call server actions directly in hydrated pages and client components as normal asynchronous functions:
+
+```tsx
+import { useReactive } from "@adaptive-js/web";
+import { getFeedItems, createPost } from "../actions/feed";
+
+export default function FeedPage() {
+  const [posts, setPosts] = useReactive<Array<{ id: number; title: string }>>([]);
+  const [loading, setLoading] = useReactive(false);
+
+  async function handleLoad() {
+    setLoading(true);
+    try {
+      const data = await getFeedItems(5);
+      setPosts(data);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleAdd() {
+    const res = await createPost("New item from client");
+    if (res.success) {
+      await handleLoad();
+    }
+  }
+
+  return (
+    <main>
+      <h1>Feed</h1>
+      <button onClick={handleLoad} disabled={() => loading()}>
+        {() => (loading() ? "Loading..." : "Load Posts")}
+      </button>
+      <button onClick={handleAdd}>Add Post</button>
+      <ul>
+        {() => posts().map((post) => <li key={post.id}>{post.title}</li>)}
+      </ul>
+    </main>
+  );
+}
+```
+
+### How It Works Behind the Scenes
+
+- **Client Bundle Safety**: During client bundling, ESM replaces the server functions with typed RPC proxies (`callServerAction`). Backend code, private packages, and environment secrets are never leaked into the browser bundle.
+- **Unified RPC Protocol**: Client requests are dispatched to `/_action` with automatic payload serialization supporting JSON, binary types (`File`, `Blob`), and `FormData`.
+- **Hot-Reload & Fast Development**: In development mode, server action modules reload dynamically without requiring server restart.
 
 ## Hydration model
 
