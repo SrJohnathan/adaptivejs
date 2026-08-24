@@ -225,7 +225,7 @@ export function renderToDOM(vnode: any, namespace: string | null = null): Node {
     // className reativo
     if (key === "className") {
       if (typeof value === "function") {
-       createReactiveEffect(() => {
+        createReactiveEffect(() => {
           el.setAttribute("class", value() ?? "");
         });
       } else {
@@ -910,10 +910,10 @@ function hydrateReactiveContentWithMarkers(
 
     if (!initialized) {
       initialized = true;
+
       if (isPromiseLike(nextValue)) {
         void nextValue.then((resolved) => {
           if (currentToken !== pendingToken) return;
-          // Cleanup do escopo anterior antes de inserir novo conteúdo
           if (currentScope) {
             cleanupEffectScope(currentScope);
             currentScope = null;
@@ -921,7 +921,15 @@ function hydrateReactiveContentWithMarkers(
           currentScope = createEffectScope("hydrate-range");
           replaceReactiveRangeContent(startAnchor, endAnchor, resolved, currentScope);
         });
+        return;
       }
+
+      // DOM-first: HTML do server permanece. Vnode é só blueprint efêmero
+      // para extrair events/refs/reatividade e descartar em seguida.
+      currentScope = createEffectScope("hydrate-range");
+      runWithEffectScope(currentScope, () => {
+        hydrateExistingReactiveContent(startAnchor, endAnchor, nextValue);
+      });
       return;
     }
 
@@ -945,6 +953,342 @@ function hydrateReactiveContentWithMarkers(
     currentScope = createEffectScope("hydrate-range");
     replaceReactiveRangeContent(startAnchor, endAnchor, nextValue, currentScope);
   });
+}
+
+/**
+ * DOM-first in-place hydration for reactive-struct / list / async.
+ *
+ * AdaptiveJS não tem VDOM persistente. O vnode é efêmero: serve só para
+ * extrair events, refs e getters reativos do render atual e ligá-los ao
+ * DOM que o server já enviou. Depois o vnode é descartado.
+ */
+const HYDRATED_IN_PLACE = new WeakSet<Element>();
+
+function hydrateExistingReactiveContent(start: Node, end: Node, value: any) {
+  const cursor: DomCursor = {
+    node: start.nextSibling,
+    end,
+    parent: start.parentNode
+  };
+
+  for (const vnode of normalizeVNodeList(value)) {
+    hydrateVNodeAgainstDOM(vnode, cursor);
+  }
+}
+
+type DomCursor = {
+  node: Node | null;
+  end: Node;
+  parent: Node | null;
+};
+
+function normalizeVNodeList(value: any): any[] {
+  if (value == null || value === false || value === true) return [];
+  if (typeof value === "function") {
+    try {
+      return normalizeVNodeList(untrack(() => value()));
+    } catch {
+      return [];
+    }
+  }
+  if (Array.isArray(value)) {
+    return value.flatMap((item) => normalizeVNodeList(item));
+  }
+  if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") {
+    return [{ __adaptive_text: String(value) }];
+  }
+  if (value && typeof value === "object" && "tag" in value) {
+    return [value];
+  }
+  return [];
+}
+
+function advanceMeaningfulSibling(cursor: DomCursor): Node | null {
+  let current = cursor.node;
+  while (current && current !== cursor.end) {
+    if (current.nodeType === Node.COMMENT_NODE) {
+      current = current.nextSibling;
+      continue;
+    }
+    if (current.nodeType === Node.TEXT_NODE) {
+      if ((current.textContent ?? "").trim() === "") {
+        current = current.nextSibling;
+        continue;
+      }
+      cursor.node = current;
+      return current;
+    }
+    if (current.nodeType === Node.ELEMENT_NODE) {
+      cursor.node = current;
+      return current;
+    }
+    current = current.nextSibling;
+  }
+  cursor.node = current;
+  return null;
+}
+
+function advanceMeaningfulChild(from: Node | null, parent: Element): { node: Node | null; found: Node | null } {
+  let current = from;
+  while (current && current.parentNode === parent) {
+    if (current.nodeType === Node.COMMENT_NODE) {
+      current = current.nextSibling;
+      continue;
+    }
+    if (current.nodeType === Node.TEXT_NODE) {
+      if ((current.textContent ?? "").trim() === "") {
+        current = current.nextSibling;
+        continue;
+      }
+      return { node: current, found: current };
+    }
+    if (current.nodeType === Node.ELEMENT_NODE) {
+      return { node: current, found: current };
+    }
+    current = current.nextSibling;
+  }
+  return { node: null, found: null };
+}
+
+function hydrateVNodeAgainstDOM(vnode: any, cursor: DomCursor) {
+  if (vnode == null || vnode === false || vnode === true) return;
+
+  if (vnode.__adaptive_text != null) {
+    const dom = advanceMeaningfulSibling(cursor);
+    if (dom && dom.nodeType === Node.TEXT_NODE) {
+      cursor.node = dom.nextSibling;
+    }
+    return;
+  }
+
+  if (typeof vnode.tag === "function") {
+    let resolved: any;
+    try {
+      resolved = untrack(() =>
+          vnode.tag({
+            ...(vnode.props ?? {}),
+            children: vnode.children ?? []
+          })
+      );
+    } catch {
+      return;
+    }
+    for (const child of normalizeVNodeList(resolved)) {
+      hydrateVNodeAgainstDOM(child, cursor);
+    }
+    return;
+  }
+
+  if (vnode.tag === "Fragment") {
+    for (const child of normalizeVNodeList(vnode.children ?? [])) {
+      hydrateVNodeAgainstDOM(child, cursor);
+    }
+    return;
+  }
+
+  if (vnode.tag === CONTEXT_PROVIDER_TAG) {
+    runWithContext(vnode.props.context.id, vnode.props.value, () => {
+      for (const child of normalizeVNodeList(vnode.children ?? [])) {
+        hydrateVNodeAgainstDOM(child, cursor);
+      }
+    });
+    return;
+  }
+
+  const dom = advanceMeaningfulSibling(cursor);
+  if (!dom || dom.nodeType !== Node.ELEMENT_NODE) {
+    warnMismatch({
+      path: "hydrate.inplace.element",
+      message: "SSR DOM element not found for vnode during in-place hydration",
+      expected: String(vnode.tag ?? "?"),
+      found: dom ? describeHydrationNode(dom) : "null",
+      node: dom ?? undefined
+    });
+    return;
+  }
+
+  const el = dom as Element;
+  const expectedTag = String(vnode.tag).toLowerCase();
+  const actualTag = el.tagName.toLowerCase();
+  if (expectedTag !== actualTag) {
+    warnMismatch({
+      path: "hydrate.inplace.tag",
+      message: "Tag mismatch during in-place hydration of reactive content",
+      expected: expectedTag,
+      found: actualTag,
+      node: el
+    });
+  }
+
+  cursor.node = el.nextSibling;
+
+  if (!HYDRATED_IN_PLACE.has(el)) {
+    HYDRATED_IN_PLACE.add(el);
+    bindHostPropsInPlace(el as HTMLElement, vnode.props ?? {});
+  }
+
+  const childCursor = { node: el.firstChild as Node | null };
+  for (const child of normalizeVNodeList(vnode.children ?? [])) {
+    hydrateVNodeAgainstDOMInside(child, el, childCursor);
+  }
+}
+
+function hydrateVNodeAgainstDOMInside(
+    vnode: any,
+    parentEl: Element,
+    cursor: { node: Node | null }
+) {
+  if (vnode == null || vnode === false || vnode === true) return;
+
+  if (vnode.__adaptive_text != null) {
+    const { found } = advanceMeaningfulChild(cursor.node, parentEl);
+    if (found && found.nodeType === Node.TEXT_NODE) {
+      cursor.node = found.nextSibling;
+    }
+    return;
+  }
+
+  if (typeof vnode.tag === "function") {
+    let resolved: any;
+    try {
+      resolved = untrack(() =>
+          vnode.tag({
+            ...(vnode.props ?? {}),
+            children: vnode.children ?? []
+          })
+      );
+    } catch {
+      return;
+    }
+    for (const child of normalizeVNodeList(resolved)) {
+      hydrateVNodeAgainstDOMInside(child, parentEl, cursor);
+    }
+    return;
+  }
+
+  if (vnode.tag === "Fragment") {
+    for (const child of normalizeVNodeList(vnode.children ?? [])) {
+      hydrateVNodeAgainstDOMInside(child, parentEl, cursor);
+    }
+    return;
+  }
+
+  if (vnode.tag === CONTEXT_PROVIDER_TAG) {
+    runWithContext(vnode.props.context.id, vnode.props.value, () => {
+      for (const child of normalizeVNodeList(vnode.children ?? [])) {
+        hydrateVNodeAgainstDOMInside(child, parentEl, cursor);
+      }
+    });
+    return;
+  }
+
+  const { found } = advanceMeaningfulChild(cursor.node, parentEl);
+  if (!found || found.nodeType !== Node.ELEMENT_NODE) {
+    warnMismatch({
+      path: "hydrate.inplace.child",
+      message: "SSR child element not found during in-place hydration",
+      expected: String(vnode.tag ?? "?"),
+      found: found ? describeHydrationNode(found) : "null",
+      node: parentEl
+    });
+    return;
+  }
+
+  const el = found as Element;
+  cursor.node = el.nextSibling;
+
+  if (!HYDRATED_IN_PLACE.has(el)) {
+    HYDRATED_IN_PLACE.add(el);
+    bindHostPropsInPlace(el as HTMLElement, vnode.props ?? {});
+  }
+
+  const nested = { node: el.firstChild as Node | null };
+  for (const child of normalizeVNodeList(vnode.children ?? [])) {
+    hydrateVNodeAgainstDOMInside(child, el, nested);
+  }
+}
+
+/**
+ * Liga behavior no host já existente. Vnode props são lidas e descartadas.
+ */
+function bindHostPropsInPlace(el: HTMLElement, props: Record<string, any>) {
+  const namespace = el.namespaceURI;
+
+  for (const [key, value] of Object.entries(props)) {
+    if (key === "children" || key === "client") continue;
+
+    if (key.startsWith("on") && typeof value === "function") {
+      const eventName = key.slice(2).toLowerCase();
+      bindDelegatedEvent(el, eventName, value as EventListener);
+      continue;
+    }
+
+    if (key === "ref" && value != null) {
+      bindRef(value, el);
+      continue;
+    }
+
+    if (key === "className") {
+      if (typeof value === "function") {
+        createReactiveEffect(() => {
+          el.setAttribute("class", value() ?? "");
+        });
+      }
+      continue;
+    }
+
+    if (key === "style") {
+      if (typeof value === "function") {
+        createReactiveEffect(() => {
+          applyStyleObject(el, value());
+        });
+      } else if (typeof value === "object" && value !== null) {
+        for (const [styleKey, styleValue] of Object.entries(value as Record<string, any>)) {
+          if (typeof styleValue === "function") {
+            createReactiveEffect(() => {
+              const resolved = styleValue();
+              const cssKey = styleKey.replace(/([A-Z])/g, "-$1").toLowerCase();
+              if (resolved == null || resolved === false) {
+                el.style.removeProperty(cssKey);
+              } else {
+                (el.style as any)[styleKey] = resolved;
+              }
+            }, "layout");
+          }
+        }
+      }
+      continue;
+    }
+
+    // prop dinâmica reativa (disabled, value, aria-*, ...)
+    if (typeof value === "function") {
+      createReactiveEffect(() => {
+        const resolved = value();
+        if (resolved === false || resolved == null) {
+          el.removeAttribute(resolveDomAttributeName(key, namespace));
+          return;
+        }
+        if (shouldAssignAsProperty(el, namespace, key)) {
+          (el as any)[key] = resolved;
+        } else {
+          el.setAttribute(resolveDomAttributeName(key, namespace), String(resolved));
+        }
+      }, "layout");
+    }
+  }
+}
+
+function describeHydrationNode(node: Node): string {
+  if (node.nodeType === Node.ELEMENT_NODE) {
+    return (node as Element).tagName.toLowerCase();
+  }
+  if (node.nodeType === Node.TEXT_NODE) {
+    return `#text(${(node.textContent ?? "").slice(0, 24)})`;
+  }
+  if (node.nodeType === Node.COMMENT_NODE) {
+    return "#comment";
+  }
+  return `nodeType:${node.nodeType}`;
 }
 
 function replaceReactiveRangeContent(

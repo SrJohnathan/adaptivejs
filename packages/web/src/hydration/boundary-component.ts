@@ -467,7 +467,8 @@ function collectHydrationBindingsFromNode(
     };
     unsupportedFeatures: Set<string>;
   }
-) {
+)
+{
   if (node == null || node === false || typeof node === "string" || typeof node === "number" || typeof node === "boolean") {
     return;
   }
