@@ -923,13 +923,16 @@ function hydrateReactiveContentWithMarkers(
         });
         return;
       }
-
       // DOM-first: HTML do server permanece. Vnode é só blueprint efêmero
       // para extrair events/refs/reatividade e descartar em seguida.
       currentScope = createEffectScope("hydrate-range");
-      runWithEffectScope(currentScope, () => {
-        hydrateExistingReactiveContent(startAnchor, endAnchor, nextValue);
-      });
+      if (config.kind === "reactive-list") {
+        replaceReactiveRangeContent(startAnchor, endAnchor, nextValue, currentScope);
+      } else {
+        runWithEffectScope(currentScope, () => {
+          hydrateExistingReactiveContent(startAnchor, endAnchor, nextValue);
+        });
+      }
       return;
     }
 
@@ -1070,7 +1073,8 @@ function hydrateVNodeAgainstDOM(vnode: any, cursor: DomCursor) {
             children: vnode.children ?? []
           })
       );
-    } catch {
+    } catch (err) {
+      console.error("[inplace]  resolve failed", err);
       return;
     }
     for (const child of normalizeVNodeList(resolved)) {
