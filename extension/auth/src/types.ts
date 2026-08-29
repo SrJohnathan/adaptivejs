@@ -1,12 +1,17 @@
 export type MaybePromise<T> = T | Promise<T>;
 
-export interface AuthUser {
+export interface AuthUserFields {
   id: string;
   email?: string;
   name?: string;
   roles?: string[];
-  [key: string]: unknown;
 }
+
+/**
+ * Known user fields stay strongly typed. Pass a generic to model app-specific fields.
+ */
+export type AuthUser<TExtra extends Record<string, unknown> = Record<string, unknown>> =
+  AuthUserFields & TExtra;
 
 export interface AuthSessionData {
   [key: string]: unknown;
@@ -35,6 +40,28 @@ export interface StoredAuthSession<TData extends AuthSessionData = AuthSessionDa
   csrfToken: string;
 }
 
+/**
+ * Public session metadata for account/device management UIs.
+ * Never includes csrfToken or other internal secrets.
+ */
+export interface ManagedUserSession {
+  id: string;
+  userId: string;
+  createdAt: Date;
+  expiresAt: Date;
+  absoluteExpiresAt: Date;
+}
+
+/**
+ * Conceptual identity for a future OAuth integration package.
+ * Linking is based on (provider, providerAccountId), not email alone.
+ */
+export interface OAuthIdentity {
+  userId: string;
+  provider: string;
+  providerAccountId: string;
+}
+
 export interface AuthAdapter<
   TUser extends AuthUser = AuthUser,
   TData extends AuthSessionData = AuthSessionData
@@ -45,6 +72,8 @@ export interface AuthAdapter<
   updateSession(session: StoredAuthSession<TData>): MaybePromise<void>;
   deleteSession(sessionId: string): MaybePromise<void>;
   deleteUserSessions?(userId: string): MaybePromise<void>;
+  deleteUserSessionsExcept?(userId: string, exceptSessionId: string): MaybePromise<void>;
+  listUserSessions?(userId: string): MaybePromise<ManagedUserSession[]>;
 }
 
 export interface AuthCookieOptions {
@@ -72,6 +101,13 @@ export interface CreateSessionOptions<TData extends AuthSessionData = AuthSessio
   data?: TData;
   expiresAt?: Date;
   absoluteExpiresAt?: Date;
+}
+
+export interface BeforeCreateSessionContext<
+  TUser extends AuthUser = AuthUser
+> {
+  user: TUser;
+  request?: AuthRequestLike;
 }
 
 export interface AuthCsrfOptions {
@@ -107,6 +143,7 @@ export interface CreateAuthOptions<
   generateSessionId?: () => string;
   csrf?: AuthCsrfOptions;
   onAuditEvent?: (event: AuthAuditEvent) => MaybePromise<void>;
+  beforeCreateSession?: (context: BeforeCreateSessionContext<TUser>) => MaybePromise<void>;
 }
 
 export interface ReadSessionResult<

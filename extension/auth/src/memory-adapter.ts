@@ -50,6 +50,30 @@ export function createMemoryAuthAdapter<
         }
       }
     },
+    deleteUserSessionsExcept(userId, exceptSessionId) {
+      for (const [sessionId, session] of sessions) {
+        if (session.userId === userId && sessionId !== exceptSessionId) {
+          sessions.delete(sessionId);
+        }
+      }
+    },
+    listUserSessions(userId) {
+      const result = [];
+
+      for (const session of sessions.values()) {
+        if (session.userId === userId) {
+          result.push({
+            id: session.id,
+            userId: session.userId,
+            createdAt: session.createdAt,
+            expiresAt: session.expiresAt,
+            absoluteExpiresAt: session.absoluteExpiresAt
+          });
+        }
+      }
+
+      return result;
+    },
     setUser(user) {
       users.set(user.id, user);
     },

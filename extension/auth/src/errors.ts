@@ -3,7 +3,8 @@ export type AuthErrorCode =
   | "AUTHORIZATION_FAILED"
   | "SESSION_USER_NOT_FOUND"
   | "CSRF_TOKEN_INVALID"
-  | "CSRF_ORIGIN_INVALID";
+  | "CSRF_ORIGIN_INVALID"
+  | "CSRF_CONFIGURATION_INVALID";
 
 export class AuthError extends Error {
   readonly code: AuthErrorCode;

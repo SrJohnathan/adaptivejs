@@ -96,3 +96,25 @@ export function toAuthClientState<TUser extends AuthUser, TClientUser extends Au
     expiresAt: session.expiresAt.toISOString()
   };
 }
+
+export function isAuthStateExpired(state: AuthClientState): boolean {
+  if (!state.expiresAt) {
+    return false;
+  }
+
+  const expiresAt = Date.parse(state.expiresAt);
+  return Number.isFinite(expiresAt) && expiresAt <= Date.now();
+}
+
+export function getAuthStateExpiresInMs(state: AuthClientState): number | null {
+  if (!state.expiresAt) {
+    return null;
+  }
+
+  const expiresAt = Date.parse(state.expiresAt);
+  if (!Number.isFinite(expiresAt)) {
+    return null;
+  }
+
+  return Math.max(0, expiresAt - Date.now());
+}

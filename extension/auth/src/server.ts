@@ -14,6 +14,7 @@ import type {
   AuthUser,
   CreateAuthOptions,
   CreateSessionOptions,
+  ManagedUserSession,
   ReadSessionResult,
   StoredAuthSession
 } from "./types.js";
@@ -76,6 +77,38 @@ function normalizeOrigin(value: string) {
   }
 }
 
+function validateAllowedOrigins(origins: string[] | undefined) {
+  if (origins === undefined) {
+    return new Set<string>();
+  }
+
+  const normalized = new Set<string>();
+
+  for (const origin of origins) {
+    const value = normalizeOrigin(origin);
+
+    if (!value) {
+      throw new AuthError(
+        "CSRF_CONFIGURATION_INVALID",
+        `Invalid CSRF allowed origin: "${origin}".`,
+        500
+      );
+    }
+
+    normalized.add(value);
+  }
+
+  if (normalized.size === 0) {
+    throw new AuthError(
+      "CSRF_CONFIGURATION_INVALID",
+      "CSRF allowedOrigins must include at least one valid origin.",
+      500
+    );
+  }
+
+  return normalized;
+}
+
 export interface AuthPageContext {
   request?: AuthRequestLike;
   appendSetCookie?: (header: string) => void;
@@ -101,7 +134,9 @@ export function createAuth<
     maxAge: options.cookie?.maxAge ?? sessionDuration
   };
   const csrfHeaderName = options.csrf?.headerName ?? DEFAULT_CSRF_HEADER_NAME;
-  const allowedOrigins = new Set((options.csrf?.allowedOrigins ?? []).map(normalizeOrigin).filter(Boolean));
+  const allowedOrigins = options.csrf
+    ? validateAllowedOrigins(options.csrf.allowedOrigins)
+    : new Set<string>();
 
   if (sessionDuration <= 0 || absoluteSessionDuration <= 0 || renewBefore < 0) {
     throw new Error("[AdaptiveJS auth] Session durations must be positive and renewBefore cannot be negative.");
@@ -111,13 +146,24 @@ export function createAuth<
     type: import("./types.js").AuthAuditEventType,
     details: Omit<import("./types.js").AuthAuditEvent, "type" | "at">
   ) {
-    await options.onAuditEvent?.({ type, at: new Date(), ...details });
+    if (!options.onAuditEvent) {
+      return;
+    }
+
+    try {
+      await options.onAuditEvent({ type, at: new Date(), ...details });
+    } catch {
+      // Audit is best-effort. Failures must not break session lifecycle operations.
+    }
   }
 
   async function createSession(
     user: TUser,
-    sessionOptions: CreateSessionOptions<TData> = {}
+    sessionOptions: CreateSessionOptions<TData> = {},
+    request?: AuthRequestLike
   ): Promise<{ session: AuthSession<TUser, TData>; cookie: AuthCookieResult }> {
+    await options.beforeCreateSession?.({ user, request });
+
     const now = new Date();
     const absoluteExpiresAt = sessionOptions.absoluteExpiresAt ?? new Date(now.getTime() + absoluteSessionDuration * 1000);
     const requestedExpiry = sessionOptions.expiresAt ?? new Date(now.getTime() + sessionDuration * 1000);
@@ -260,6 +306,31 @@ export function createAuth<
     await audit("session.invalidated", { userId, reason: "user-sessions-invalidated" });
   }
 
+  async function invalidateUserSessionsExcept(userId: string, currentSessionId: string) {
+    if (!options.adapter.deleteUserSessionsExcept) {
+      throw new Error(
+        "[AdaptiveJS auth] The configured adapter does not implement deleteUserSessionsExcept()."
+      );
+    }
+
+    await options.adapter.deleteUserSessionsExcept(userId, currentSessionId);
+    await audit("session.invalidated", {
+      userId,
+      sessionId: currentSessionId,
+      reason: "other-user-sessions-invalidated"
+    });
+  }
+
+  async function listUserSessions(userId: string): Promise<ManagedUserSession[]> {
+    if (options.adapter.listUserSessions) {
+      return options.adapter.listUserSessions(userId);
+    }
+
+    throw new Error(
+      "[AdaptiveJS auth] The configured adapter does not implement listUserSessions()."
+    );
+  }
+
   async function getCsrfToken(session: Pick<AuthSession<TUser, TData>, "id">) {
     const stored = await options.adapter.getSession(session.id);
     if (!stored || stored.expiresAt.getTime() <= Date.now() || stored.absoluteExpiresAt.getTime() <= Date.now()) {
@@ -278,15 +349,27 @@ export function createAuth<
     }
 
     if (allowedOrigins.size === 0) {
-      throw new Error(
-        "[AdaptiveJS auth] CSRF protection requires csrf.allowedOrigins to be configured."
+      throw new AuthError(
+        "CSRF_CONFIGURATION_INVALID",
+        "CSRF protection requires csrf.allowedOrigins to be configured in createAuth().",
+        500
       );
     }
 
     const origin = readHeader(request, "origin");
-    if (allowedOrigins.size > 0 && (!origin || !allowedOrigins.has(normalizeOrigin(origin)))) {
-      await audit("csrf.rejected", { sessionId: session.id, userId: session.userId, reason: "origin" });
-      throw new AuthError("CSRF_ORIGIN_INVALID", "The request origin is not allowed.", 403);
+    if (!origin || !allowedOrigins.has(normalizeOrigin(origin) ?? "")) {
+      await audit("csrf.rejected", {
+        sessionId: session.id,
+        userId: session.userId,
+        reason: origin ? "origin" : "origin-missing"
+      });
+      throw new AuthError(
+        "CSRF_ORIGIN_INVALID",
+        origin
+          ? "The request origin is not allowed."
+          : "The request must include a valid Origin header.",
+        403
+      );
     }
 
     const stored = await options.adapter.getSession(session.id);
@@ -364,6 +447,8 @@ export function createAuth<
     invalidateSession,
     invalidateRequestSession,
     invalidateUserSessions,
+    invalidateUserSessionsExcept,
+    listUserSessions,
     getCsrfToken,
     requireCsrf,
     protectPage,
@@ -380,3 +465,9 @@ export type AdaptiveAuth<
   TUser extends AuthUser = AuthUser,
   TData extends AuthSessionData = AuthSessionData
 > = ReturnType<typeof createAuth<TUser, TData>>;
+
+export {
+  buildLoginReturnUrl,
+  readReturnToFromSearchParams,
+  sanitizeReturnTo
+} from "./intended-url.js";
