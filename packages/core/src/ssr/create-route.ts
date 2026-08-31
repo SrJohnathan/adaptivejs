@@ -379,13 +379,34 @@ async function loadNotFoundPage(
     return null;
 }
 
-async function importServerRouteModule(absolutePath: string, fresh: boolean) {
+async function importServerRouteModule(
+    absolutePath: string,
+    fresh: boolean,
+) {
+    console.log(
+        "[Adaptive SSR MODULE]",
+        path.basename(absolutePath),
+        "fresh:",
+        fresh,
+    );
+
     const moduleUrl = pathToFileURL(absolutePath);
 
     if (fresh) {
         const stats = await fs.stat(absolutePath);
+
+        console.log(
+            "[Adaptive SSR MODULE VERSION]",
+            stats.mtimeMs,
+        );
+
         moduleUrl.searchParams.set("t", `${stats.mtimeMs}`);
     }
+
+    console.log(
+        "[Adaptive SSR MODULE IMPORT]",
+        moduleUrl.href,
+    );
 
     return import(moduleUrl.href);
 }

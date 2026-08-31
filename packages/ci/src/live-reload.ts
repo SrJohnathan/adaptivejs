@@ -19,6 +19,7 @@ export type LiveReloadPayload = {
 const sseClients = new Set<ServerResponse>();
 
 export function subscribeLiveReload(res: ServerResponse): void {
+    console.log("[Adaptive LiveReload] client connected");
     res.writeHead(200, {
         "Content-Type": "text/event-stream; charset=utf-8",
         "Cache-Control": "no-store, no-cache, must-revalidate",
@@ -49,11 +50,21 @@ export function subscribeLiveReload(res: ServerResponse): void {
 
 /** Chamado após rebuild bem-sucedido. */
 export function notifyLiveReload(buildId: string): void {
+    console.log(
+        "[Adaptive LiveReload] notify:",
+        buildId,
+        "clients:",
+        sseClients.size,
+    );
+
     const payload: LiveReloadPayload = {
         buildId,
         at: Date.now(),
     };
-    const data = `event: reload\ndata: ${JSON.stringify(payload)}\n\n`;
+
+    const data =
+        `event: reload\n` +
+        `data: ${JSON.stringify(payload)}\n\n`;
 
     for (const res of [...sseClients]) {
         try {
@@ -61,6 +72,9 @@ export function notifyLiveReload(buildId: string): void {
                 sseClients.delete(res);
                 continue;
             }
+
+            console.log("[Adaptive LiveReload] sending reload");
+
             res.write(data);
         } catch {
             sseClients.delete(res);
