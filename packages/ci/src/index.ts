@@ -8,6 +8,7 @@ import {buildApp, buildAppDev, buildAppDevIncremental} from "./build.js";
 import {startAdaptiveDevServer} from "./dev-server.js";
 import {FileChange} from "./utilly.js";
 
+export {AdaptiveConfig} from "./load-adaptive-config.js";
 
 
 const command = process.argv[2];

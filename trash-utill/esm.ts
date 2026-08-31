@@ -1,12 +1,14 @@
 /*
  * Copyright (c) 2026 Antonio Johnathan
+ *
  * Licensed under the MIT License.
+ * See LICENSE file in the project root for full license information.
  */
 
 import path from "node:path";
 import fs from "node:fs/promises";
 import esbuild, { Plugin } from "esbuild";
-import {extractExports, getHydratableDirective, normalizeEntryId} from "./utilly.js";
+import {extractExports, getHydratableDirective, normalizeEntryId} from "@adaptive-js/ci";
 
 /* ================= TYPES ================= */
 
@@ -17,6 +19,7 @@ type BundleClientParams = {
     tempDir: string;
     dev?: boolean;
     define?: Record<string, string>;
+    external: string[]
 };
 
 type ClientEntry = {
@@ -45,6 +48,7 @@ export async function bundleClientEntries({
                                               tempDir,
                                               dev = false,
                                               define = {},
+                                              external: options.external
                                           }: BundleClientParams): Promise<void>
 {
     const entryPoints: string[] = [];

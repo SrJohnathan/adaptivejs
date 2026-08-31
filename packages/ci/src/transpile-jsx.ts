@@ -17,6 +17,7 @@ import {
     stripHydrateDirective
 } from "./utilly.js";
 import {transform} from "oxc-transform";
+import {applyThunkTransform} from "./thunk-transform.js";
 
 export async function buildServerFile(sourcePath:string, outputPath:string, options:any) {
     await fs.mkdir(path.dirname(outputPath), { recursive: true });
@@ -54,7 +55,13 @@ export async function buildServerFile(sourcePath:string, outputPath:string, opti
 
 async function buildTransformedFile(sourcePath:string, outputPath:string, cwd:any, sourceText:string) {
     await fs.mkdir(path.dirname(outputPath), { recursive: true });
-    const result = await transform(sourcePath, sourceText, {
+
+
+
+    const thunked = applyThunkTransform(sourceText, sourcePath);
+    const sourceForOxc = thunked.code;
+
+    const result = await transform(sourcePath, sourceForOxc, {
         cwd,
         lang: sourcePath.endsWith(".tsx") ? "tsx" : "ts",
         sourceType: "module",

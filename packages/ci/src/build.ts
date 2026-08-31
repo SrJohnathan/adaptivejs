@@ -15,13 +15,17 @@ import {
     getPublicEnv,
 } from "./env-loader.js";
 
-import { bundleClientEntries, writeServerModulesManifest } from "./esm.js";
+//import { bundleClientEntries, writeServerModulesManifest } from "./esm.js";
+import { bundleClientEntries, writeServerModulesManifest } from "./esm-rolldown.js";
 import { rewriteRelativeImportExtensions } from "./utilly.js";
 import { buildServerFile } from "./transpile-jsx.js";
+import {loadAdaptiveConfig} from "./load-adaptive-config.js";
+
 
 type BuildOptionsAdaptive = {
     dev?: boolean;
     publicEnv?: Record<string, string>;
+    external?: (string | RegExp)[];
 };
 
 type BuildTreeOptions = {
@@ -37,6 +41,10 @@ type BuildMetadata = {
     buildId: string;
     mode: "development" | "production";
 };
+
+
+
+
 
 export async function buildApp(
     appDir: string,
@@ -74,6 +82,10 @@ export async function buildApp(
     await copyDir(path.join(appDir, "public"), clientDistDir);
     await processCssAssets(clientDistDir, appDir);
 
+
+    const config = await loadAdaptiveConfig(appDir);
+    const external = options.external ?? config.client?.external;
+
     await bundleClientEntries({
         appDir,
         srcDir,
@@ -83,6 +95,7 @@ export async function buildApp(
         define: createClientEnvDefine(
             options.publicEnv ?? getPublicEnv(),
         ),
+        external
     });
 
 
