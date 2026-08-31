@@ -15,11 +15,12 @@ import {
     getPublicEnv,
 } from "./env-loader.js";
 
-//import { bundleClientEntries, writeServerModulesManifest } from "./esm.js";
+
 import { bundleClientEntries, writeServerModulesManifest } from "./esm-rolldown.js";
-import { rewriteRelativeImportExtensions } from "./utilly.js";
+
 import { buildServerFile } from "./transpile-jsx.js";
 import {loadAdaptiveConfig} from "./load-adaptive-config.js";
+import {notifyLiveReload} from "./live-reload.js";
 
 
 type BuildOptionsAdaptive = {
@@ -171,6 +172,8 @@ export async function buildAppDev(appDir: string) {
 
         await swapDir(serverDistDir, stagedServerDistDir, backupServerDistDir);
         await swapDir(clientDistDir, stagedClientDistDir, backupClientDistDir);
+
+        notifyLiveReload(metadata.buildId);
 
         await Promise.all([
             rmWithRetries(backupServerDistDir),

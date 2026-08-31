@@ -7,6 +7,7 @@ import { buildNitroIfNeeded, previewNitro, type CliArgs } from "./nitro.js";
 import {buildApp, buildAppDev, buildAppDevIncremental} from "./build.js";
 import {startAdaptiveDevServer} from "./dev-server.js";
 import {FileChange} from "./utilly.js";
+import {rebuildDevIncremental} from "./rebuild-dev.js";
 
 export {AdaptiveConfig} from "./load-adaptive-config.js";
 
@@ -93,28 +94,46 @@ async function runDev(appDir: string): Promise<void> {
 
             if (changes.length === 0) {
                 await buildAppDev(appDir);
-            } else {
-                console.log(
-                    "[adaptive] changed:",
-                    changes.map((change) => change.filePath).join(", "),
-                );
-
-                // Por enquanto continuamos usando o full build.
-                // O próximo passo será substituir isso pelo incremental builder.
-              //  await buildAppDev(appDir);
-
-                await buildAppDevIncremental(appDir, changes);
+                console.log("✅ done (full)");
+                return;
             }
 
-            console.log("✅ done");
-        } catch (err) {
-            console.error("❌ build error", err);
+            const result = await rebuildDevIncremental(appDir, changes, {
+                fullRebuild: () => buildAppDev(appDir),
+            });
+
+            if (result.full) {
+                console.log("✅ done (full)");
+                return;
+            }
+
+            if (
+                !result.server &&
+                !result.client &&
+                !result.public &&
+                !result.html
+            ) {
+                console.log("✅ done (nothing to rebuild)");
+                return;
+            }
+
+            const parts: string[] = [];
+            if (result.server) parts.push("server");
+            if (result.client) parts.push("client");
+            if (result.public) parts.push("public");
+            if (result.html) parts.push("html");
+            console.log(
+                `✅ done (${parts.join(" + ")})${
+                    result.buildId ? ` · buildId=${result.buildId}` : ""
+                }`,
+            );
+        } catch (error) {
+            console.error("❌ rebuild failed", error);
         } finally {
             building = false;
-
-            if (rebuildPending || pendingChanges.size > 0) {
+            if (rebuildPending) {
                 rebuildPending = false;
-                scheduleRebuild();
+                void executeRebuild();
             }
         }
     }

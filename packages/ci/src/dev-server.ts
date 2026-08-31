@@ -13,6 +13,10 @@ import fs from "node:fs/promises";
 import { createReadStream } from "node:fs";
 import { createRouter, handle_actions_request } from "@adaptive-js/core";
 import * as http from "node:http";
+import {
+    createDevLiveReloadScript,
+    subscribeLiveReload,
+} from "./live-reload.js";
 
 const ACTION_PATH = "/_action";
 const MAX_PORT_CANDIDATES = 20;
@@ -66,8 +70,18 @@ export async function startAdaptiveDevServer(appDir: string) {
         }),
     );
 
+    const nodeHandler = toNodeHandler(app);
+
     const { server, port } = await listenOnAvailablePort(
-        () => http.createServer(toNodeHandler(app)),
+        () =>
+            http.createServer((req, res) => {
+                const url = req.url ?? "";
+                if (url.startsWith("/_adaptive/livereload")) {
+                    subscribeLiveReload(res);
+                    return;
+                }
+                return nodeHandler(req, res);
+            }),
         preferredPort,
     );
 
@@ -324,52 +338,7 @@ function shouldVersionAssetUrl(url: string) {
     return /\.[a-z0-9]+($|\?)/i.test(url);
 }
 
-function createDevLiveReloadScript(assetVersion: string | null) {
-    const initialBuildId = JSON.stringify(assetVersion ?? null);
 
-    return `<script>
-(() => {
-  const initialBuildId = ${initialBuildId};
-  if (!initialBuildId) return;
-
-  let disposed = false;
-  let reloading = false;
-
-  async function checkForUpdates() {
-    if (disposed || reloading) return;
-
-    try {
-      const response = await fetch('/_adaptive/build-meta.json?ts=' + Date.now(), {
-        cache: 'no-store',
-        headers: {
-          'cache-control': 'no-store'
-        }
-      });
-
-      if (!response.ok) return;
-
-      const metadata = await response.json();
-      if (metadata?.buildId && metadata.buildId !== initialBuildId) {
-        disposed = true;
-        reloading = true;
-        window.location.reload();
-        window.setTimeout(() => {
-          if (!document.hidden) {
-            window.location.href = window.location.href;
-          }
-        }, 150);
-      }
-    } catch {}
-  }
-
-  const interval = window.setInterval(checkForUpdates, 1000);
-  window.addEventListener('beforeunload', () => {
-    disposed = true;
-    window.clearInterval(interval);
-  }, { once: true });
-})();
-</script>`;
-}
 
 function setNoStoreHeaders(headers: Headers) {
     headers.set("cache-control", "no-store, no-cache, must-revalidate, max-age=0");
