@@ -72,6 +72,8 @@ async function runDev(appDir: string): Promise<void> {
     let rebuildPending = false;
     let debounceTimer: NodeJS.Timeout | null = null;
 
+    const pendingChanges = new Map<string, any>();
+
     async function executeRebuild() {
         if (building) {
             rebuildPending = true;
@@ -81,44 +83,135 @@ async function runDev(appDir: string): Promise<void> {
         building = true;
         rebuildPending = false;
 
+        const changes = Array.from(pendingChanges.values());
+        pendingChanges.clear();
+
         try {
             console.log("🔁 rebuilding...");
-            await buildAppDev(appDir);
+
+            if (changes.length === 0) {
+                await buildAppDev(appDir);
+            } else {
+                console.log(
+                    "[adaptive] changed:",
+                    changes.map((change) => change.filePath).join(", "),
+                );
+
+                // Por enquanto continuamos usando o full build.
+                // O próximo passo será substituir isso pelo incremental builder.
+                await buildAppDev(appDir);
+            }
+
             console.log("✅ done");
         } catch (err) {
             console.error("❌ build error", err);
         } finally {
             building = false;
-            if (rebuildPending) {
+
+            if (rebuildPending || pendingChanges.size > 0) {
                 rebuildPending = false;
                 scheduleRebuild();
             }
         }
     }
 
-    function scheduleRebuild() {
+    function scheduleRebuild(change?: any) {
+        if (change) {
+            pendingChanges.set(change.filePath, change);
+        }
+
         if (debounceTimer) {
             clearTimeout(debounceTimer);
         }
+
         debounceTimer = setTimeout(() => {
             debounceTimer = null;
-            executeRebuild();
+            void executeRebuild();
         }, 100);
+    }
+
+    function watchDirectory(targetPath: string) {
+        if (!fs.existsSync(targetPath)) return;
+
+        fs.watch(
+            targetPath,
+            { recursive: true },
+            (eventType, filename) => {
+                if (!filename) return;
+
+                const relativePath = filename.toString();
+
+                scheduleRebuild({
+                    eventType:
+                        eventType === "rename"
+                            ? "rename"
+                            : "change",
+                    filePath: path.relative(
+                        appDir,
+                        path.join(targetPath, relativePath),
+                    ),
+                });
+            },
+        );
     }
 
     await executeRebuild();
     await startAdaptiveDevServer(appDir);
 
-    fs.watch(path.join(appDir, "src"), { recursive: true }, scheduleRebuild);
-    fs.watch(path.join(appDir, "public"), { recursive: true }, scheduleRebuild);
-    watchIfExists(path.join(appDir, "index.html"), scheduleRebuild);
-    watchIfExists(path.join(appDir, "dependency.ts"), scheduleRebuild);
-    watchIfExists(path.join(appDir, "dependency.tsx"), scheduleRebuild);
-    watchIfExists(path.join(appDir, "dependency.js"), scheduleRebuild);
-    watchIfExists(path.join(appDir, "dependency.jsx"), scheduleRebuild);
+    watchDirectory(path.join(appDir, "src"));
+    watchDirectory(path.join(appDir, "public"));
+
+    watchIfExists(
+        path.join(appDir, "index.html"),
+        () =>
+            scheduleRebuild({
+                eventType: "change",
+                filePath: "index.html",
+            }),
+    );
+
+    watchIfExists(
+        path.join(appDir, "dependency.ts"),
+        () =>
+            scheduleRebuild({
+                eventType: "change",
+                filePath: "dependency.ts",
+            }),
+    );
+
+    watchIfExists(
+        path.join(appDir, "dependency.tsx"),
+        () =>
+            scheduleRebuild({
+                eventType: "change",
+                filePath: "dependency.tsx",
+            }),
+    );
+
+    watchIfExists(
+        path.join(appDir, "dependency.js"),
+        () =>
+            scheduleRebuild({
+                eventType: "change",
+                filePath: "dependency.js",
+            }),
+    );
+
+    watchIfExists(
+        path.join(appDir, "dependency.jsx"),
+        () =>
+            scheduleRebuild({
+                eventType: "change",
+                filePath: "dependency.jsx",
+            }),
+    );
 }
 
-function watchIfExists(targetPath: string, listener: () => void) {
+function watchIfExists(
+    targetPath: string,
+    listener: () => void,
+) {
     if (!fs.existsSync(targetPath)) return;
+
     fs.watch(targetPath, listener);
 }

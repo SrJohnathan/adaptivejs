@@ -191,7 +191,7 @@ async function handleSsr(event: any, url: string, dirs: {
     appDir: string;
 }) {
     const result = await createRouter(url, [], {
-        isProduction: false,
+        isProduction: true,
         sourceDir: dirs.sourceDir,
         serverBuildDir: dirs.serverBuildDir,
         clientBuildDir: dirs.clientBuildDir,
