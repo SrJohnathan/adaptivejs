@@ -35,12 +35,23 @@ export async function createRouter(
         request?: AdaptiveRouteRequest;
     }
 ) {
-    const isProduction = options?.isProduction ?? process.env.NODE_ENV === "production";
-    const sourceDir = options?.sourceDir || path.join(process.cwd(), "src");
-    const serverBuildDir = options?.serverBuildDir || path.join(process.cwd(), "dist", "server");
-    const clientBuildDir = options?.clientBuildDir || path.join(process.cwd(), "dist", "client");
-    const pagesDir = isProduction ? path.join(serverBuildDir, "pages") : path.join(sourceDir, "pages");
-    const pagePattern = isProduction ? "**/*.js" : "**/*.tsx";
+    const isProduction =
+        options?.isProduction ?? process.env.NODE_ENV === "production";
+
+    const sourceDir =
+        options?.sourceDir || path.join(process.cwd(), "src");
+
+    const serverBuildDir =
+        options?.serverBuildDir ||
+        path.join(process.cwd(), "dist", "server");
+
+    const clientBuildDir =
+        options?.clientBuildDir ||
+        path.join(process.cwd(), "dist", "client");
+
+    const pagesDir = path.join(serverBuildDir, "pages");
+    const pagePattern = "**/*.js";
+
     const clientManifest = await loadClientManifest(clientBuildDir);
     const clientAssetManifest = await loadClientAssetManifest(clientBuildDir);
     const globalClientAssets = Object.values(clientAssetManifest).filter((record) => record.global);
@@ -112,11 +123,7 @@ export async function createRouter(
 
     const uri = parseUrl(url);
 
-    function normalizeRoutePath(pathname: string) {
-        return pathname === "/" ? "/index" : pathname;
-    }
-
-    const pathname = normalizeRoutePath(uri.pathname);
+    const pathname = uri.pathname;
 
     console.log(
         "[Adaptive Router] pathname:",
@@ -125,9 +132,11 @@ export async function createRouter(
         routes.map((route) => route.path),
     );
 
-    const routeMatch =
-        resolveRoute(routes, pathname, uri.query) ??
-        (pathname !== uri.pathname ? resolveRoute(routes, uri.pathname, uri.query) : null);
+    const routeMatch = resolveRoute(
+        routes,
+        pathname,
+        uri.query,
+    );
 
     if (!routeMatch) {
         return renderNotFoundResponse({
