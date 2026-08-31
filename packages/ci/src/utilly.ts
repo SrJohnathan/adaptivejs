@@ -10,6 +10,11 @@
 import path from "node:path";
 import {existsSync} from "node:fs";
 
+export type FileChange = {
+    eventType: "rename" | "change";
+    filePath: string;
+};
+
 export function parseCliArgs(args:any) {
     let targetDir = process.cwd();
     let preset = null;

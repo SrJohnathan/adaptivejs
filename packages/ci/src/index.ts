@@ -4,8 +4,9 @@ import fs from "node:fs";
 import path from "node:path";
 import { prepareEnv } from "./env-loader.js";
 import { buildNitroIfNeeded, previewNitro, type CliArgs } from "./nitro.js";
-import {buildApp, buildAppDev} from "./build.js";
+import {buildApp, buildAppDev, buildAppDevIncremental} from "./build.js";
 import {startAdaptiveDevServer} from "./dev-server.js";
+import {FileChange} from "./utilly.js";
 
 
 
@@ -72,7 +73,7 @@ async function runDev(appDir: string): Promise<void> {
     let rebuildPending = false;
     let debounceTimer: NodeJS.Timeout | null = null;
 
-    const pendingChanges = new Map<string, any>();
+    const pendingChanges = new Map<string, FileChange>();
 
     async function executeRebuild() {
         if (building) {
@@ -99,7 +100,9 @@ async function runDev(appDir: string): Promise<void> {
 
                 // Por enquanto continuamos usando o full build.
                 // O próximo passo será substituir isso pelo incremental builder.
-                await buildAppDev(appDir);
+              //  await buildAppDev(appDir);
+
+                await buildAppDevIncremental(appDir, changes);
             }
 
             console.log("✅ done");
@@ -115,7 +118,7 @@ async function runDev(appDir: string): Promise<void> {
         }
     }
 
-    function scheduleRebuild(change?: any) {
+    function scheduleRebuild(change?: FileChange) {
         if (change) {
             pendingChanges.set(change.filePath, change);
         }

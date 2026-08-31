@@ -168,6 +168,109 @@ export async function buildAppDev(appDir: string) {
     }
 }
 
+
+export async function buildAppDevIncremental(
+    appDir: string,
+    changes: Array<{
+        eventType: "rename" | "change";
+        filePath: string;
+    }>,
+): Promise<void> {
+    const srcDir = path.join(appDir, "src");
+    const devRuntimeDir = path.join(appDir, ".adaptivejs", "dev-runtime");
+    const serverDistDir = path.join(devRuntimeDir, "server");
+
+    for (const change of changes) {
+        const normalizedFilePath = change.filePath.replace(/\\/g, "/");
+
+        if (
+            !normalizedFilePath.startsWith("src/")
+        ) {
+            continue;
+        }
+
+        const absolutePath = path.join(appDir, change.filePath);
+
+        const relativeSrcPath = normalizedFilePath.slice("src/".length);
+
+        if (
+            relativeSrcPath.startsWith("..") ||
+            path.isAbsolute(relativeSrcPath)
+        ) {
+            continue;
+        }
+
+        const targetPath = path.join(
+            serverDistDir,
+            relativeSrcPath,
+        );
+
+        if (change.eventType === "rename") {
+            if (existsSync(absolutePath)) {
+                await buildIncrementalServerFile(
+                    absolutePath,
+                    targetPath,
+                    appDir,
+                    srcDir,
+                );
+            } else {
+                await fs.rm(
+                    targetPath.replace(/\.(ts|tsx)$/, ".js"),
+                    { force: true },
+                );
+            }
+
+            continue;
+        }
+
+        if (!existsSync(absolutePath)) {
+            continue;
+        }
+
+        await buildIncrementalServerFile(
+            absolutePath,
+            targetPath,
+            appDir,
+            srcDir,
+        );
+    }
+}
+
+async function buildIncrementalServerFile(
+    sourcePath: string,
+    targetPath: string,
+    appDir: string,
+    srcDir: string,
+): Promise<void> {
+    const relativePath = path.relative(srcDir, sourcePath);
+
+    if (relativePath.endsWith(".d.ts")) {
+        return;
+    }
+
+    await fs.mkdir(path.dirname(targetPath), {
+        recursive: true,
+    });
+
+    if (/\.(ts|tsx)$/.test(sourcePath)) {
+        await buildServerFile(
+            sourcePath,
+            targetPath.replace(/\.(ts|tsx)$/, ".js"),
+            {
+                cwd: appDir,
+                srcRoot: srcDir,
+            },
+        );
+
+        return;
+    }
+
+    await fs.copyFile(
+        sourcePath,
+        targetPath,
+    );
+}
+
 /**
  * Substitui `targetDir` pelo conteúdo de `stagedDir` sem nunca deixar
  * `targetDir` inexistente: primeiro move o `targetDir` atual (se existir)

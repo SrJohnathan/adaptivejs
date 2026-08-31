@@ -65,6 +65,13 @@ export async function createRouter(
             ]
         });
 
+        console.log(
+            "[Adaptive Router] pagesDir:",
+            pagesDir,
+            "modules:",
+            modules,
+        );
+
         // Tenta novamente uma vez se não encontrar nada (race condition no dev server)
         // Usamos um contador de tentativas simples via options para evitar loop infinito
         const attempt = (options as any)?._attempt || 0;
@@ -74,6 +81,12 @@ export async function createRouter(
         }
 
         for (const relativePath of modules) {
+
+            console.log(
+                "[Adaptive Router] loading route:",
+                relativePath,
+            );
+
             const absolutePath = path.join(pagesDir, relativePath);
             const mod = await importServerRouteModule(
                 absolutePath,
@@ -104,6 +117,13 @@ export async function createRouter(
     }
 
     const pathname = normalizeRoutePath(uri.pathname);
+
+    console.log(
+        "[Adaptive Router] pathname:",
+        pathname,
+        "routes:",
+        routes.map((route) => route.path),
+    );
 
     const routeMatch =
         resolveRoute(routes, pathname, uri.query) ??

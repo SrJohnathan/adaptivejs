@@ -191,14 +191,14 @@ async function handleSsr(event: any, url: string, dirs: {
     appDir: string;
 }) {
     const result = await createRouter(url, [], {
-        isProduction: true,
+        isProduction: false,
         sourceDir: dirs.sourceDir,
         serverBuildDir: dirs.serverBuildDir,
         clientBuildDir: dirs.clientBuildDir,
         freshServerModules: true,
         request: {
             headers: event.req.headers,
-            url: event.url.toString()
+            url: `http://${event.node.req.headers.host ?? "localhost"}${url}`
         }
     });
 
