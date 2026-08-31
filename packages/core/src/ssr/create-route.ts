@@ -52,6 +52,7 @@ export async function createRouter(
         const modules = await fg(pagePattern, {
             cwd: pagesDir,
             onlyFiles: true,
+            suppressErrors: true, // Adicionado para evitar que erros de acesso matem a busca
             ignore: [
                 "**/components/**",
                 "**/forms/**",
@@ -63,6 +64,14 @@ export async function createRouter(
                 "404.js",
             ]
         });
+
+        // Tenta novamente uma vez se não encontrar nada (race condition no dev server)
+        // Usamos um contador de tentativas simples via options para evitar loop infinito
+        const attempt = (options as any)?._attempt || 0;
+        if (modules.length === 0 && !isProduction && attempt < 3) {
+            await new Promise(r => setTimeout(r, 100 * (attempt + 1)));
+            return createRouter(url, routes, { ...options, _attempt: attempt + 1 } as any);
+        }
 
         for (const relativePath of modules) {
             const absolutePath = path.join(pagesDir, relativePath);

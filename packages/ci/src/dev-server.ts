@@ -35,21 +35,34 @@ export async function startAdaptiveDevServer(appDir: string) {
             const pathname = event.url.pathname;
             const url = pathname + event.url.search;
 
-            const staticResponse = await tryServeStatic(event, clientBuildDir, pathname);
-            if (staticResponse) return staticResponse;
+            try {
+                const staticResponse = await tryServeStatic(event, clientBuildDir, pathname);
+                if (staticResponse) return staticResponse;
 
-            if (event.req.method === "POST" && pathname === ACTION_PATH) {
-                return handleAction(event, { appDir, sourceDir, serverBuildDir, clientBuildDir });
+                if (event.req.method === "POST" && pathname === ACTION_PATH) {
+                    return handleAction(event, { appDir, sourceDir, serverBuildDir, clientBuildDir });
+                }
+
+                return await handleSsr(event, url, {
+                    templatePath,
+                    buildMetaPath,
+                    sourceDir,
+                    serverBuildDir,
+                    clientBuildDir,
+                    appDir
+                });
+            } catch (error: any) {
+                console.error(`[Adaptive Dev Server] Erro ao processar requisição ${url}:`, error);
+                
+                // Se o erro for de módulo não encontrado durante um rebuild, tenta responder algo básico
+                // ou deixa o h3 lidar com o erro.
+                event.res.status = 500;
+                return {
+                    status: 500,
+                    message: "Internal Server Error during rebuild. Please try again in a moment.",
+                    error: error?.message
+                };
             }
-
-            return handleSsr(event, url, {
-                templatePath,
-                buildMetaPath,
-                sourceDir,
-                serverBuildDir,
-                clientBuildDir,
-                appDir
-            });
         }),
     );
 
@@ -178,7 +191,7 @@ async function handleSsr(event: any, url: string, dirs: {
     appDir: string;
 }) {
     const result = await createRouter(url, [], {
-        isProduction: true,
+        isProduction: false,
         sourceDir: dirs.sourceDir,
         serverBuildDir: dirs.serverBuildDir,
         clientBuildDir: dirs.clientBuildDir,
