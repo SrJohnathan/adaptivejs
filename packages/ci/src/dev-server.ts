@@ -205,7 +205,7 @@ async function handleSsr(event: any, url: string, dirs: {
     if (result?.__type === "redirect") {
         event.res.status = result.status ?? 302;
         event.res.headers.set("location", result.location);
-        return;
+        return null;
     }
 
     const uri = parseUrl(url);

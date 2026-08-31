@@ -104,6 +104,17 @@ export async function createRouter(
                 Boolean(options?.freshServerModules),
             );
             if (typeof mod.default !== "function") continue;
+
+
+            const routePath = parseRoutePathServer(relativePath);
+
+            console.log(
+                "[Adaptive Router] route:",
+                relativePath,
+                "->",
+                routePath,
+            );
+
             routes.push({
                 path: parseRoutePathServer(relativePath),
                 component: mod.default,

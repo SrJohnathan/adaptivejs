@@ -63,6 +63,14 @@ function getContentType(filePath: string) {
 
 
 export default eventHandler(async (event) => {
+
+  console.log(
+      "[Adaptive SSR] REQUEST:",
+      event.method,
+      event.path,
+  );
+
+
   const url = event.path || "/";
   const pathname = parseUrl(url).pathname;
 
@@ -122,7 +130,7 @@ async function handleSsr(event: any, url: string) {
   if (result?.__type === "redirect") {
     event.node.res.statusCode = result.status ?? 302;
     event.node.res.setHeader("Location", result.location);
-    return;
+    return null;
   }
 
   const uri = parseUrl(url);
