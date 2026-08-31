@@ -146,13 +146,59 @@ export async function buildAppDev(appDir: string) {
         const metadata = await writeBuildMetadata(stagedClientDistDir, { dev: true });
         await appendDevImportVersion(stagedServerDistDir, metadata.buildId);
 
-        await rmWithRetries(serverDistDir);
-        await rmWithRetries(clientDistDir);
         await fs.mkdir(devRuntimeDir, { recursive: true });
-        await fs.rename(stagedServerDistDir, serverDistDir);
-        await fs.rename(stagedClientDistDir, clientDistDir);
+
+        // Troca "quase atômica": renomeia o build antigo para um diretório de
+        // backup ANTES de mover o novo build para o lugar, e só remove o backup
+        // depois. Isso evita a janela em que serverDistDir/clientDistDir não
+        // existem (o que fazia o roteador do dev server encontrar 0 páginas e
+        // responder 404 para qualquer rota durante um rebuild em andamento).
+        const backupServerDistDir = path.join(tempDir, `server-old-${uniqueId}`);
+        const backupClientDistDir = path.join(tempDir, `client-old-${uniqueId}`);
+
+        await swapDir(serverDistDir, stagedServerDistDir, backupServerDistDir);
+        await swapDir(clientDistDir, stagedClientDistDir, backupClientDistDir);
+
+        await Promise.all([
+            rmWithRetries(backupServerDistDir),
+            rmWithRetries(backupClientDistDir),
+        ]);
     } finally {
         await rmWithRetries(stagedDistDir);
+    }
+}
+
+/**
+ * Substitui `targetDir` pelo conteúdo de `stagedDir` sem nunca deixar
+ * `targetDir` inexistente: primeiro move o `targetDir` atual (se existir)
+ * para `backupDir`, depois move `stagedDir` para `targetDir`.
+ */
+async function swapDir(
+    targetDir: string,
+    stagedDir: string,
+    backupDir: string,
+): Promise<void> {
+    let hadPrevious = true;
+
+    try {
+        await fs.rename(targetDir, backupDir);
+    } catch (error) {
+        if (isErrnoCode(error, "ENOENT")) {
+            hadPrevious = false;
+        } else {
+            throw error;
+        }
+    }
+
+    try {
+        await fs.rename(stagedDir, targetDir);
+    } catch (error) {
+        // Se a nova build não puder ser movida para o lugar, restaura o backup
+        // para não deixar o dev server sem nenhuma versão funcional.
+        if (hadPrevious) {
+            await fs.rename(backupDir, targetDir).catch(() => {});
+        }
+        throw error;
     }
 }
 

@@ -24,7 +24,8 @@ import {
   runHydrationCollection,
   runWithEffectScope,
   type DependencyList,
-  type EffectFn, runWithContext, untrack
+  type EffectFn, runWithContext, untrack,
+  isSSR
 } from "../reactive/index.js";
 import type { ReactiveSource } from "../reactive/index.js";
 import {
@@ -55,8 +56,11 @@ const clientBoundaryScopes = new Map<Node, {
 }>();
 
 
-const mountedClientBoundaries = new WeakSet<Node>();
+let mountedClientBoundaries = new WeakSet<Node>();
 const boundaryHydrationNotices = new Set<string>();
+
+// Registro global de módulos já hidratados, para permitir reexecução em mudanças de rota
+const registeredHydrationModules = new Map<string, Record<string, any>>();
 
 export type ClientMetadata = {
   moduleId: string;
@@ -110,7 +114,38 @@ export function getClientComponentMetadata(value: unknown): ClientMetadata | nul
 
 export function hydrateClientComponents(moduleId: string, exportsMap: Record<string, any>) {
   if (typeof document === "undefined") return;
+
+  // Armazena o módulo/exports para permitir re-hidratação após mudanças de rota
+  registeredHydrationModules.set(moduleId, exportsMap);
+
+  // Garante que o roteador seja inicializado ao hidratar qualquer componente
+  if (!isSSR()) {
+    import("../front/router.js").then(({ useRouter }) => {
+      useRouter().init();
+    });
+  }
+
   runWhenDomReady(() => hydrateClientComponentsNow(moduleId, exportsMap));
+}
+
+// Escuta mudanças de rota para re-hidratar componentes se necessário
+if (!isSSR()) {
+  window.addEventListener("adaptive:routechange", () => {
+    // Limpa o cache de boundaries montados para permitir re-hidratação/remontagem
+    mountedClientBoundaries = new WeakSet<Node>();
+
+    // Reexecuta a hidratação para todos os módulos previamente registrados
+    runWhenDomReady(() => {
+      for (const [moduleId, exportsMap] of registeredHydrationModules.entries()) {
+        try {
+          hydrateClientComponentsNow(moduleId, exportsMap);
+        } catch (err) {
+          // Falhas na reidratação de um módulo não devem impedir os demais
+          console.warn("[Adaptive Hydration] Falha ao re-hidratar módulo:", moduleId, err);
+        }
+      }
+    });
+  });
 }
 
 function hydrateClientComponentsNow(moduleId: string, exportsMap: Record<string, any>) {

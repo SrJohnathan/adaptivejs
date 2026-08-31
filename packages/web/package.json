@@ -27,7 +27,6 @@
     "access": "public"
   },
   "dependencies": {
-    "@adaptive-js/core": "0.0.1",
     "@adaptive-js/jsx": "0.0.1",
     "@adaptive-js/shared": "0.0.1"
   }

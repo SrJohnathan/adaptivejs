@@ -22,7 +22,8 @@ export function createTestAuth(options: {
 } = {}) {
   const user = createTestUser();
   const adapter = createMemoryAuthAdapter({
-    users: options.users ?? [user]
+    users: options.users ?? [user],
+    isolated: true
   });
 
   const auth = createAuth({

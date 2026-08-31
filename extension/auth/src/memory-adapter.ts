@@ -7,6 +7,7 @@ import type {
 
 export interface MemoryAuthAdapterOptions<TUser extends AuthUser = AuthUser> {
   users?: Iterable<TUser>;
+  isolated?: boolean;
 }
 
 /**
@@ -20,8 +21,13 @@ export function createMemoryAuthAdapter<
   deleteUser(userId: string): void;
   clear(): void;
 } {
-  const users = new Map<string, TUser>();
-  const sessions = new Map<string, StoredAuthSession<TData>>();
+  const users = options.isolated
+    ? new Map<string, TUser>()
+    : (((globalThis as any).__ADAPTIVE_AUTH_MEMORY_USERS__ ??= new Map<string, any>()) as Map<string, TUser>);
+
+  const sessions = options.isolated
+    ? new Map<string, StoredAuthSession<TData>>()
+    : (((globalThis as any).__ADAPTIVE_AUTH_MEMORY_SESSIONS__ ??= new Map<string, any>()) as Map<string, StoredAuthSession<TData>>);
 
   for (const user of options.users ?? []) {
     users.set(user.id, user);

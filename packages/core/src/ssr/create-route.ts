@@ -11,8 +11,9 @@ import {pathToFileURL} from "node:url";
 import {renderToString, renderToStringWithMetadata} from "./render-to-string.js";
 import fs from "node:fs/promises";
 import fg from "fast-glob";
-import {AdaptiveMetadata, AdaptiveMetadataContext, AdaptiveMetadataResolver, AdaptiveRouteRequest, RouteDefinition} from "./interfaces/index.js";
+import {AdaptiveMetadata, AdaptiveMetadataContext, AdaptiveMetadataResolver, AdaptiveRouteRequest} from "./interfaces/index.js";
 import {matchRouteServer, parseRoutePathServer} from "./parse.js";
+import {RouteDefinition} from "@adaptive-js/shared";
 
 type ClientAssetRecord = { script: string; styles: string[]; global: boolean };
 
@@ -117,7 +118,7 @@ export async function createRouter(
         params: routeMatch.params,
         query: uri.query,
         request: options?.request,
-        appendSetCookie: (header) => setCookies.push(header)
+        appendSetCookie: (header: string) => setCookies.push(header)
     });
 
 // 🔥 intercepta redirect
@@ -222,7 +223,7 @@ async function renderNotFoundResponse(options: {
         params: {},
         query,
         request,
-        appendSetCookie: (header) => setCookies.push(header),
+        appendSetCookie: (header: string) => setCookies.push(header),
     });
 
     if (element?.__type === "redirect") {

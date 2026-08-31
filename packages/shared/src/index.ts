@@ -9,6 +9,13 @@
 
 export {callServerAction} from "./call-server-action.js";
 export {
+    RouteDefinition,
+    AdaptiveMetadata,
+    AdaptiveMetadataContext,
+    AdaptiveMetadataResolver,
+    AdaptiveRouteContext
+} from "./interfaces_shared.js";
+export {
   CONTEXT_PROVIDER_TAG,
   readServerContext,
   runWithServerContext
@@ -18,3 +25,4 @@ export {
   serializeStyleLike,
   toCssPropertyName
 } from "./style-shared.js";
+export { matchRouteServer } from "./routing.js";
