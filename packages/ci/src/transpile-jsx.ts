@@ -19,6 +19,18 @@ import {
 import {transform} from "oxc-transform";
 import {applyThunkTransform} from "./thunk-transform.js";
 
+export class AdaptiveBuildError extends Error {
+    constructor(
+        message: string,
+        public readonly sourcePath: string,
+        public readonly errors: any[],
+    ) {
+        super(message);
+        this.name = "AdaptiveBuildError";
+    }
+}
+
+
 export async function buildServerFile(sourcePath:string, outputPath:string, options:any) {
     await fs.mkdir(path.dirname(outputPath), { recursive: true });
 
@@ -79,11 +91,11 @@ async function buildTransformedFile(sourcePath:string, outputPath:string, cwd:an
 
 
     if (result.errors.length > 0) {
-        for (const error of result.errors) {
-            console.error(`${sourcePath}: ${error.message}`);
-            if (error.codeframe) console.error(error.codeframe);
-        }
-        process.exit(1);
+        throw new AdaptiveBuildError(
+            `Failed to transform ${sourcePath}`,
+            sourcePath,
+            result.errors,
+        );
     }
 
     const mapPath = `${outputPath}.map`;

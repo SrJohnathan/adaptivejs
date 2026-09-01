@@ -15,7 +15,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 
 import { bundleClientEntries } from "./esm-rolldown.js";
-import { buildServerFile } from "./transpile-jsx.js";
+import {AdaptiveBuildError, buildServerFile} from "./transpile-jsx.js";
 import { loadAdaptiveConfig } from "./load-adaptive-config.js";
 import { createClientEnvDefine, getPublicEnv } from "./env-loader.js";
 import { getHydratableDirective } from "./utilly.js";
@@ -254,12 +254,36 @@ export async function rebuildDevIncremental(
             }
 
             if (/\.(ts|tsx)$/.test(item.absolutePath)) {
-                await buildServerFile(
-                    item.absolutePath,
-                    targetPath.replace(/\.(ts|tsx)$/, ".js"),
-                    { cwd: appDir, srcRoot: srcDir },
-                );
-                result.server = true;
+                try {
+                    await buildServerFile(
+                        item.absolutePath,
+                        targetPath.replace(/\.(ts|tsx)$/, ".js"),
+                        { cwd: appDir, srcRoot: srcDir },
+                    );
+
+                    result.server = true;
+                } catch (error) {
+                    if (error instanceof AdaptiveBuildError) {
+                        for (const diagnostic of error.errors) {
+                            console.error(
+                                `\n❌ [AdaptiveJS] ${error.sourcePath}`,
+                            );
+
+                            console.error(`   ${diagnostic.message}`);
+
+                            if (diagnostic.codeframe) {
+                                console.error(diagnostic.codeframe);
+                            }
+                        }
+
+                        // O build anterior continua válido.
+                        // Não marca server como alterado.
+                        continue;
+                    }
+
+                    // Erro inesperado: esse sim deve subir.
+                    throw error;
+                }
             } else {
                 await fs.mkdir(path.dirname(targetPath), { recursive: true });
                 await fs.copyFile(item.absolutePath, targetPath);
