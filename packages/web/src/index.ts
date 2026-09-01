@@ -21,3 +21,5 @@ export * from "./front/context-runtime.js";
 export * from "./front/router.js";
 export * from  "./hydration/templates.js";
 export { callServerAction } from "@adaptive-js/shared";
+import { AdaptiveRouteContext  } from "@adaptive-js/shared";
+export type PageContext = AdaptiveRouteContext ;

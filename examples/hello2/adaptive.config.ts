@@ -1,8 +1,7 @@
-import type { AdaptiveConfig } from "@adaptive-js/ci"; // se exportar o tipo
-// ou sem tipo:
+import type { AdaptiveConfig } from "@adaptive-js/ci";
 
 export default {
     client: {
-        external: ["monaco-editor", /^monaco-editor\//],
+        external: ["monaco-editor"],
     },
 } satisfies AdaptiveConfig;

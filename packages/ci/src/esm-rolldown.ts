@@ -6,9 +6,10 @@
 import path from "node:path";
 import fs from "node:fs/promises";
 import { createHash } from "node:crypto";
-import { build, type Plugin } from "rolldown";
+import {build, ExternalOption, type Plugin} from "rolldown";
 import { extractExports, getHydratableDirective, normalizeEntryId } from "./utilly.js";
 import {applyThunkTransform} from "./thunk-transform.js";
+import {ExternalPattern} from "./load-adaptive-config.js";
 
 /* ================= TYPES ================= */
 
@@ -19,7 +20,7 @@ type BundleClientParams = {
     tempDir: string;
     dev?: boolean;
     define?: Record<string, string>;
-    external?: (string | RegExp)[];
+    external?: ExternalPattern|ExternalPattern[];
 };
 
 type ClientEntry = {
@@ -42,6 +43,52 @@ function adaptiveThunkPlugin(): Plugin {
             if (wrapped === 0) return null;
             return { code: thunked, map: null };
         },
+    };
+}
+
+
+// esm-rolldown.ts
+
+// esm-rolldown.ts
+
+function normalizeExternalOption(
+    external?: ExternalPattern | ExternalPattern[]
+) {
+    if (!external) return () => false;
+
+    const list = Array.isArray(external) ? external : [external];
+
+    return (id: string, parentId?: string, isResolved?: boolean) => {
+        // Normaliza separadores do Windows/Unix para comparar caminhos
+        const normalizedId = id.replace(/\\/g, "/");
+
+        return list.some((pattern) => {
+            if (typeof pattern === "function") {
+                return Boolean(pattern(id, parentId, isResolved));
+            }
+            if (pattern instanceof RegExp) {
+                return pattern.test(id) || pattern.test(normalizedId);
+            }
+            if (typeof pattern === "string") {
+                const cleanPattern = pattern.endsWith("/*")
+                    ? pattern.slice(0, -2)
+                    : pattern;
+
+                // 1. Checa import direto do módulo/subcaminho (ex: "monaco-editor" ou "monaco-editor/...")
+                if (
+                    normalizedId === cleanPattern ||
+                    normalizedId.startsWith(`${cleanPattern}/`)
+                ) {
+                    return true;
+                }
+
+                // 2. IMPORTANTE: Checa se o Rolldown já resolveu o caminho para node_modules!
+                if (normalizedId.includes(`node_modules/${cleanPattern}/`)) {
+                    return true;
+                }
+            }
+            return false;
+        });
     };
 }
 
@@ -102,7 +149,7 @@ export async function bundleClientEntries({
         input,
         platform: "browser",
         treeshake: true,
-        external ,
+        external : normalizeExternalOption(external),
         checks: {
             configurationFieldConflict: false
         },

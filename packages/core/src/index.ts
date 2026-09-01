@@ -11,3 +11,4 @@ export { handle_actions_request } from "./actions/handle_actions_request.js";
 export { redirect, type AdaptiveRedirect } from "./ssr/response.js";
 export {matchRouteServer} from "./ssr/parse.js"
 export {AdaptiveMetadataResolver, AdaptiveRouteContext} from  "./ssr/interfaces/index.js";
+export {AdaptiveMetadataContext} from "@adaptive-js/shared";

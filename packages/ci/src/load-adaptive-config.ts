@@ -10,9 +10,19 @@ import path from "node:path";
 import { pathToFileURL } from "node:url";
 import { createRequire } from "node:module";
 
+/* ================= TYPES ================= */
+
+export type ExternalPattern =
+    | string
+    | RegExp
+    | ((id: string, parentId?: string, isResolved?: boolean) => boolean | null | void);
+
 export type AdaptiveClientConfig = {
-    /** Módulos que o Rolldown não deve bundlar no client. */
-    external?: (string | RegExp)[];
+    /**
+     * Módulos que o Rolldown não deve bundlar no client.
+     * Suporta pacotes simples ("monaco-editor"), wildcards ("lodash/*"), RegExp ou funções de filtro.
+     */
+    external?: ExternalPattern | ExternalPattern[];
 };
 
 export type AdaptiveConfig = {
@@ -26,6 +36,8 @@ const CONFIG_FILES = [
     "adaptive.config.mjs",
     "adaptive.config.cjs",
 ] as const;
+
+/* ================= MAIN ================= */
 
 /**
  * Resolve e importa o config do app.
@@ -53,7 +65,6 @@ export async function loadAdaptiveConfig(
 }
 
 async function findConfigPath(appDir: string): Promise<string | null> {
-    console.log("appDir", appDir);
     for (const name of CONFIG_FILES) {
         const full = path.join(appDir, name);
         try {
@@ -152,6 +163,8 @@ async function tryCreateTsLoader(configPath: string): Promise<TsLoader | null> {
     return null;
 }
 
+/* ================= NORMALIZATION ================= */
+
 function normalizeConfig(raw: unknown): AdaptiveConfig {
     if (!raw || typeof raw !== "object") {
         return {};
@@ -169,17 +182,16 @@ function normalizeConfig(raw: unknown): AdaptiveConfig {
 
 function normalizeExternal(
     value: unknown,
-): (string | RegExp)[] | undefined {
+): ExternalPattern[] | undefined {
     if (value == null) return undefined;
-    if (!Array.isArray(value)) {
-        throw new Error(
-            `[adaptive] client.external must be an array of string | RegExp`,
-        );
-    }
 
-    return value.map((item, index) => {
-        if (typeof item === "string") return item;
-        if (item instanceof RegExp) return item;
+    const list = Array.isArray(value) ? value : [value];
+
+    return list.map((item, index) => {
+        if (typeof item === "string" || typeof item === "function" || item instanceof RegExp) {
+            return item;
+        }
+
         if (
             item &&
             typeof item === "object" &&
@@ -189,8 +201,9 @@ function normalizeExternal(
             const { source, flags } = item as { source: string; flags?: string };
             return new RegExp(source, flags);
         }
+
         throw new Error(
-            `[adaptive] client.external[${index}] must be string | RegExp`,
+            `[adaptive] client.external[${index}] must be string, RegExp, or function`,
         );
     });
 }
