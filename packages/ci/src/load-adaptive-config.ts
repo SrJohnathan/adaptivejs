@@ -53,6 +53,7 @@ export async function loadAdaptiveConfig(
 }
 
 async function findConfigPath(appDir: string): Promise<string | null> {
+    console.log("appDir", appDir);
     for (const name of CONFIG_FILES) {
         const full = path.join(appDir, name);
         try {

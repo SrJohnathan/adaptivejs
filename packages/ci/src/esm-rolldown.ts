@@ -8,6 +8,7 @@ import fs from "node:fs/promises";
 import { createHash } from "node:crypto";
 import { build, type Plugin } from "rolldown";
 import { extractExports, getHydratableDirective, normalizeEntryId } from "./utilly.js";
+import {applyThunkTransform} from "./thunk-transform.js";
 
 /* ================= TYPES ================= */
 
@@ -31,6 +32,18 @@ type AssetManifestRecord = {
     styles: string[];
     global: boolean;
 };
+
+function adaptiveThunkPlugin(): Plugin {
+    return {
+        name: "adaptive-thunk",
+        transform(code, id) {
+            if (!/\.(tsx|jsx)$/.test(id)) return null;
+            const { code: thunked, wrapped } = applyThunkTransform(code, id);
+            if (wrapped === 0) return null;
+            return { code: thunked, map: null };
+        },
+    };
+}
 
 /* ================= MAIN ================= */
 
@@ -117,6 +130,7 @@ export async function bundleClientEntries({
             ".avif": "asset",
         },
         plugins: [
+            adaptiveThunkPlugin(),
             adaptiveCssPlugin({ minify: !dev }),
             serverOnlyProxyPlugin(srcDir),
         ],

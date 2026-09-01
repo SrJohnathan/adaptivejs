@@ -1,6 +1,7 @@
 'hydrate'
 import { useReactive } from "@adaptive-js/web";
 
+// @thunk
 export const CounterBeer = () => {
     const [count, setCount] = useReactive(0);
 
@@ -17,6 +18,7 @@ export const CounterBeer = () => {
                 </button>
             </nav>
             <p className="large-text top-margin">Valor atual: {() => count()}</p>
+            <p className="large-text top-margin">Valor atual no trunk: { count()}</p>
         </article>
     );
 };
