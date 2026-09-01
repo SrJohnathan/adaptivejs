@@ -149,12 +149,16 @@ export async function buildAppDev(appDir: string) {
         await copyDir(path.join(appDir, "public"), stagedClientDistDir);
         await processCssAssets(stagedClientDistDir, appDir);
 
+        const config = await loadAdaptiveConfig(appDir);
+
+
         await bundleClientEntries({
             appDir,
             srcDir,
             clientDistDir: stagedClientDistDir,
             tempDir: stagedTempDir,
             dev: true,
+            external: config.client?.external
         });
 
         const metadata = await writeBuildMetadata(stagedClientDistDir, { dev: true });
@@ -162,11 +166,7 @@ export async function buildAppDev(appDir: string) {
 
         await fs.mkdir(devRuntimeDir, { recursive: true });
 
-        // Troca "quase atômica": renomeia o build antigo para um diretório de
-        // backup ANTES de mover o novo build para o lugar, e só remove o backup
-        // depois. Isso evita a janela em que serverDistDir/clientDistDir não
-        // existem (o que fazia o roteador do dev server encontrar 0 páginas e
-        // responder 404 para qualquer rota durante um rebuild em andamento).
+
         const backupServerDistDir = path.join(tempDir, `server-old-${uniqueId}`);
         const backupClientDistDir = path.join(tempDir, `client-old-${uniqueId}`);
 
