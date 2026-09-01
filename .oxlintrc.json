@@ -1,0 +1,35 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "plugins": ["typescript", "unicorn", "import", "oxc"],
+  "categories": {
+    "correctness": "error",
+    "suspicious": "warn",
+    "perf": "warn",
+    "style": "off"
+  },
+  "rules": {
+    "no-var": "error",
+    "prefer-const": "warn",
+    "eqeqeq": "warn",
+    "no-debugger": "error",
+    "no-console": "off",
+    "typescript/no-explicit-any": "warn",
+    "typescript/no-unused-vars": "warn",
+    "typescript/consistent-type-imports": "warn",
+    "typescript/ban-ts-comment": "warn",
+    "typescript/no-non-null-assertion": "off",
+    "unicorn/no-null": "off",
+    "unicorn/prevent-abbreviations": "off",
+    "unicorn/filename-case": "off",
+    "import/no-cycle": "warn",
+    "import/no-self-import": "error",
+    "import/no-duplicates": "error"
+  },
+  "ignorePatterns": [
+    "**/dist/**",
+    "**/node_modules/**",
+    "**/.adaptivejs/**",
+    "**/.adaptive-temp/**",
+    "**/*.d.ts"
+  ]
+}

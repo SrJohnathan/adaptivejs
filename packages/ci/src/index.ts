@@ -8,7 +8,7 @@ import {buildApp, buildAppDev, buildAppDevIncremental} from "./build.js";
 import {startAdaptiveDevServer} from "./dev-server.js";
 import {FileChange} from "./utilly.js";
 import {rebuildDevIncremental} from "./rebuild-dev.js";
-
+import chokidar from "chokidar";
 export {AdaptiveConfig} from "./load-adaptive-config.js";
 
 
@@ -153,29 +153,24 @@ async function runDev(appDir: string): Promise<void> {
         }, 100);
     }
 
+
+
     function watchDirectory(targetPath: string) {
         if (!fs.existsSync(targetPath)) return;
 
-        fs.watch(
-            targetPath,
-            { recursive: true },
-            (eventType, filename) => {
-                if (!filename) return;
+        const watcher = chokidar.watch(targetPath, {
+            ignoreInitial: true,
+            persistent: true,
+        });
 
-                const relativePath = filename.toString();
-
-                scheduleRebuild({
-                    eventType:
-                        eventType === "rename"
-                            ? "rename"
-                            : "change",
-                    filePath: path.relative(
-                        appDir,
-                        path.join(targetPath, relativePath),
-                    ),
-                });
-            },
-        );
+        watcher.on("all", (eventType, filePath) => {
+            scheduleRebuild({
+                eventType: eventType === "unlink" || eventType === "unlinkDir" || eventType === "addDir"
+                    ? "rename"
+                    : "change",
+                filePath: path.relative(appDir, filePath),
+            });
+        });
     }
 
     await executeRebuild();

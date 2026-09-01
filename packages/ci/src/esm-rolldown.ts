@@ -90,6 +90,9 @@ export async function bundleClientEntries({
         platform: "browser",
         treeshake: true,
         external ,
+        checks: {
+            configurationFieldConflict: false
+        },
         transform: {
             define,
             target: "es2020",

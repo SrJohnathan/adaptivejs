@@ -9,7 +9,9 @@
     "release:check": "node scripts/npm-release.mjs check",
     "release:pack": "node scripts/npm-release.mjs pack",
     "release:publish": "node scripts/npm-release.mjs publish",
-    "scope:check": "node scope.js"
+    "scope:check": "node scope.js",
+    "lint": "oxlint packages",
+    "lint:fix": "oxlint packages --fix"
   },
   "workspaces": [
     "packages/*",
@@ -18,5 +20,8 @@
     "extension/*"
 
 
-  ]
+  ],
+  "devDependencies": {
+    "oxlint": "^1.80.0"
+  }
 }

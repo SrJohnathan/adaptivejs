@@ -47,7 +47,7 @@ import {
 import { isSupportedDynamicHydrationPropName } from "./hydration-supported-props.js";
 import {CONTEXT_PROVIDER_TAG} from "../front/context-runtime.js";
 import {cleanupHandlerScope, createHandlerScope, runWithHandlerScope} from "../front/handler-scope.js";
-
+import { useRouter } from "../front/router.js";
 const clientBoundaryScopes = new Map<Node, {
   scope: ReturnType<typeof createEffectScope>;
   handlerScope: ReturnType<typeof createHandlerScope>;
@@ -120,9 +120,7 @@ export function hydrateClientComponents(moduleId: string, exportsMap: Record<str
 
   // Garante que o roteador seja inicializado ao hidratar qualquer componente
   if (!isSSR()) {
-    import("../front/router.js").then(({ useRouter }) => {
-      useRouter().init();
-    });
+    useRouter().init()
   }
 
   runWhenDomReady(() => hydrateClientComponentsNow(moduleId, exportsMap));

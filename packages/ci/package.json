@@ -28,7 +28,8 @@
     "@adaptive-js/adapter-nitro": "0.0.1",
     "h3": "^2.0.1-rc.21",
     "oxc-transform": "^0.128.0",
-    "rolldown": "^1.2.6"
+    "rolldown": "^1.2.6",
+    "chokidar": "^5.0.0"
 
   },
   "devDependencies": {
