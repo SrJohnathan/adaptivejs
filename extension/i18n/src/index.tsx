@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useReactive } from "@adaptive-js/web";
+import {createContext, events, signal, useContext,} from "@adaptive-js/web";
 
 export const DEFAULT_I18N_LANGUAGE = "en";
 
@@ -149,7 +149,7 @@ export function getBrowserLanguage(options: HtmlLanguageOptions = {}) {
 }
 
 export function useHtmlLanguage(locale: string | (() => string)) {
-  useEffect(() => {
+  events(() => {
     const nextLocale = typeof locale === "function" ? locale() : locale;
     setHtmlLanguage(nextLocale);
   }, [locale]);
@@ -173,8 +173,8 @@ export function createI18n<TLocale extends string>(config: I18nConfig<TLocale>) 
       )
     ) as TLocale;
 
-    const [locale, setLocale] = useReactive<TLocale>(initialLocale);
-    const [fallbackLocale] = useReactive<TLocale>(initialFallbackLocale);
+    const [locale, setLocale] = signal<TLocale>(initialLocale);
+    const [fallbackLocale] = signal<TLocale>(initialFallbackLocale);
 
     useHtmlLanguage(locale);
 

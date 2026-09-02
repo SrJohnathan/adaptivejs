@@ -7,7 +7,7 @@
 
 'hydrate';
 
-import { useRef } from "@adaptive-js/web";
+import {ref, RefBox} from "@adaptive-js/web";
 import {
   AnimatedIconController,
   cn,
@@ -31,11 +31,11 @@ export function AArrowDownIcon({
   iconRef,
   ...props
 }: AArrowDownIconProps) {
-  const controller = useRef<AnimatedIconController>(new AnimatedIconController());
-  const letterStrokeRef = useRef<SVGPathElement>(null);
-  const letterShapeRef = useRef<SVGPathElement>(null);
-  const arrowStemRef = useRef<SVGPathElement>(null);
-  const arrowHeadRef = useRef<SVGPathElement>(null);
+  const controller = ref<AnimatedIconController>(new AnimatedIconController());
+  const letterStrokeRef = ref<SVGPathElement>(null);
+  const letterShapeRef = ref<SVGPathElement>(null);
+  const arrowStemRef = ref<SVGPathElement>(null);
+  const arrowHeadRef = ref<SVGPathElement>(null);
 
   const getTargets = () =>
     collectElements(

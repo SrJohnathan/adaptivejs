@@ -5,12 +5,7 @@
  * See LICENSE file in the project root for full license information.
  */
 
-import {
-  runWithContext,
-  useEffect,
-  type ReactiveSource,
-  untrack, createReactiveEffect, createEffectScope, runWithEffectScope, cleanupEffectScope
-} from "../reactive/index.js";
+
 import { resolveStyleEntries, serializeStyleLike, toCssPropertyName } from "./style-shared.js";
 import {
   CLIENT_BOUNDARY_END,
@@ -27,6 +22,10 @@ import {
   HYDRATE_SLOT_START,
 } from "./client-boundary.js";
 import {CONTEXT_PROVIDER_TAG} from "../front/context-runtime.js";
+import {ReactiveSource, runWithContext, runWithEffectScope} from "../reactive";
+import {cleanupEffectScope, createEffectScope, untrack} from "../reactive";
+import {createReactiveEffect} from "../reactive/events.js";
+
 
 const eventHandlers = new WeakMap<EventTarget, Map<string, EventListener>>();
 const mismatchLog = new Set<string>();

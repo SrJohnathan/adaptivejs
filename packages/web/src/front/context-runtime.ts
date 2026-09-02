@@ -1,6 +1,8 @@
+import {readContext} from "../reactive";
+
 export { CONTEXT_PROVIDER_TAG } from "@adaptive-js/shared";
 import { CONTEXT_PROVIDER_TAG } from "@adaptive-js/shared";
-import { readContext } from "../reactive/index.js";
+
 
 export type AdaptiveContext<T> = {
     id: symbol;

@@ -1,4 +1,4 @@
-import { createContext, useContext, useReactive } from "@adaptive-js/web";
+import { createContext, useContext, signal } from "@adaptive-js/web";
 import type { AuthClientState, AuthUser } from "./types.js";
 
 export interface AuthProviderProps<TUser extends AuthUser = AuthUser> {
@@ -24,7 +24,7 @@ export function createAuthClient<TUser extends AuthUser = AuthUser>() {
   const AuthContext = createContext<AuthClientApi<TUser> | null>(null);
 
   function AuthProvider(props: AuthProviderProps<TUser>) {
-    const [state, setState] = useReactive<AuthClientState<TUser>>(
+    const [state, setState] = signal<AuthClientState<TUser>>(
       props.initialState ?? (EMPTY_AUTH_STATE as AuthClientState<TUser>)
     );
 

@@ -5,8 +5,10 @@
  * See LICENSE file in the project root for full license information.
  */
 
-import { AdaptiveObserver, isSSR, useClientEffect } from "../reactive/index.js";
+
 import {RouteDefinition, matchRouteServer} from "@adaptive-js/shared";
+import {AdaptiveObserver, isSSR} from "../reactive";
+import {useClientEffect} from "../reactive/init.js";
 
 /**
  * Representa um redirect no runtime do Adaptive

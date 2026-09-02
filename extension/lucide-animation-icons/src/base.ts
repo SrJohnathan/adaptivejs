@@ -1,5 +1,6 @@
-import { useLayoutEffect, useRef } from "@adaptive-js/web";
-import type { RefObject } from "@adaptive-js/web";
+import {events, layoutEvents} from "@adaptive-js/web";
+import {RefBox} from "@adaptive-js/web";
+
 
 export type BaseDivProps = {
   className?: string;
@@ -18,7 +19,7 @@ export type AnimatedLucideIconProps = BaseDivProps & {
   duration?: number;
   strokeWidth?:number;
   animateOnHover?: boolean;
-  iconRef?: RefObject<AnimatedLucideIconHandle> | ((handle: AnimatedLucideIconHandle | null) => void);
+  iconRef?: RefBox<AnimatedLucideIconHandle> | ((handle: AnimatedLucideIconHandle | null) => void);
 };
 
 export type AnimationTarget = SVGElement;
@@ -156,12 +157,12 @@ export function createVariantAnimation(
 
 export function useAnimatedIconHandle(
   iconRef: AnimatedLucideIconProps["iconRef"],
-  controller: RefObject<AnimatedIconController | null>,
+  controller: RefBox<AnimatedIconController | null>,
   getTargets: () => SVGElement[],
   startAnimation: () => void,
   stopAnimation: () => void
 ) {
-  useLayoutEffect(() => {
+  layoutEvents(() => {
     const handle: AnimatedLucideIconHandle = {
       startAnimation,
       stopAnimation
