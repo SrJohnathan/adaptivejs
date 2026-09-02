@@ -1,5 +1,5 @@
 'hydrate'
-import {init, signal} from "@adaptive-js/web";
+import {Reveal, signal} from "@adaptive-js/web";
 import {Test} from "./Test";
 // @thunk
 export const CounterBeer = () => {
@@ -8,7 +8,17 @@ export const CounterBeer = () => {
     return (
         <article className="padding round surface-container">
             <h6>Contador BeerCSS</h6>
-            {  count() > 0 ? <Test key="on" /> : <div key="off">TEX</div> }
+            <Reveal when={() => count() > 0}>
+                <Reveal.If>
+                    <Test/>
+                </Reveal.If>
+
+                <Reveal.Else>
+                    <div key="off">TEX</div>
+                </Reveal.Else>
+
+            </Reveal>
+
             <p className="small-text">Clique para testar hidratação com BeerCSS vindo por npm.</p>
             <nav className="row gap small-margin top-margin">
                 <button className="border" onClick={() => setCount(count() + 1)}>
@@ -19,8 +29,7 @@ export const CounterBeer = () => {
                 </button>
             </nav>
             <p className="large-text top-margin">Valor atual: {() => count()}</p>
-            <p className="large-text top-margin">Valor atual no trunk: { count()}</p>
-
+            <p className="large-text top-margin">Valor atual no trunk: {count()}</p>
 
 
         </article>

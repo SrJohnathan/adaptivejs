@@ -18,8 +18,10 @@ export {events,
     ReactiveSource,
     cleanupEffectScope,
     untrack,
-    createEffectScope
+    createEffectScope,
+    createReactiveEffect
 } from "./events.js"
 export {signal, rootSignal, ref, memo, store, rootStore, createSignal,RefBox} from "./reactive.js"
 export {init} from "./init.js"
 export {AdaptiveObserver} from "./adaptive-observer.js"
+export * from "../front/reveal.js"

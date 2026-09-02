@@ -1,74 +1,65 @@
 /*
- * Copyright (c) 2026 Antonio Johnathan
  * Licensed under the MIT License.
  *
  * Bloco reativo com estabilidade por key (on/off).
- *
- * Uso no JSX (com ou sem @thunk):
- *
- *   {() => count() > 0
- *     ? <Test key="on" />
- *     : <div key="off">TEX</div>}
- *
- * Enquanto a key do root não mudar, o DOM e o effect scope dos children
- * são preservados — count 1→2→3 não desmonta <Test key="on" />.
- * Só troca de "on" → "off" (ou ausência de key → replace total).
- *
- * Integrar em hidrate.ts no branch `typeof vnode === "function"`.
+ * Versão corrigida: extrai key de vnode.key OU props.key
  */
-
-
 
 import {
     cleanupEffectScope,
     createEffectScope,
     runWithEffectScope,
 } from "../reactive/index.js";
-import {createReactiveEffect} from "../reactive/events.js";
-
+import { createReactiveEffect } from "../reactive/events.js";
 
 export type RenderToDOM = (vnode: any, namespace: string | null) => Node;
 
 /**
- * Extrai key de um vnode Adaptive (props.key) ou de lista normalizada.
- * Sem key → null (modo replace total, comportamento antigo).
+ * Extrai key de um vnode Adaptive.
+ * Em Adaptive/JSX a key pode estar em:
+ * - vnode.key (padrão React-like)
+ * - vnode.props.key
+ * - vnode.props["data-key"]
  */
 export function getVNodeKey(value: any): string | number | null {
-    if (value == null || value === false || value === true) {
-        return null;
-    }
-    if (typeof value === "function") {
-        // thunk aninhado: não estabiliza por key no nível de fora
-        return null;
-    }
+    if (value == null || value === false || value === true) return null;
+    if (typeof value === "function") return null;
+
     if (Array.isArray(value)) {
-        const list = value.flat(Infinity).filter(
-            (v) => v != null && v !== false && v !== true,
-        );
+        const list = value.flat(Infinity).filter((v) => v != null && v !== false && v !== true);
         if (list.length === 1) return getVNodeKey(list[0]);
-        // várias roots: key composta se todas tiverem key
         const keys = list.map(getVNodeKey);
         if (keys.every((k) => k != null)) return keys.join("|");
         return null;
     }
-    if (typeof value === "object" && value.props != null) {
-        const k = value.props.key;
-        if (k != null && k !== false) return k as string | number;
+
+    if (typeof value === "object") {
+        // 1. vnode.key direto (JSX runtime padrão)
+        if ((value as any).key != null && (value as any).key !== false) {
+            return (value as any).key as string | number;
+        }
+        // 2. props.key
+        if (value.props != null) {
+            const k = value.props.key;
+            if (k != null && k !== false) return k as string | number;
+            // fallback para data-key
+            const dk = value.props["data-key"];
+            if (dk != null && dk !== false) return dk as string | number;
+        }
     }
+
     return null;
 }
 
-/**
- * Substitui o path genérico de function-child em renderToDOM.
- *
- * createReactiveEffect:
- *  - sempre reexecuta quando signals lidos no thunk mudam
- *  - só faz unmount/remount se a key mudou (ou não há key)
- */
+type CachedEntry = {
+    scope: ReturnType<typeof createEffectScope>;
+    nodes: Node[];
+};
+
 export function mountKeyedReactiveFunction(
     thunk: () => any,
     namespace: string | null,
-    renderToDOM: RenderToDOM,
+    renderToDOM: RenderToDOM
 ): DocumentFragment {
     const start = document.createTextNode("");
     const end = document.createTextNode("");
@@ -80,14 +71,33 @@ export function mountKeyedReactiveFunction(
     let currentScope: ReturnType<typeof createEffectScope> | null = null;
     let hasMounted = false;
 
+    // Cache por key: on -> off -> on restaura sem remontar
+    const cache = new Map<string | number, CachedEntry>();
+
+    // Final cleanup: quando o componente pai desmontar, limpa tudo que ficou em cache
+    // Este efeito roda uma vez e só é disposto no unmount final
+    createReactiveEffect(() => {
+        return () => {
+            for (const entry of cache.values()) {
+                cleanupEffectScope(entry.scope);
+            }
+            cache.clear();
+            if (currentScope) {
+                cleanupEffectScope(currentScope);
+                currentScope = null;
+            }
+        };
+    }, "layout");
+
+    // Efeito reativo principal: troca de key com cache
     createReactiveEffect(() => {
         const nextValue = thunk();
         const parent = start.parentNode;
         if (!parent) return;
 
-        const nextKey = getVNodeKey(nextValue);
+        const nextKey = getVNodeKey(nextValue); // "on" | "off" | null
 
-        // Mesma key e já montado → não mexe no DOM / scope
+        // mesma key → não mexe (count 1→2→3)
         if (
             hasMounted &&
             nextKey != null &&
@@ -97,9 +107,9 @@ export function mountKeyedReactiveFunction(
             return;
         }
 
-        // key mudou ou primeira montagem ou sem key → replace
+        // branch mudou (ou primeira vez): destrói o atual de verdade
         if (currentScope) {
-            cleanupEffectScope(currentScope);
+            cleanupEffectScope(currentScope); // ← unmounting BeerCSS
             currentScope = null;
         }
 
@@ -110,7 +120,10 @@ export function mountKeyedReactiveFunction(
             node = next;
         }
 
-        currentScope = createEffectScope("reactive-keyed");
+        // monta o branch novo
+        currentScope = createEffectScope(
+            `reactive-keyed:${String(nextKey ?? "nokey")}`,
+        );
         const rendered = runWithEffectScope(currentScope, () =>
             renderToDOM(nextValue, namespace),
         );

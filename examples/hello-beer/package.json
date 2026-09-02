@@ -13,6 +13,7 @@
     "@adaptive-js/adapter-nitro": "file:../../packages/adapter-nitro",
     "@adaptive-js/ci": "file:../../packages/ci",
     "@adaptive-js/web": "file:../../packages/web",
+    "@adaptive-js/components": "file:../../packages/components",
     "beercss": "^4.0.21",
     "material-dynamic-colors": "^1.1.4"
   },

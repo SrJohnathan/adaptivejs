@@ -25,7 +25,7 @@ import {CONTEXT_PROVIDER_TAG} from "../front/context-runtime.js";
 import {ReactiveSource, runWithContext, runWithEffectScope} from "../reactive/index.js";
 import {cleanupEffectScope, createEffectScope, untrack} from "../reactive/index.js";
 import {createReactiveEffect} from "../reactive/events.js";
-import { mountKeyedReactiveFunction } from "./keyed-reactive-block.js";
+import {getVNodeKey, mountKeyedReactiveFunction} from "./keyed-reactive-block.js";
 
 
 const eventHandlers = new WeakMap<EventTarget, Map<string, EventListener>>();
@@ -874,7 +874,7 @@ function hydrateReactiveContentWithMarkers(
       id: string;
       kind: "reactive-struct" | "reactive-list" | "reactive-async";
       getter: () => any;
-    }
+    },
 ) {
   if (!start || !end) {
     warnMismatch({
@@ -882,15 +882,13 @@ function hydrateReactiveContentWithMarkers(
       message: "Reactive content markers were not found in existing DOM",
       expected: `markers for ${config.kind}:${config.id}`,
       found: "nothing",
-      node: start ?? end ?? undefined
+      node: start ?? end ?? undefined,
     });
     return;
   }
 
   const parent = start.parentNode;
-  if (!parent) {
-    return;
-  }
+  if (!parent) return;
 
   const startAnchor = document.createTextNode("");
   const endAnchor = document.createTextNode("");
@@ -899,18 +897,18 @@ function hydrateReactiveContentWithMarkers(
 
   let initialized = false;
   let pendingToken = 0;
-  // Escopo de efeitos para o conteúdo entre os marcadores. A cada atualização,
-  // limpamos o escopo anterior e criamos um novo, garantindo que efeitos de
-  // props reativas e closures criadas durante a renderização do subtree sejam
-  // descartados corretamente quando a subtree for trocada.
   let currentScope: ReturnType<typeof createEffectScope> | null = null;
+  let currentKey: string | number | null | undefined = undefined;
 
   createReactiveEffect(() => {
     const nextValue = config.getter();
     const currentToken = ++pendingToken;
+    const nextKey = getVNodeKey(nextValue);
 
+    // ---------- 1ª execução (DOM do server) ----------
     if (!initialized) {
       initialized = true;
+      currentKey = nextKey;
 
       if (isPromiseLike(nextValue)) {
         void nextValue.then((resolved) => {
@@ -920,15 +918,25 @@ function hydrateReactiveContentWithMarkers(
             currentScope = null;
           }
           currentScope = createEffectScope("hydrate-range");
-          replaceReactiveRangeContent(startAnchor, endAnchor, resolved, currentScope);
+          currentKey = getVNodeKey(resolved);
+          replaceReactiveRangeContent(
+              startAnchor,
+              endAnchor,
+              resolved,
+              currentScope,
+          );
         });
         return;
       }
-      // DOM-first: HTML do server permanece. Vnode é só blueprint efêmero
-      // para extrair events/refs/reatividade e descartar em seguida.
+
       currentScope = createEffectScope("hydrate-range");
       if (config.kind === "reactive-list") {
-        replaceReactiveRangeContent(startAnchor, endAnchor, nextValue, currentScope);
+        replaceReactiveRangeContent(
+            startAnchor,
+            endAnchor,
+            nextValue,
+            currentScope,
+        );
       } else {
         runWithEffectScope(currentScope, () => {
           hydrateExistingReactiveContent(startAnchor, endAnchor, nextValue);
@@ -937,28 +945,58 @@ function hydrateReactiveContentWithMarkers(
       return;
     }
 
+    // ---------- updates ----------
+    // mesma key → não remount (count 1→2→3)
+    if (
+        nextKey != null &&
+        currentKey != null &&
+        Object.is(nextKey, currentKey)
+    ) {
+      return;
+    }
+
     if (isPromiseLike(nextValue)) {
       void nextValue.then((resolved) => {
         if (currentToken !== pendingToken) return;
+        const resolvedKey = getVNodeKey(resolved);
+        if (
+            resolvedKey != null &&
+            currentKey != null &&
+            Object.is(resolvedKey, currentKey)
+        ) {
+          return;
+        }
         if (currentScope) {
           cleanupEffectScope(currentScope);
           currentScope = null;
         }
         currentScope = createEffectScope("hydrate-range");
-        replaceReactiveRangeContent(startAnchor, endAnchor, resolved, currentScope);
+        currentKey = resolvedKey;
+        replaceReactiveRangeContent(
+            startAnchor,
+            endAnchor,
+            resolved,
+            currentScope,
+        );
       });
       return;
     }
 
+    // key mudou → destroy de verdade (sem cache)
     if (currentScope) {
       cleanupEffectScope(currentScope);
       currentScope = null;
     }
     currentScope = createEffectScope("hydrate-range");
-    replaceReactiveRangeContent(startAnchor, endAnchor, nextValue, currentScope);
+    currentKey = nextKey;
+    replaceReactiveRangeContent(
+        startAnchor,
+        endAnchor,
+        nextValue,
+        currentScope,
+    );
   });
 }
-
 /**
  * DOM-first in-place hydration for reactive-struct / list / async.
  *
