@@ -19,7 +19,7 @@ export {createHydrateComponent } from "./hydration/hydrate-component.js"
 export * from "./front/handler-scope.js";
 export * from "./front/context-runtime.js";
 export * from "./front/router.js";
-export * from "./reactive";
+export * from "./reactive/index.js";
 export * from  "./hydration/templates.js";
 export { callServerAction } from "@adaptive-js/shared";
 import { AdaptiveRouteContext  } from "@adaptive-js/shared";

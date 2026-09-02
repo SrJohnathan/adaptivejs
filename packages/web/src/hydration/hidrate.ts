@@ -22,8 +22,8 @@ import {
   HYDRATE_SLOT_START,
 } from "./client-boundary.js";
 import {CONTEXT_PROVIDER_TAG} from "../front/context-runtime.js";
-import {ReactiveSource, runWithContext, runWithEffectScope} from "../reactive";
-import {cleanupEffectScope, createEffectScope, untrack} from "../reactive";
+import {ReactiveSource, runWithContext, runWithEffectScope} from "../reactive/index.js";
+import {cleanupEffectScope, createEffectScope, untrack} from "../reactive/index.js";
 import {createReactiveEffect} from "../reactive/events.js";
 
 

@@ -7,7 +7,7 @@
 
 
 import {RouteDefinition, matchRouteServer} from "@adaptive-js/shared";
-import {AdaptiveObserver, isSSR} from "../reactive";
+import {AdaptiveObserver, isSSR} from "../reactive/index.js";
 import {useClientEffect} from "../reactive/init.js";
 
 /**
