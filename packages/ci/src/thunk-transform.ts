@@ -4,36 +4,34 @@
  *
  * Opt-in JSX thunk transform for AdaptiveJS.
  *
- * Mark a component with JSDoc `@thunk` (or line `// @thunk` / `/* @thunk *​/`).
- * Inside that component only, bare call expressions in JSX value positions:
+ * Mark a component with JSDoc `@thunk` (or `// @thunk` / block comment).
+ * Inside that component, JSX value expressions that need reactivity are wrapped:
  *
- *   <div>{value()}</div>        →  <div>{() => value()}</div>
- *   <Input value={count()} />   →  <Input value={() => count()} />
+ *   {value()}                           → {() => value()}
+ *   {count() > 0 ? <A/> : <B/>}         → {() => (count() > 0 ? <A/> : <B/>)}
+ *   {open() && <Panel/>}                → {() => (open() && <Panel/>)}
+ *   {items().map(i => <Row item={i}/>)} → {() => items().map(i => <Row item={i}/>)}
+ *   {[a(), b()]}                        → {() => [a(), b()]}
+ *   <Input value={count()} />           → <Input value={() => count()} />
  *
  * Not transformed:
- *   - already an arrow/function: {() => value()}
+ *   - already an arrow/function: {() => ...}
  *   - event props: onClick={...}, on:click={...}
+ *   - pure static literals: {"hi"}, {42}, {true}
  *   - components without @thunk
  */
 
 export type ThunkTransformResult = {
     code: string;
-    /** Number of call expressions wrapped */
     wrapped: number;
-    /** Number of @thunk scopes found */
     scopes: number;
 };
 
 const THUNK_TAG_RE = /@thunk\b/;
 
-/** Props that must never be auto-wrapped (handlers / refs). */
 const SKIP_PROP_RE =
     /^(on[A-Z].*|on:.*|ref|ref:.*|bind:.*)$/;
 
-/**
- * Apply @thunk transform to source text.
- * Safe to call on any .ts/.tsx/.js/.jsx file; no-op when there is no @thunk.
- */
 export function applyThunkTransform(
     code: string,
     _filePath?: string,
@@ -47,14 +45,13 @@ export function applyThunkTransform(
         return { code, wrapped: 0, scopes: 0 };
     }
 
-    // Apply from the end so earlier offsets stay valid
     let result = code;
     let wrapped = 0;
 
     for (let i = scopes.length - 1; i >= 0; i--) {
         const scope = scopes[i];
         const body = result.slice(scope.bodyStart, scope.bodyEnd);
-        const transformed = transformJsxCallsInBody(body);
+        const transformed = transformJsxExpressionsInBody(body);
         wrapped += transformed.wrapped;
         result =
             result.slice(0, scope.bodyStart) +
@@ -68,31 +65,21 @@ export function applyThunkTransform(
 /* ========================= scope discovery ========================= */
 
 type ThunkScope = {
-    /** Inclusive start of function body `{` content */
     bodyStart: number;
-    /** Exclusive end of function body (index of closing `}`) */
     bodyEnd: number;
 };
 
-/**
- * Finds function / arrow bodies that carry a @thunk annotation
- * immediately before the declaration (JSDoc or line comment).
- */
 function findThunkScopes(code: string): ThunkScope[] {
     const scopes: ThunkScope[] = [];
     const len = code.length;
     let i = 0;
 
     while (i < len) {
-        // Skip strings & comments quickly when searching for "function" / "=>" contexts
-        // We search for @thunk comments, then resolve the following declaration.
         if (code[i] === "/" && code[i + 1] === "*") {
             const end = code.indexOf("*/", i + 2);
             if (end === -1) break;
-            const comment = code.slice(i, end + 2);
-            if (THUNK_TAG_RE.test(comment)) {
-                const after = skipWs(code, end + 2);
-                const scope = tryParseDeclarationBody(code, after);
+            if (THUNK_TAG_RE.test(code.slice(i, end + 2))) {
+                const scope = tryParseDeclarationBody(code, skipWs(code, end + 2));
                 if (scope) scopes.push(scope);
             }
             i = end + 2;
@@ -102,17 +89,17 @@ function findThunkScopes(code: string): ThunkScope[] {
         if (code[i] === "/" && code[i + 1] === "/") {
             const end = code.indexOf("\n", i + 2);
             const lineEnd = end === -1 ? len : end;
-            const comment = code.slice(i, lineEnd);
-            if (THUNK_TAG_RE.test(comment)) {
-                const after = skipWs(code, lineEnd + (end === -1 ? 0 : 1));
-                const scope = tryParseDeclarationBody(code, after);
+            if (THUNK_TAG_RE.test(code.slice(i, lineEnd))) {
+                const scope = tryParseDeclarationBody(
+                    code,
+                    skipWs(code, lineEnd + (end === -1 ? 0 : 1)),
+                );
                 if (scope) scopes.push(scope);
             }
             i = lineEnd + 1;
             continue;
         }
 
-        // skip string literals so we don't trip on "@thunk" inside strings
         if (code[i] === "'" || code[i] === '"' || code[i] === "`") {
             i = skipString(code, i);
             continue;
@@ -124,43 +111,24 @@ function findThunkScopes(code: string): ThunkScope[] {
     return scopes;
 }
 
-/**
- * From position `pos` (after annotation), accept:
- *   export async function Name(...) { body }
- *   function Name(...) { body }
- *   export const Name = async (...) => { body }
- *   const Name = (...) => { body }
- *   const Name = function (...) { body }
- */
-function tryParseDeclarationBody(
-    code: string,
-    pos: number,
-): ThunkScope | null {
+function tryParseDeclarationBody(code: string, pos: number): ThunkScope | null {
     let i = skipWs(code, pos);
 
-    // optional export / default
     if (matchKeyword(code, i, "export")) {
         i = skipWs(code, i + 6);
-        if (matchKeyword(code, i, "default")) {
-            i = skipWs(code, i + 7);
-        }
+        if (matchKeyword(code, i, "default")) i = skipWs(code, i + 7);
     }
 
-    // async function / function
-    if (matchKeyword(code, i, "async")) {
-        i = skipWs(code, i + 5);
-    }
+    if (matchKeyword(code, i, "async")) i = skipWs(code, i + 5);
 
     if (matchKeyword(code, i, "function")) {
         i = skipWs(code, i + 8);
-        // optional name
         i = skipIdent(code, i);
         i = skipWs(code, i);
         if (code[i] !== "(") return null;
         i = skipBalanced(code, i, "(", ")");
         if (i < 0) return null;
         i = skipWs(code, i);
-        // optional return type `: Type`
         if (code[i] === ":") {
             i = skipTypeAnnotation(code, i + 1);
             i = skipWs(code, i);
@@ -172,7 +140,6 @@ function tryParseDeclarationBody(
         return { bodyStart, bodyEnd: bodyEnd - 1 };
     }
 
-    // const / let / var Name = ...
     if (
         matchKeyword(code, i, "const") ||
         matchKeyword(code, i, "let") ||
@@ -182,7 +149,6 @@ function tryParseDeclarationBody(
         i = skipWs(code, i + kwLen);
         i = skipIdent(code, i);
         i = skipWs(code, i);
-        // optional type
         if (code[i] === ":") {
             i = skipTypeAnnotation(code, i + 1);
             i = skipWs(code, i);
@@ -190,11 +156,8 @@ function tryParseDeclarationBody(
         if (code[i] !== "=") return null;
         i = skipWs(code, i + 1);
 
-        if (matchKeyword(code, i, "async")) {
-            i = skipWs(code, i + 5);
-        }
+        if (matchKeyword(code, i, "async")) i = skipWs(code, i + 5);
 
-        // function expression
         if (matchKeyword(code, i, "function")) {
             i = skipWs(code, i + 8);
             i = skipIdent(code, i);
@@ -214,7 +177,6 @@ function tryParseDeclarationBody(
             return { bodyStart, bodyEnd: bodyEnd - 1 };
         }
 
-        // arrow: (params) => { body }  or  param => { body }
         if (code[i] === "(") {
             i = skipBalanced(code, i, "(", ")");
             if (i < 0) return null;
@@ -232,9 +194,6 @@ function tryParseDeclarationBody(
 
         if (code[i] !== "=" || code[i + 1] !== ">") return null;
         i = skipWs(code, i + 2);
-
-        // only block bodies — expression-bodied arrows have no stable "body range"
-        // for multi-expression JSX transforms; require `{ ... }`
         if (code[i] !== "{") return null;
         const bodyStart = i + 1;
         const bodyEnd = skipBalanced(code, i, "{", "}");
@@ -245,19 +204,19 @@ function tryParseDeclarationBody(
     return null;
 }
 
-/* ========================= JSX call wrapping ========================= */
+/* ========================= JSX expression wrapping ========================= */
 
-function transformJsxCallsInBody(body: string): { code: string; wrapped: number } {
+function transformJsxExpressionsInBody(body: string): {
+    code: string;
+    wrapped: number;
+} {
     let out = "";
     let wrapped = 0;
     let i = 0;
     const len = body.length;
-
-    // Track simple JSX tag context for prop names: last seen prop name before `=`
     let lastPropName = "";
 
     while (i < len) {
-        // strings
         if (body[i] === "'" || body[i] === '"' || body[i] === "`") {
             const end = skipString(body, i);
             out += body.slice(i, end);
@@ -265,7 +224,6 @@ function transformJsxCallsInBody(body: string): { code: string; wrapped: number 
             continue;
         }
 
-        // comments
         if (body[i] === "/" && body[i + 1] === "/") {
             const end = body.indexOf("\n", i);
             const e = end === -1 ? len : end + 1;
@@ -281,20 +239,16 @@ function transformJsxCallsInBody(body: string): { code: string; wrapped: number 
             continue;
         }
 
-        // remember prop name:  name={...}  or  name = {
         if (isIdentStart(body[i])) {
             const start = i;
             i = skipIdent(body, i);
             const ident = body.slice(start, i);
             const after = skipWs(body, i);
-            if (body[after] === "=") {
-                lastPropName = ident;
-            }
+            if (body[after] === "=") lastPropName = ident;
             out += ident;
             continue;
         }
 
-        // JSX expression container: { ... }
         if (body[i] === "{") {
             const close = skipBalanced(body, i, "{", "}");
             if (close < 0) {
@@ -306,12 +260,12 @@ function transformJsxCallsInBody(body: string): { code: string; wrapped: number 
             const innerRaw = body.slice(i + 1, close - 1);
             const innerTrim = innerRaw.trim();
 
-            // skip empty / spread
             if (
                 !innerTrim ||
                 innerTrim.startsWith("...") ||
                 isAlreadyThunk(innerTrim) ||
-                isSkippedProp(lastPropName)
+                isSkippedProp(lastPropName) ||
+                isStaticLiteral(innerTrim)
             ) {
                 out += body.slice(i, close);
                 i = close;
@@ -319,11 +273,13 @@ function transformJsxCallsInBody(body: string): { code: string; wrapped: number 
                 continue;
             }
 
-            if (isWrapableCallExpression(innerTrim)) {
-                // preserve original inner spacing lightly
+            if (shouldWrapJsxExpression(innerTrim)) {
                 const leading = innerRaw.match(/^\s*/)?.[0] ?? "";
                 const trailing = innerRaw.match(/\s*$/)?.[0] ?? "";
-                out += `{${leading}() => ${innerTrim}${trailing}}`;
+                const core = needsParentheses(innerTrim)
+                    ? `(${innerTrim})`
+                    : innerTrim;
+                out += `{${leading}() => ${core}${trailing}}`;
                 wrapped++;
             } else {
                 out += body.slice(i, close);
@@ -341,65 +297,82 @@ function transformJsxCallsInBody(body: string): { code: string; wrapped: number 
     return { code: out, wrapped };
 }
 
-/** True if expression is already () => ... or function ... */
+function isSkippedProp(propName: string): boolean {
+    return Boolean(propName) && SKIP_PROP_RE.test(propName);
+}
+
 function isAlreadyThunk(expr: string): boolean {
     const t = expr.trim();
     if (t.startsWith("function")) return true;
-    // ( ... ) =>    or   async ( ... ) =>   or  id =>
+
     if (/^(async\s+)?\(/.test(t)) {
-        // could be grouped call (value()) — check for => after balanced paren
-        if (t[0] === "(" || t.startsWith("async")) {
-            let idx = 0;
-            if (t.startsWith("async")) {
-                idx = t.slice(5).match(/^\s*/)?.[0].length ?? 0;
-                idx += 5;
-            }
-            if (t[idx] === "(") {
-                const end = skipBalanced(t, idx, "(", ")");
-                if (end > 0) {
-                    const rest = t.slice(end).trimStart();
-                    if (rest.startsWith("=>")) return true;
-                }
-            }
+        let idx = 0;
+        if (t.startsWith("async")) {
+            idx = 5 + (t.slice(5).match(/^\s*/)?.[0].length ?? 0);
+        }
+        if (t[idx] === "(") {
+            const end = skipBalanced(t, idx, "(", ")");
+            if (end > 0 && t.slice(end).trimStart().startsWith("=>")) return true;
         }
     }
-    // x =>
+
     if (/^[A-Za-z_$][\w$]*\s*=>/.test(t)) return true;
-    // async x =>
     if (/^async\s+[A-Za-z_$][\w$]*\s*=>/.test(t)) return true;
     return false;
 }
 
-function isSkippedProp(propName: string): boolean {
-    if (!propName) return false;
-    return SKIP_PROP_RE.test(propName);
+function isStaticLiteral(expr: string): boolean {
+    const t = expr.trim();
+    if (t === "true" || t === "false" || t === "null" || t === "undefined") {
+        return true;
+    }
+    if (/^-?\d+(\.\d+)?([eE][+-]?\d+)?$/.test(t)) return true;
+    if (
+        (t.startsWith('"') && t.endsWith('"')) ||
+        (t.startsWith("'") && t.endsWith("'")) ||
+        (t.startsWith("`") && t.endsWith("`") && !t.includes("${"))
+    ) {
+        return true;
+    }
+    return false;
 }
 
 /**
- * Accepts top-level call expressions only, e.g.:
- *   value()
- *   count( )
- *   user.name()
- *   store.user.name()
- * Optional simple args: value(1), value(x) — still a call to wrap.
- * Rejects: a + b, a ? b : c, a && b, arrays, objects, awaits, new, etc.
+ * Wrap when expression needs reactivity:
+ *  - call: value(), store.x()
+ *  - call chain: items().map(...)
+ *  - ternary / && / ||
+ *  - array literal
+ *  - any expression containing a call
  */
+function shouldWrapJsxExpression(expr: string): boolean {
+    const t = expr.trim();
+    if (!t || isAlreadyThunk(t) || isStaticLiteral(t)) return false;
+
+    if (isWrapableCallExpression(t)) return true;
+    if (hasTopLevelTernary(t)) return true;
+    if (hasTopLevelLogical(t)) return true;
+    if (t.startsWith("[") && t.endsWith("]")) return true;
+    if (hasArrayMethodChain(t)) return true;
+    if (containsCallExpression(t)) return true;
+
+    return false;
+}
+
+function needsParentheses(expr: string): boolean {
+    const t = expr.trim();
+    return hasTopLevelTernary(t) || hasTopLevelComma(t);
+}
+
 function isWrapableCallExpression(expr: string): boolean {
     const t = expr.trim();
-    if (!t) return false;
+    if (!t || !isIdentStart(t[0])) return false;
 
-    // must look like  MemberOrIdent ( args )
-    // scan ident.member* then (...)
-    let i = 0;
-    if (!isIdentStart(t[i])) return false;
-    i = skipIdent(t, i);
+    let i = skipIdent(t, 0);
 
-    while (t[i] === "." || t[i] === "?.") {
-        if (t[i] === "?" && t[i + 1] === ".") {
-            i += 2;
-        } else {
-            i += 1;
-        }
+    while (t[i] === "." || (t[i] === "?" && t[i + 1] === ".")) {
+        if (t[i] === "?" && t[i + 1] === ".") i += 2;
+        else i += 1;
         i = skipWs(t, i);
         if (!isIdentStart(t[i])) return false;
         i = skipIdent(t, i);
@@ -411,9 +384,123 @@ function isWrapableCallExpression(expr: string): boolean {
     const afterCall = skipBalanced(t, i, "(", ")");
     if (afterCall < 0) return false;
 
-    // nothing after the call (no trailing operators)
-    const rest = t.slice(afterCall).trim();
+    // allow .map(...) chain after the call
+    let rest = t.slice(afterCall).trim();
+    while (rest.startsWith(".") || rest.startsWith("?.")) {
+        const member = rest.match(/^\??\.([A-Za-z_$][\w$]*)/);
+        if (!member) break;
+        rest = rest.slice(member[0].length).trimStart();
+        if (rest.startsWith("(")) {
+            const end = skipBalanced(rest, 0, "(", ")");
+            if (end < 0) return false;
+            rest = rest.slice(end).trimStart();
+            continue;
+        }
+        break;
+    }
+
     return rest.length === 0;
+}
+
+function hasArrayMethodChain(expr: string): boolean {
+    return /\.\s*(map|filter|flatMap|reduce|forEach|find|some|every|slice|concat)\s*\(/.test(
+        expr,
+    );
+}
+
+function containsCallExpression(expr: string): boolean {
+    let i = 0;
+    while (i < expr.length) {
+        if (expr[i] === "'" || expr[i] === '"' || expr[i] === "`") {
+            i = skipString(expr, i);
+            continue;
+        }
+        if (isIdentStart(expr[i])) {
+            i = skipIdent(expr, i);
+            const after = skipWs(expr, i);
+            if (expr[after] === "(") return true;
+            continue;
+        }
+        i++;
+    }
+    return false;
+}
+
+function hasTopLevelTernary(expr: string): boolean {
+    return findTopLevelChar(expr, "?") >= 0;
+}
+
+function hasTopLevelLogical(expr: string): boolean {
+    return (
+        findTopLevelOperator(expr, "&&") >= 0 ||
+        findTopLevelOperator(expr, "||") >= 0
+    );
+}
+
+function hasTopLevelComma(expr: string): boolean {
+    return findTopLevelChar(expr, ",") >= 0;
+}
+
+function findTopLevelChar(expr: string, ch: string): number {
+    let depthParen = 0;
+    let depthBrace = 0;
+    let depthBracket = 0;
+
+    for (let i = 0; i < expr.length; i++) {
+        const c = expr[i];
+        if (c === "'" || c === '"' || c === "`") {
+            i = skipString(expr, i) - 1;
+            continue;
+        }
+        if (c === "(") depthParen++;
+        else if (c === ")") depthParen--;
+        else if (c === "{") depthBrace++;
+        else if (c === "}") depthBrace--;
+        else if (c === "[") depthBracket++;
+        else if (c === "]") depthBracket--;
+        else if (
+            c === ch &&
+            depthParen === 0 &&
+            depthBrace === 0 &&
+            depthBracket === 0
+        ) {
+            if (ch === "?" && (expr[i + 1] === "?" || expr[i + 1] === ".")) {
+                i++;
+                continue;
+            }
+            return i;
+        }
+    }
+    return -1;
+}
+
+function findTopLevelOperator(expr: string, op: string): number {
+    let depthParen = 0;
+    let depthBrace = 0;
+    let depthBracket = 0;
+
+    for (let i = 0; i < expr.length; i++) {
+        const c = expr[i];
+        if (c === "'" || c === '"' || c === "`") {
+            i = skipString(expr, i) - 1;
+            continue;
+        }
+        if (c === "(") depthParen++;
+        else if (c === ")") depthParen--;
+        else if (c === "{") depthBrace++;
+        else if (c === "}") depthBrace--;
+        else if (c === "[") depthBracket++;
+        else if (c === "]") depthBracket--;
+        else if (
+            depthParen === 0 &&
+            depthBrace === 0 &&
+            depthBracket === 0 &&
+            expr.startsWith(op, i)
+        ) {
+            return i;
+        }
+    }
+    return -1;
 }
 
 /* ========================= scan helpers ========================= */
@@ -441,7 +528,6 @@ function skipIdent(code: string, i: number): number {
 function matchKeyword(code: string, i: number, kw: string): boolean {
     if (!code.startsWith(kw, i)) return false;
     const next = code[i + kw.length];
-    // word boundary
     return !next || !isIdentPart(next);
 }
 
@@ -455,7 +541,6 @@ function skipString(code: string, i: number): number {
                 continue;
             }
             if (code[i] === "`") return i + 1;
-            // template expression ${ ... }
             if (code[i] === "$" && code[i + 1] === "{") {
                 const end = skipBalanced(code, i + 1, "{", "}");
                 i = end < 0 ? code.length : end;
@@ -476,7 +561,6 @@ function skipString(code: string, i: number): number {
     return code.length;
 }
 
-/** Returns index just past the closing delimiter, or -1. `openIdx` points at opener. */
 function skipBalanced(
     code: string,
     openIdx: number,
@@ -490,7 +574,6 @@ function skipBalanced(
 
     while (i < len) {
         const ch = code[i];
-
         if (ch === "'" || ch === '"' || ch === "`") {
             i = skipString(code, i);
             continue;
@@ -505,7 +588,6 @@ function skipBalanced(
             i = end === -1 ? len : end + 2;
             continue;
         }
-
         if (ch === open) {
             depth++;
             i++;
@@ -522,10 +604,6 @@ function skipBalanced(
     return -1;
 }
 
-/**
- * Skip a TypeScript type annotation roughly until `{`, `=>`, `=` or `;`
- * that ends the annotation context. Good enough for finding the body `{`.
- */
 function skipTypeAnnotation(code: string, i: number): number {
     i = skipWs(code, i);
     let depthAngle = 0;
@@ -535,12 +613,10 @@ function skipTypeAnnotation(code: string, i: number): number {
 
     while (i < code.length) {
         const ch = code[i];
-
         if (ch === "'" || ch === '"' || ch === "`") {
             i = skipString(code, i);
             continue;
         }
-
         if (ch === "<") {
             depthAngle++;
             i++;
@@ -588,10 +664,8 @@ function skipTypeAnnotation(code: string, i: number): number {
             depthBrace === 0 &&
             depthBracket === 0
         ) {
-            // end of annotation before body / arrow / assign
             if (ch === "{" || ch === ";" || ch === "," || ch === ")") break;
-            if (ch === "=" && code[i + 1] === ">") break;
-            if (ch === "=" && code[i + 1] !== ">") break;
+            if (ch === "=") break;
         }
         i++;
     }

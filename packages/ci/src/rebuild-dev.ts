@@ -91,7 +91,7 @@ function shouldIgnorePath(normalized: string): boolean {
     return false;
 }
 
-async function classifyPath(
+/*async function classifyPath(
     appDir: string,
     normalized: string,
     absolutePath: string,
@@ -149,6 +149,46 @@ async function classifyPath(
     }
 
     return "server";
+}*/
+
+async function classifyPath(
+    appDir: string,
+    normalized: string,
+    absolutePath: string,
+): Promise<ChangeKind> {
+    // ... html / dependency / public / ignore iguais ...
+
+    if (!normalized.startsWith("src/")) { /* ... */ }
+
+    if (!existsSync(absolutePath)) {
+        // removido: server + client por segurança
+        return "client";
+    }
+
+    if (normalized.endsWith(".d.ts")) return "ignore";
+
+    if (!/\.(ts|tsx|js|jsx)$/.test(normalized)) {
+        return "server";
+    }
+
+    try {
+        const source = await fs.readFile(absolutePath, "utf8");
+        if (getHydratableDirective(source)) {
+            return "client";
+        }
+    } catch {
+        return "client";
+    }
+
+    // IMPORTANTE: secundários (sem diretiva) ainda entram no bundle
+    // dos parents hydrate/client → no dev sempre rebundle client
+    if (/\.(tsx|jsx)$/.test(normalized)) {
+        return "client";
+    }
+
+    // .ts puro (actions, utils): server; se utils for importado no client,
+    // no dev também vale forçar client:
+    return "client"; // ou "server" se quiser otimizar só .ts
 }
 
 export type IncrementalDevResult = {

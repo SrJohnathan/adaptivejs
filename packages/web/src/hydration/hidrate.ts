@@ -25,6 +25,7 @@ import {CONTEXT_PROVIDER_TAG} from "../front/context-runtime.js";
 import {ReactiveSource, runWithContext, runWithEffectScope} from "../reactive/index.js";
 import {cleanupEffectScope, createEffectScope, untrack} from "../reactive/index.js";
 import {createReactiveEffect} from "../reactive/events.js";
+import { mountKeyedReactiveFunction } from "./keyed-reactive-block.js";
 
 
 const eventHandlers = new WeakMap<EventTarget, Map<string, EventListener>>();
@@ -134,7 +135,8 @@ export function renderToDOM(vnode: any, namespace: string | null = null): Node {
   }
 
   if (typeof vnode === "function") {
-    const start = document.createTextNode("");
+    return mountKeyedReactiveFunction(vnode, namespace, renderToDOM);
+/*    const start = document.createTextNode("");
     const end = document.createTextNode("");
     const fragment = document.createDocumentFragment();
 
@@ -168,7 +170,7 @@ export function renderToDOM(vnode: any, namespace: string | null = null): Node {
       parent.insertBefore(rendered, end);
     });
 
-    return fragment;
+    return fragment;*/
   }
 
   if (vnode.tag === CONTEXT_PROVIDER_TAG) {

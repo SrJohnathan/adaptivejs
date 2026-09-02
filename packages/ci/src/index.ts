@@ -82,6 +82,43 @@ async function runDev(appDir: string): Promise<void> {
             rebuildPending = true;
             return;
         }
+        building = true;
+        rebuildPending = false;
+
+        const changes = Array.from(pendingChanges.values()).filter((c) => {
+            const p = c.filePath.replace(/\\/g, "/");
+            const base = p.split("/").pop() ?? "";
+            return !base.endsWith("~") && !base.endsWith(".swp");
+        });
+        pendingChanges.clear();
+
+        try {
+            console.log("🔁 rebuilding...");
+            console.log(
+                "[adaptive] changed:",
+                changes.map((c) => c.filePath).join(", ") || "(full)",
+            );
+
+            // DEV: full sempre — pages + components + shared
+            await buildAppDev(appDir);
+
+            console.log("✅ done (full)");
+        } catch (error) {
+            console.error("❌ rebuild failed", error);
+        } finally {
+            building = false;
+            if (rebuildPending) {
+                rebuildPending = false;
+                void executeRebuild();
+            }
+        }
+    }
+
+    /*async function executeRebuild() {
+        if (building) {
+            rebuildPending = true;
+            return;
+        }
 
         building = true;
         rebuildPending = false;
@@ -136,7 +173,7 @@ async function runDev(appDir: string): Promise<void> {
                 void executeRebuild();
             }
         }
-    }
+    }*/
 
     function scheduleRebuild(change?: FileChange) {
         if (change) {
