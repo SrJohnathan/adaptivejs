@@ -1,6 +1,9 @@
-<img src="avatar.png" width="120" />
+
+
 
 # AdaptiveJS
+
+<img src="adaptivejs_chameleon_no_logo.png" width="500" />
 
 AdaptiveJS is an experimental TypeScript and TSX framework focused on:
 
@@ -549,6 +552,9 @@ The closest mental model today is:
 
 The project began as a place to explore architecture and runtime ideas. Over time it has been turning into a real open-source codebase: same technical direction, with more weight on clarity, maintenance, and collaboration.
 
+<img src="avatar.png" width="120" /> 
+
 ## License
 
 MIT
+
