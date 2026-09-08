@@ -30,6 +30,12 @@ export interface AuthSession<
   absoluteExpiresAt: Date;
 }
 
+export interface StoredSessionBinding {
+  userAgent?: string;
+  ip?: string;
+  fingerprint?: string;
+}
+
 export interface StoredAuthSession<TData extends AuthSessionData = AuthSessionData> {
   id: string;
   userId: string;
@@ -38,6 +44,7 @@ export interface StoredAuthSession<TData extends AuthSessionData = AuthSessionDa
   expiresAt: Date;
   absoluteExpiresAt: Date;
   csrfToken: string;
+  binding?: StoredSessionBinding;
 }
 
 /**
@@ -101,6 +108,7 @@ export interface CreateSessionOptions<TData extends AuthSessionData = AuthSessio
   data?: TData;
   expiresAt?: Date;
   absoluteExpiresAt?: Date;
+  binding?: StoredSessionBinding;
 }
 
 export interface BeforeCreateSessionContext<
@@ -111,7 +119,7 @@ export interface BeforeCreateSessionContext<
 }
 
 export interface AuthCsrfOptions {
-  allowedOrigins?: string[];
+  allowedOrigins: string[];
   headerName?: string;
 }
 
@@ -131,19 +139,61 @@ export interface AuthAuditEvent {
   at: Date;
 }
 
+export interface SessionBindingConfig {
+  userAgent?: boolean;
+  ip?: boolean;
+  fingerprint?: boolean;
+}
+
+export interface RateLimitContext<TUser extends AuthUser = AuthUser> {
+  ip: string | null;
+  userId?: string;
+  user?: TUser;
+  request?: AuthRequestLike;
+}
+
+export interface RateLimitEntry {
+  count: number;
+  resetAt: number;
+}
+
+export interface AuthRateLimitStorage {
+  increment(key: string, windowMs: number): MaybePromise<{ count: number; resetAt: number }>;
+  get?(key: string): MaybePromise<RateLimitEntry | null>;
+  reset?(key: string): MaybePromise<void>;
+}
+
+export interface AuthRateLimitRule<TUser extends AuthUser = AuthUser> {
+  max: number;
+  windowMs: number;
+  key?: (context: RateLimitContext<TUser>) => string;
+  storage?: AuthRateLimitStorage;
+}
+
+export interface AuthRateLimitConfig<TUser extends AuthUser = AuthUser> {
+  createSession?: AuthRateLimitRule<TUser>;
+}
+
 export interface CreateAuthOptions<
   TUser extends AuthUser = AuthUser,
   TData extends AuthSessionData = AuthSessionData
 > {
   adapter: AuthAdapter<TUser, TData>;
+  csrf: AuthCsrfOptions;
   cookie?: AuthCookieOptions;
   sessionDuration?: number;
   absoluteSessionDuration?: number;
   renewBefore?: number;
   generateSessionId?: () => string;
-  csrf?: AuthCsrfOptions;
+  secureDefaults?: boolean;
+  sessionBinding?: SessionBindingConfig;
+  rateLimit?: AuthRateLimitConfig<TUser>;
   onAuditEvent?: (event: AuthAuditEvent) => MaybePromise<void>;
   beforeCreateSession?: (context: BeforeCreateSessionContext<TUser>) => MaybePromise<void>;
+  onPasswordChanged?: (userId: string) => MaybePromise<void>;
+  onRoleChanged?: (userId: string) => MaybePromise<void>;
+  onMfaEnabled?: (userId: string) => MaybePromise<void>;
+  onSuspiciousActivity?: (userId: string, reason: string) => MaybePromise<void>;
 }
 
 export interface ReadSessionResult<
@@ -159,3 +209,40 @@ export interface AuthClientState<TUser extends AuthUser = AuthUser> {
   user: TUser | null;
   expiresAt: string | null;
 }
+
+export interface AuthActionContext<
+  TUser extends AuthUser = AuthUser,
+  TData extends AuthSessionData = AuthSessionData
+> {
+  session: AuthSession<TUser, TData>;
+  freshCookie?: AuthCookieResult;
+  formData?: FormData;
+  request: AuthRequestLike;
+  args: unknown[];
+  event?: any;
+}
+
+export interface AuthActionOptions {
+  roles?: string[];
+}
+
+export interface AuthPageContext {
+  request?: AuthRequestLike;
+  appendSetCookie?: (header: string) => void;
+}
+
+export interface ProtectPageOptions {
+  roles?: string[];
+  onUnauthenticated?: "404" | "401" | "redirect" | ((context: AuthPageContext) => any);
+  redirectTo?: string;
+  returnTo?: boolean;
+  onForbidden?: "404" | "403" | ((context: AuthPageContext) => any);
+}
+
+export type ProtectedPageContext<
+  TContext extends AuthPageContext = AuthPageContext,
+  TUser extends AuthUser = AuthUser,
+  TData extends AuthSessionData = AuthSessionData
+> = TContext & { session: AuthSession<TUser, TData> };
+
+

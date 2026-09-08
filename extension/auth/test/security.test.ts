@@ -83,4 +83,15 @@ describe("security guarantees", () => {
 
     assert.deepEqual(events, ["before", "audit"]);
   });
+
+  it("prevents session fixation by always generating fresh IDs on session creation", async () => {
+    const { auth, user } = createTestAuth();
+    const session1 = await auth.createSession(user);
+    const session2 = await auth.createSession(user);
+
+    assert.notEqual(session1.session.id, session2.session.id);
+    assert.ok(session1.session.id.length >= 32);
+    assert.ok(session2.session.id.length >= 32);
+  });
 });
+

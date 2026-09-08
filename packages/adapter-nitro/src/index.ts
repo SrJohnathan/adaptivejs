@@ -8,3 +8,5 @@
 
 export {createVinxiApp , buildAdaptive ,StaticOptions ,PreviewOptions} from "./build.js"
 export {previewAdaptive} from "./preview.js";
+export { setSecurityPlugin } from "./handler.js";
+export type { NitroSecurityPlugin } from "./handler.js";

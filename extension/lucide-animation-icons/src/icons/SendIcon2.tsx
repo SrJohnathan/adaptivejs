@@ -7,7 +7,7 @@
 
 'hydrate';
 
-import { useRef } from "@adaptive-js/web";
+import { ref } from "@adaptive-js/web";
 import {
     AnimatedIconController,
     cn,
@@ -31,8 +31,8 @@ export function SendIcon2({
                               iconRef,
                               ...props
                           }: SendIcon2Props) {
-    const controller = useRef<AnimatedIconController>(new AnimatedIconController());
-    const groupRef = useRef<SVGGElement>(null);
+    const controller = ref<AnimatedIconController>(new AnimatedIconController());
+    const groupRef = ref<SVGGElement>(null);
 
     const getTargets = () => collectElements(groupRef.current);
 

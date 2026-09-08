@@ -1,6 +1,6 @@
 'client';
 
-import { useRef } from "@adaptive-js/web";
+import { ref } from "@adaptive-js/web";
 import type { AnimatedLucideIconProps } from "../base.js";
 import {
   AnimatedIconController,
@@ -21,8 +21,8 @@ export function MoonIcon({
   iconRef,
   ...props
 }: MoonIconProps) {
-  const controller = useRef(new AnimatedIconController());
-  const svgRef = useRef<SVGSVGElement | null>(null);
+  const controller = ref(new AnimatedIconController());
+  const svgRef = ref<SVGSVGElement | null>(null);
 
   const getTargets = (): SVGElement[] => (svgRef.current ? [svgRef.current] : []);
 

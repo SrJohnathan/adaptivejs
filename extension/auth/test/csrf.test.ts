@@ -84,21 +84,13 @@ describe("requireCsrf", () => {
     );
   });
 
-  it("fails when csrf was not configured and requireCsrf is used", async () => {
+  it("fails createAuth when csrf is omitted", () => {
     const adapter = createMemoryAuthAdapter({ users: [createTestUser()] });
-    const auth = createAuth({
-      adapter,
-      cookie: { name: "adaptive.session.test", secure: false }
-    });
-    const { session, cookie } = await auth.createSession(createTestUser());
-    const csrfToken = await auth.getCsrfToken(session);
-
-    await assert.rejects(
-      () => auth.requireCsrf(
-        csrfRequest(cookie.value, csrfToken, TEST_ORIGIN),
-        session,
-        csrfToken
-      ),
+    assert.throws(
+      () => createAuth({
+        adapter,
+        cookie: { name: "adaptive.session.test", secure: false }
+      } as any),
       (error: unknown) => error instanceof AuthError && error.code === "CSRF_CONFIGURATION_INVALID"
     );
   });

@@ -17,6 +17,8 @@ import {
     createDevLiveReloadScript,
     subscribeLiveReload,
 } from "./live-reload.js";
+import { writeServerModulesManifest } from "./esm-rolldown.js";
+import { loadAdaptiveConfig, resolveActionAllowedOrigins } from "./load-adaptive-config.js";
 
 const ACTION_PATH = "/_action";
 const MAX_PORT_CANDIDATES = 20;
@@ -31,6 +33,16 @@ export async function startAdaptiveDevServer(appDir: string) {
     const templatePath = path.join(clientBuildDir, "index.html");
     const buildMetaPath = path.join(clientBuildDir, "build-meta.json");
 
+    await fs.mkdir(serverBuildDir, { recursive: true });
+    try {
+        await writeServerModulesManifest(sourceDir, serverBuildDir);
+    } catch {
+        // best effort in dev startup
+    }
+
+    const config = await loadAdaptiveConfig(appDir);
+    const allowedOrigins = resolveActionAllowedOrigins(config);
+
     const app = new H3();
 
     app.use(
@@ -44,7 +56,13 @@ export async function startAdaptiveDevServer(appDir: string) {
                 if (staticResponse) return staticResponse;
 
                 if (event.req.method === "POST" && pathname === ACTION_PATH) {
-                    return handleAction(event, { appDir, sourceDir, serverBuildDir, clientBuildDir });
+                    return handleAction(event, {
+                        appDir,
+                        sourceDir,
+                        serverBuildDir,
+                        clientBuildDir,
+                        allowedOrigins,
+                    });
                 }
 
                 return await handleSsr(event, url, {
@@ -169,8 +187,12 @@ async function handleAction(event: any, dirs: {
     sourceDir: string;
     serverBuildDir: string;
     clientBuildDir: string;
+    allowedOrigins?: string[];
 }) {
     const body: any = await readBody(event);
+    const reqHeaders = event.req?.headers ?? event.node?.req?.headers ?? event.headers;
+    const reqMethod = event.req?.method ?? event.node?.req?.method ?? event.method ?? "POST";
+    const reqUrl = event.req?.url ?? event.node?.req?.url ?? event.url;
 
     const result = await handle_actions_request({
         moduleId: body?.module ?? "actions/index",
@@ -183,6 +205,11 @@ async function handleAction(event: any, dirs: {
         isProduction: false,
         sourceDir: dirs.sourceDir,
         serverBuildDir: dirs.serverBuildDir,
+        request: {
+            headers: reqHeaders,
+            method: reqMethod,
+            url: reqUrl
+        },
         context: {
             event,
             appDir: dirs.appDir,
@@ -190,6 +217,7 @@ async function handleAction(event: any, dirs: {
             serverBuildDir: dirs.serverBuildDir,
             clientBuildDir: dirs.clientBuildDir,
         },
+        allowedOrigins: dirs.allowedOrigins,
     });
 
     event.res.status = result.status;

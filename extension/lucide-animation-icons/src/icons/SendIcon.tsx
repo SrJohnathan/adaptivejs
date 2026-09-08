@@ -1,6 +1,6 @@
 'hydrate';
 
-import { useRef } from "@adaptive-js/web";
+import { ref } from "@adaptive-js/web";
 import {
     AnimatedIconController,
     cn,
@@ -23,9 +23,9 @@ export function SendIcon({
                              iconRef,
                              ...props
                          }: SendIconProps) {
-    const controller = useRef<AnimatedIconController>(new AnimatedIconController());
-    const planeRef = useRef<SVGGElement>(null);
-    const trailRef = useRef<SVGPathElement>(null);
+    const controller = ref<AnimatedIconController>(new AnimatedIconController());
+    const planeRef = ref<SVGGElement>(null);
+    const trailRef = ref<SVGPathElement>(null);
 
     const getTargets = () => collectElements(planeRef.current, trailRef.current);
 

@@ -7,7 +7,7 @@
 
 'hydrate';
 
-import { useRef } from "@adaptive-js/web";
+import { ref } from "@adaptive-js/web";
 import {
   AnimatedIconController,
   cn,
@@ -30,9 +30,9 @@ export function LogInIcon({
   iconRef,
   ...props
 }: LogInIconProps) {
-  const controller = useRef<AnimatedIconController>(new AnimatedIconController());
-  const arrowRef = useRef<SVGPolylineElement>(null);
-  const lineRef = useRef<SVGLineElement>(null);
+  const controller = ref<AnimatedIconController>(new AnimatedIconController());
+  const arrowRef = ref<SVGPolylineElement>(null);
+  const lineRef = ref<SVGLineElement>(null);
 
   const getTargets = () => collectElements(arrowRef.current, lineRef.current);
 

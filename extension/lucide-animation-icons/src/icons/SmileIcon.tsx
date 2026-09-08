@@ -7,7 +7,7 @@
 
 'hydrate';
 
-import { useRef } from "@adaptive-js/web";
+import { ref } from "@adaptive-js/web";
 import {
     AnimatedIconController,
     cn,
@@ -31,12 +31,12 @@ export function SmileIcon({
                               iconRef,
                               ...props
                           }: SmileIconProps) {
-    const controller = useRef<AnimatedIconController>(new AnimatedIconController());
+    const controller = ref<AnimatedIconController>(new AnimatedIconController());
 
-    const faceRef = useRef<SVGCircleElement>(null);
-    const mouthRef = useRef<SVGPathElement>(null);
-    const leftEyeRef = useRef<SVGLineElement>(null);
-    const rightEyeRef = useRef<SVGLineElement>(null);
+    const faceRef = ref<SVGCircleElement>(null);
+    const mouthRef = ref<SVGPathElement>(null);
+    const leftEyeRef = ref<SVGLineElement>(null);
+    const rightEyeRef = ref<SVGLineElement>(null);
 
     const getTargets = () =>
         collectElements(faceRef.current, mouthRef.current, leftEyeRef.current, rightEyeRef.current);

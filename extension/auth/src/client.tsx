@@ -3,6 +3,8 @@ import type { AuthClientState, AuthUser } from "./types.js";
 
 export interface AuthProviderProps<TUser extends AuthUser = AuthUser> {
   initialState?: AuthClientState<TUser>;
+  autoClearOnExpired?: boolean;
+  onExpired?: () => void;
   children?: any;
 }
 
@@ -10,8 +12,15 @@ export interface AuthClientApi<TUser extends AuthUser = AuthUser> {
   state: () => AuthClientState<TUser>;
   user: () => TUser | null;
   authenticated: () => boolean;
+  isExpired: () => boolean;
+  expiresInMs: () => number | null;
   setState: (state: AuthClientState<TUser>) => void;
   clear: () => void;
+}
+
+export interface CreateAuthClientOptions {
+  autoClearOnExpired?: boolean;
+  onExpired?: () => void;
 }
 
 const EMPTY_AUTH_STATE: AuthClientState = {
@@ -20,7 +29,9 @@ const EMPTY_AUTH_STATE: AuthClientState = {
   expiresAt: null
 };
 
-export function createAuthClient<TUser extends AuthUser = AuthUser>() {
+export function createAuthClient<TUser extends AuthUser = AuthUser>(
+  clientOptions: CreateAuthClientOptions = {}
+) {
   const AuthContext = createContext<AuthClientApi<TUser> | null>(null);
 
   function AuthProvider(props: AuthProviderProps<TUser>) {
@@ -28,12 +39,76 @@ export function createAuthClient<TUser extends AuthUser = AuthUser>() {
       props.initialState ?? (EMPTY_AUTH_STATE as AuthClientState<TUser>)
     );
 
+    const autoClear = props.autoClearOnExpired ?? clientOptions.autoClearOnExpired ?? false;
+    const onExpiredCallback = props.onExpired ?? clientOptions.onExpired;
+
+    let timerId: any = null;
+
+    function scheduleExpiryCheck(currentState: AuthClientState<TUser>) {
+      if (typeof setTimeout === "undefined") return;
+      if (timerId) {
+        clearTimeout(timerId);
+        timerId = null;
+      }
+
+      if (!currentState.authenticated || !currentState.expiresAt) {
+        return;
+      }
+
+      const remaining = getAuthStateExpiresInMs(currentState);
+      if (remaining === null) return;
+
+      if (remaining <= 0) {
+        if (autoClear) {
+          setState(EMPTY_AUTH_STATE as AuthClientState<TUser>);
+        }
+        onExpiredCallback?.();
+        return;
+      }
+
+      // Schedule callback slightly after expiration
+      timerId = setTimeout(() => {
+        if (autoClear) {
+          setState(EMPTY_AUTH_STATE as AuthClientState<TUser>);
+        }
+        onExpiredCallback?.();
+      }, remaining + 50);
+    }
+
+    // Schedule on initial state
+    scheduleExpiryCheck(state());
+
+    function updateState(next: AuthClientState<TUser>) {
+      setState(next);
+      scheduleExpiryCheck(next);
+    }
+
+    function clear() {
+      if (timerId) {
+        clearTimeout(timerId);
+        timerId = null;
+      }
+      setState(EMPTY_AUTH_STATE as AuthClientState<TUser>);
+    }
+
     const api: AuthClientApi<TUser> = {
       state,
       user: () => state().user,
-      authenticated: () => state().authenticated,
-      setState,
-      clear: () => setState(EMPTY_AUTH_STATE as AuthClientState<TUser>)
+      authenticated: () => {
+        const s = state();
+        if (!s.authenticated) return false;
+        if (isAuthStateExpired(s)) {
+          if (autoClear) {
+            clear();
+          }
+          return false;
+        }
+        return true;
+      },
+      isExpired: () => isAuthStateExpired(state()),
+      expiresInMs: () => getAuthStateExpiresInMs(state()),
+      setState: updateState,
+      clear
     };
 
     return AuthContext.Provider({

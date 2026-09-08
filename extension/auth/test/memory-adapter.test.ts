@@ -57,4 +57,24 @@ describe("MemoryAuthAdapter", () => {
     assert.ok(await adapter.getSession(first.session.id));
     assert.equal(await adapter.getSession(second.session.id), null);
   });
+
+  it("proactively cleans up expired sessions with cleanup()", async () => {
+    const user = createTestUser();
+    const adapter = createMemoryAuthAdapter({ users: [user], cleanupIntervalMs: 0 });
+    const auth = createAuth({
+      adapter,
+      cookie: { name: "adaptive.session.test", secure: false },
+      csrf: { allowedOrigins: ["https://app.example.com"] },
+      sessionDuration: 1,
+      renewBefore: 0
+    });
+
+    await auth.createSession(user);
+    await new Promise((resolve) => setTimeout(resolve, 1100));
+
+    const removedCount = adapter.cleanup();
+    assert.equal(removedCount, 1);
+    adapter.destroy();
+  });
 });
+

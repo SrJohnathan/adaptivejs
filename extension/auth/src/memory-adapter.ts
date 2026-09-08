@@ -8,6 +8,7 @@ import type {
 export interface MemoryAuthAdapterOptions<TUser extends AuthUser = AuthUser> {
   users?: Iterable<TUser>;
   isolated?: boolean;
+  cleanupIntervalMs?: number;
 }
 
 /**
@@ -20,6 +21,8 @@ export function createMemoryAuthAdapter<
   setUser(user: TUser): void;
   deleteUser(userId: string): void;
   clear(): void;
+  cleanup(): number;
+  destroy(): void;
 } {
   const users = options.isolated
     ? new Map<string, TUser>()
@@ -33,12 +36,40 @@ export function createMemoryAuthAdapter<
     users.set(user.id, user);
   }
 
+  function cleanupExpiredSessions(): number {
+    const now = Date.now();
+    let count = 0;
+    for (const [id, session] of sessions) {
+      if (session.expiresAt.getTime() <= now || session.absoluteExpiresAt.getTime() <= now) {
+        sessions.delete(id);
+        count += 1;
+      }
+    }
+    return count;
+  }
+
+  let cleanupTimer: NodeJS.Timeout | null = null;
+  const interval = options.cleanupIntervalMs ?? 60_000;
+  if (interval > 0 && typeof setInterval !== "undefined") {
+    cleanupTimer = setInterval(cleanupExpiredSessions, interval);
+    if (cleanupTimer && typeof cleanupTimer.unref === "function") {
+      cleanupTimer.unref();
+    }
+  }
+
   return {
     getUser(userId) {
       return users.get(userId) ?? null;
     },
     getSession(sessionId) {
-      return sessions.get(sessionId) ?? null;
+      const session = sessions.get(sessionId) ?? null;
+      if (!session) return null;
+      const now = Date.now();
+      if (session.expiresAt.getTime() <= now || session.absoluteExpiresAt.getTime() <= now) {
+        sessions.delete(sessionId);
+        return null;
+      }
+      return session;
     },
     createSession(session) {
       sessions.set(session.id, session);
@@ -64,10 +95,15 @@ export function createMemoryAuthAdapter<
       }
     },
     listUserSessions(userId) {
+      const now = Date.now();
       const result = [];
 
-      for (const session of sessions.values()) {
+      for (const [sessionId, session] of sessions) {
         if (session.userId === userId) {
+          if (session.expiresAt.getTime() <= now || session.absoluteExpiresAt.getTime() <= now) {
+            sessions.delete(sessionId);
+            continue;
+          }
           result.push({
             id: session.id,
             userId: session.userId,
@@ -89,6 +125,15 @@ export function createMemoryAuthAdapter<
     clear() {
       users.clear();
       sessions.clear();
+    },
+    cleanup() {
+      return cleanupExpiredSessions();
+    },
+    destroy() {
+      if (cleanupTimer) {
+        clearInterval(cleanupTimer);
+        cleanupTimer = null;
+      }
     }
   };
 }

@@ -1,3 +1,4 @@
+import { AuthError } from "./errors.js";
 import type { AuthCookieOptions, AuthCookieResult, AuthRequestLike } from "./types.js";
 
 export const DEFAULT_AUTH_COOKIE_NAME = "__Host-adaptive-session";
@@ -10,6 +11,34 @@ export const DEFAULT_AUTH_COOKIE_OPTIONS: Required<
   secure: true,
   httpOnly: true
 };
+
+export function validateCookieOptions(
+  name: string = DEFAULT_AUTH_COOKIE_NAME,
+  options: AuthCookieOptions = {},
+  isProduction: boolean = process.env.NODE_ENV === "production"
+) {
+  const secure = options.secure ?? DEFAULT_AUTH_COOKIE_OPTIONS.secure;
+  const httpOnly = options.httpOnly ?? DEFAULT_AUTH_COOKIE_OPTIONS.httpOnly;
+  const path = options.path ?? DEFAULT_AUTH_COOKIE_OPTIONS.path;
+
+  if (isProduction && (!secure || !httpOnly)) {
+    throw new AuthError(
+      "AUTH_CONFIGURATION_INVALID",
+      `In production, cookies must have Secure and HttpOnly enabled. (Cookie: "${name}")`,
+      500
+    );
+  }
+
+  if (name.startsWith("__Host-")) {
+    if (options.domain || path !== "/" || !secure) {
+      throw new AuthError(
+        "AUTH_CONFIGURATION_INVALID",
+        `Cookie "${name}" uses the __Host- prefix and must use Secure, Path=/, and no Domain attribute.`,
+        500
+      );
+    }
+  }
+}
 
 export function readCookieHeader(
   source: AuthRequestLike | Headers | Record<string, string | string[] | undefined> | string
@@ -81,13 +110,7 @@ export function serializeCookie(name: string, value: string, options: AuthCookie
   const secure = options.secure ?? DEFAULT_AUTH_COOKIE_OPTIONS.secure;
   const httpOnly = options.httpOnly ?? DEFAULT_AUTH_COOKIE_OPTIONS.httpOnly;
 
-  if (name.startsWith("__Host-")) {
-    if (options.domain || path !== "/" || !secure) {
-      throw new Error(
-        `Cookie "${name}" uses the __Host- prefix and must use Secure, Path=/, and no Domain attribute.`
-      );
-    }
-  }
+  validateCookieOptions(name, options);
   const parts = [`${name}=${encodeURIComponent(value)}`, `Path=${path}`];
 
   if (options.domain) {

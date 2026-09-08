@@ -6,7 +6,7 @@
  * See LICENSE file in the project root for full license information.
  */
 
-import { useRef } from "@adaptive-js/web";
+import { ref } from "@adaptive-js/web";
 import {
     AnimatedIconController,
     cn,
@@ -29,8 +29,8 @@ export function MicIcon({
                             iconRef,
                             ...props
                         }: MicIconProps) {
-    const controller = useRef<AnimatedIconController>(new AnimatedIconController());
-    const capsuleRef = useRef<SVGRectElement>(null);
+    const controller = ref<AnimatedIconController>(new AnimatedIconController());
+    const capsuleRef = ref<SVGRectElement>(null);
 
     const getTargets = () => collectElements(capsuleRef.current);
 

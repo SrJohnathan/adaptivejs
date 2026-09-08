@@ -25,8 +25,14 @@ export type AdaptiveClientConfig = {
     external?: ExternalPattern | ExternalPattern[];
 };
 
+export type AdaptiveActionsConfig = {
+    /** Origens adicionais permitidas no endpoint /_action (além do Host). */
+    allowedOrigins?: string[];
+};
+
 export type AdaptiveConfig = {
     client?: AdaptiveClientConfig;
+    actions?: AdaptiveActionsConfig;
 };
 
 const CONFIG_FILES = [
@@ -177,7 +183,24 @@ function normalizeConfig(raw: unknown): AdaptiveConfig {
         client: {
             external: normalizeExternal(external),
         },
+        actions: input.actions?.allowedOrigins?.length
+            ? { allowedOrigins: [...input.actions.allowedOrigins] }
+            : undefined,
     };
+}
+
+/** Resolve origens permitidas para /_action a partir de config + env. */
+export function resolveActionAllowedOrigins(
+    config: AdaptiveConfig = {},
+): string[] | undefined {
+    const fromConfig = config.actions?.allowedOrigins ?? [];
+    const fromEnv = (process.env.ADAPTIVE_ACTION_ALLOWED_ORIGINS ?? "")
+        .split(",")
+        .map((v) => v.trim())
+        .filter(Boolean);
+
+    const merged = [...fromConfig, ...fromEnv];
+    return merged.length > 0 ? merged : undefined;
 }
 
 function normalizeExternal(

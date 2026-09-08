@@ -7,7 +7,7 @@
 
 'hydrate';
 
-import { useRef } from "@adaptive-js/web";
+import { ref } from "@adaptive-js/web";
 import {
     AnimatedIconController,
     cn,
@@ -30,8 +30,8 @@ export function PaperclipIcon({
                                   iconRef,
                                   ...props
                               }: PaperclipIconProps) {
-    const controller = useRef<AnimatedIconController>(new AnimatedIconController());
-    const pathRef = useRef<SVGPathElement>(null);
+    const controller = ref<AnimatedIconController>(new AnimatedIconController());
+    const pathRef = ref<SVGPathElement>(null);
 
     const getTargets = () => collectElements(pathRef.current);
 

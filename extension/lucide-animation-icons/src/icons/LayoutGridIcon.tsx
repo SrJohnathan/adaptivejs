@@ -7,7 +7,7 @@
 
 'hydrate';
 
-import { useRef } from "@adaptive-js/web";
+import { ref } from "@adaptive-js/web";
 import {
   AnimatedIconController,
   cn,
@@ -30,11 +30,11 @@ export function LayoutGridIcon({
   iconRef,
   ...props
 }: LayoutGridIconProps) {
-  const controller = useRef<AnimatedIconController>(new AnimatedIconController());
-  const rect1Ref = useRef<SVGRectElement>(null);
-  const rect2Ref = useRef<SVGRectElement>(null);
-  const rect3Ref = useRef<SVGRectElement>(null);
-  const rect4Ref = useRef<SVGRectElement>(null);
+  const controller = ref<AnimatedIconController>(new AnimatedIconController());
+  const rect1Ref = ref<SVGRectElement>(null);
+  const rect2Ref = ref<SVGRectElement>(null);
+  const rect3Ref = ref<SVGRectElement>(null);
+  const rect4Ref = ref<SVGRectElement>(null);
 
   const getTargets = () =>
     collectElements(rect1Ref.current, rect2Ref.current, rect3Ref.current, rect4Ref.current);

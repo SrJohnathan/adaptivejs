@@ -1,24 +1,26 @@
 {
-  "name": "@adaptive-js/core",
+  "name": "@adaptive-js/extension-security",
   "version": "0.0.1",
-  "description": "Core SSR, routing and framework primitives for AdaptiveJS.",
+  "description": "Security headers, rate limiting, and runtime guards for AdaptiveJS applications.",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "test": "npm run build && tsc -p tsconfig.test.json && node --test dist-test/**/*.test.js"
   },
+  "license": "MIT",
   "publishConfig": {
     "access": "public"
   },
-  "license": "MIT",
-  "dependencies": {
-    "@adaptive-js/shared": "0.0.1",
-    "fast-glob": "^3.3.3"
-  },
   "devDependencies": {
-    "typescript": "^6.0.3",
-    "@types/node": "^25.6.0"
+    "@types/node": "^25.6.0",
+    "typescript": "^6.0.3"
   }
 }

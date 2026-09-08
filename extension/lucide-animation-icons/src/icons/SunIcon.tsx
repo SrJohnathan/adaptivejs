@@ -1,6 +1,6 @@
 'client'
 
-import { useRef } from "@adaptive-js/web";
+import { ref} from "@adaptive-js/web";
 import type { AnimatedLucideIconProps } from "../base.js";
 import {
   AnimatedIconController,
@@ -38,13 +38,13 @@ export function SunIcon({
   iconRef,
   ...props
 }: SunIconProps) {
-  const controller = useRef<AnimatedIconController | null>(new  AnimatedIconController());
+  const controller = ref<AnimatedIconController | null>(new  AnimatedIconController());
 
 
 
-  const isPlaying = useRef(false);
-  const resetTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const rayRefs = Array.from({ length: SUN_RAYS.length }, () => useRef<SVGPathElement | null>(null));
+  const isPlaying = ref(false);
+  const resetTimeout = ref<ReturnType<typeof setTimeout> | null>(null);
+  const rayRefs = Array.from({ length: SUN_RAYS.length }, () => ref<SVGPathElement | null>(null));
 
   const getTargets = () => collectElements(...rayRefs.map((ref) => ref.current));
 
