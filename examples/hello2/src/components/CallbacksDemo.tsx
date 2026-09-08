@@ -1,14 +1,14 @@
 'hydrate'
 
-import { useReactive } from "@adaptive-js/web";
+import { signal } from "@adaptive-js/web";
 
 export const CallbacksDemo = () => {
-    const [inputValue, setInputValue] = useReactive("");
-    const [clickCount, setClickCount] = useReactive(0);
-    const [submitCount, setSubmitCount] = useReactive(0);
-    const [scrollTop, setScrollTop] = useReactive(0);
-    const [wheelDelta, setWheelDelta] = useReactive(0);
-    const [status, setStatus] = useReactive("Aguardando evento");
+    const [inputValue, setInputValue] = signal("");
+    const [clickCount, setClickCount] = signal(0);
+    const [submitCount, setSubmitCount] = signal(0);
+    const [scrollTop, setScrollTop] = signal(0);
+    const [wheelDelta, setWheelDelta] = signal(0);
+    const [status, setStatus] = signal("Aguardando evento");
 
     return (
         <div className="grid gap-4 rounded-2xl border border-white/10 bg-slate-900/60 p-5">

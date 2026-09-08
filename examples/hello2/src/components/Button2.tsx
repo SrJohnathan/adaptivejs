@@ -1,5 +1,5 @@
 'hydrate'
-import {createHandler, createStore} from "@adaptive-js/web";
+import {createHandler, store,} from "@adaptive-js/web";
 /*
  * Copyright (c) 2026 Antonio Johnathan
  *
@@ -8,22 +8,22 @@ import {createHandler, createStore} from "@adaptive-js/web";
  */
 
 export const ButtonR = () => {
-    const store = createStore({
+    const stor = store({
         notifyCount: 0,
         lastMessage: "Nenhum evento ainda"
     });
 
     createHandler("notify",cb => {
-        store.notifyCount[1]((current) => current + 1)
-        store.lastMessage[1](`Notify disparado ${store.notifyCount[0]()} vez(es)`)
+        stor.notifyCount[1]((current) => current + 1)
+        stor.lastMessage[1](`Notify disparado ${stor.notifyCount[0]()} vez(es)`)
         console.log("CALISTOU")
     });
 
     return (
         <>
             <button>Button</button>
-            <p>Total de notify: {() => store.notifyCount[0]()}</p>
-            <p>Estado: {() => store.lastMessage[0]()}</p>
+            <p>Total de notify: {() => stor.notifyCount[0]()}</p>
+            <p>Estado: {() => stor.lastMessage[0]()}</p>
         </>
 
     )

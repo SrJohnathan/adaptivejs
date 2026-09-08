@@ -2,7 +2,7 @@
 
 import {MoonIcon, SunIcon ,AArrowDownIcon} from "@adaptive-js/extension-lucide-animation-icons";
 
-import { useLayoutEffect, useReactive } from "@adaptive-js/web";
+import {layoutEvents, signal} from "@adaptive-js/web";
 
 type ThemeMode = "light" | "dark";
 
@@ -11,9 +11,9 @@ const STORAGE_KEY = "adaptive-theme";
 export  const ThemeController = ()=> {
 
 
-  const [theme, setTheme] = useReactive<ThemeMode>("dark");
+  const [theme, setTheme] = signal<ThemeMode>("dark");
 
-  useLayoutEffect(() => {
+  layoutEvents(() => {
     const media = window.matchMedia("(prefers-color-scheme: dark)");
     const nextTheme = resolveInitialTheme(media);
 

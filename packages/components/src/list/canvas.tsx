@@ -1,5 +1,5 @@
 import type { AdaptiveNode } from "@adaptive-js/web/jsx-runtime";
-import { useDOMEffect, useReactive, useRef } from "@adaptive-js/web";
+import {init, ref, signal} from "@adaptive-js/web";
 import {
     isCustomListItemDescriptor,
     isListItemDescriptor,
@@ -41,18 +41,18 @@ function calculateHeight(height: number | string): number {
 }
 
 export function ListCanvas<T>(props: ListCanvasProps<T>) {
-    const viewportRef = useRef<HTMLDivElement | null>(null);
-    const canvasRef = useRef<HTMLCanvasElement | null>(null);
-    const rafRef = useRef<number | null>(null);
-    const tickingRef = useRef(false);
+    const viewportRef = ref<HTMLDivElement | null>(null);
+    const canvasRef = ref<HTMLCanvasElement | null>(null);
+    const rafRef = ref<number | null>(null);
+    const tickingRef = ref(false);
 
-    const scrollTopRef = useRef(0);
-    const hoverIndexRef = useRef(-1);
-    const viewportWidthRef = useRef(0);
-    const viewportHeightRef = useRef(calculateHeight(props.height));
-    const devicePixelRatioRef = useRef(1);
+    const scrollTopRef = ref(0);
+    const hoverIndexRef = ref(-1);
+    const viewportWidthRef = ref(0);
+    const viewportHeightRef = ref(calculateHeight(props.height));
+    const devicePixelRatioRef = ref(1);
 
-    const [, forceUpdate] = useReactive(0);
+    const [, forceUpdate] = signal(0);
 
     const totalHeight = () => props.items.length * props.itemHeight;
     const physicalTotalHeight = () => Math.min(totalHeight(), MAX_SCROLL_HEIGHT);
@@ -230,7 +230,7 @@ export function ListCanvas<T>(props: ListCanvasProps<T>) {
         return index;
     };
 
-    useDOMEffect(() => {
+    init(() => {
         const viewport = viewportRef.current;
         const parent = viewport?.parentElement;
 

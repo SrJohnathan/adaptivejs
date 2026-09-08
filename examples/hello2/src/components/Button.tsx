@@ -1,5 +1,5 @@
 'hydrate'
-import {useHandler, useReactive} from "@adaptive-js/web";
+import {signal, useHandler,} from "@adaptive-js/web";
 
 /*
  * Copyright (c) 2026 Antonio Johnathan
@@ -10,12 +10,12 @@ import {useHandler, useReactive} from "@adaptive-js/web";
 /* @thunk */
 export const ButtonV = () => {
 
-    const  [state , setState] = useReactive(0)
+    const  [state , setState] = signal(0)
 
     const  h =  useHandler("notify")
     return (
         <>
-           {/* <button onClick={() => {h();setState(state() + 1)}} >CHAMAR CALL  { () => state() }</button>*/}
+
             <button onClick={() => {h();setState(state() + 1)}} >CHAMAR CALL  { state() }</button>
         </>
 

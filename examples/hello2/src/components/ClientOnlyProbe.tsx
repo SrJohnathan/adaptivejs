@@ -1,17 +1,17 @@
 "client";
 
 import EditorJS from "@editorjs/editorjs";
-import { useClientEffect, useRef } from "@adaptive-js/web";
+import {events, ref} from "@adaptive-js/web";
 
 const browserUserAgent = window.navigator.userAgent;
 const browserLanguage = window.navigator.language;
 const browserViewport = `${window.innerWidth}x${window.innerHeight}`;
 
 export function ClientOnlyProbe() {
-    const editorRootRef = useRef<HTMLDivElement | null>(null);
-    const editorInstanceRef = useRef<EditorJS | null>(null);
+    const editorRootRef = ref<HTMLDivElement | null>(null);
+    const editorInstanceRef = ref<EditorJS | null>(null);
 
-    useClientEffect(() => {
+    events(() => {
         if (!editorRootRef.current || editorInstanceRef.current) {
             return;
         }

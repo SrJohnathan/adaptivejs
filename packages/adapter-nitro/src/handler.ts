@@ -76,9 +76,9 @@ export function setSecurityPlugin(plugin: NitroSecurityPlugin): void {
 export default eventHandler(async (event) => {
   if (isDev) {
     console.log(
-      "[Adaptive SSR] REQUEST:",
-      event.method,
-      event.path,
+        "[Adaptive SSR] REQUEST:",
+        event.method,
+        event.path,
     );
   }
 
@@ -145,10 +145,10 @@ async function handleAction(event: any) {
     moduleId: body?.module ?? "actions/index",
     actionName: String(body?.action ?? ""),
     args: Array.isArray(body?.args)
-      ? body.args
-      : body?.input !== undefined
-        ? [body.input]
-        : [],
+        ? body.args
+        : body?.input !== undefined
+            ? [body.input]
+            : [],
     isProduction: !isDev,
     sourceDir: appRoot,
     serverBuildDir,
@@ -205,22 +205,22 @@ async function handleSsr(event: any, url: string) {
   const nonceAttr = nonce ? ` nonce="${nonce}"` : "";
 
   const hydrationScript =
-    `<script${nonceAttr}>` +
-    `window.__ROUTE__=${JSON.stringify(uri.pathname)};` +
-    `window.__PARAMS__=${JSON.stringify(result.params ?? {})};` +
-    `window.__QUERYS__=${JSON.stringify(result.query ?? {})};` +
-    `</script>`;
+      `<script${nonceAttr}>` +
+      `window.__ROUTE__=${safeJsonForScript(uri.pathname)};` +
+      `window.__PARAMS__=${safeJsonForScript(result.params ?? {})};` +
+      `window.__QUERYS__=${safeJsonForScript(result.query ?? {})};` +
+      `</script>`;
 
   const html = applyAssetVersion(
-    injectIntoTemplate(
-      template,
-      result.html,
-      hydrationScript,
-      result.clientEntries ?? [],
-      result.clientStyles ?? [],
-      headHtml,
-    ),
-    assetVersion,
+      injectIntoTemplate(
+          template,
+          result.html,
+          hydrationScript,
+          result.clientEntries ?? [],
+          result.clientStyles ?? [],
+          headHtml,
+      ),
+      assetVersion,
   );
 
   event.node.res.setHeader("content-type", "text/html; charset=utf-8");
@@ -245,11 +245,11 @@ function appendSetCookies(response: any, cookies: string[]) {
   if (cookies.length === 0) return;
   const existing = response.getHeader("Set-Cookie");
   const values =
-    existing == null
-      ? cookies
-      : Array.isArray(existing)
-        ? [...existing, ...cookies]
-        : [String(existing), ...cookies];
+      existing == null
+          ? cookies
+          : Array.isArray(existing)
+              ? [...existing, ...cookies]
+              : [String(existing), ...cookies];
   response.setHeader("Set-Cookie", values);
 }
 
@@ -264,18 +264,18 @@ function resolveRuntimeRoot() {
 
   try {
     candidates.push(
-      path.resolve(path.dirname(fileURLToPath(import.meta.url)), "adaptive-runtime"),
+        path.resolve(path.dirname(fileURLToPath(import.meta.url)), "adaptive-runtime"),
     );
   } catch {}
 
   try {
     candidates.push(
-      path.resolve(
-        path.dirname(fileURLToPath(import.meta.url)),
-        "..",
-        "..",
-        "adaptive-runtime",
-      ),
+        path.resolve(
+            path.dirname(fileURLToPath(import.meta.url)),
+            "..",
+            "..",
+            "adaptive-runtime",
+        ),
     );
   } catch {}
 
@@ -316,31 +316,31 @@ async function loadBuildVersion(metaPath: string) {
 }
 
 function injectIntoTemplate(
-  template: string,
-  html: string,
-  hydrationScript: string,
-  clientEntries: string[],
-  clientStyles: string[],
-  headHtml = "",
+    template: string,
+    html: string,
+    hydrationScript: string,
+    clientEntries: string[],
+    clientStyles: string[],
+    headHtml = "",
 ) {
   const withHtml = template.includes("<!--app-html-->")
-    ? template.replace("<!--app-html-->", html)
-    : template.replace("</body>", `<div id="root">${html}</div></body>`);
+      ? template.replace("<!--app-html-->", html)
+      : template.replace("</body>", `<div id="root">${html}</div></body>`);
 
   const styleLinks = clientStyles
-    .map((entry) => `<link rel="stylesheet" href="${entry}">`)
-    .join("");
+      .map((entry) => `<link rel="stylesheet" href="${entry}">`)
+      .join("");
 
   const withHead =
-    headHtml || styleLinks
-      ? withHtml.includes("<!--adaptive-head-->")
-        ? withHtml.replace("<!--adaptive-head-->", `${headHtml}${styleLinks}`)
-        : withHtml.replace("</head>", `${headHtml}${styleLinks}</head>`)
-      : withHtml;
+      headHtml || styleLinks
+          ? withHtml.includes("<!--adaptive-head-->")
+              ? withHtml.replace("<!--adaptive-head-->", `${headHtml}${styleLinks}`)
+              : withHtml.replace("</head>", `${headHtml}${styleLinks}</head>`)
+          : withHtml;
 
   const clientScripts = clientEntries
-    .map((entry) => `<script type="module" src="${entry}"></script>`)
-    .join("");
+      .map((entry) => `<script type="module" src="${entry}"></script>`)
+      .join("");
 
   if (withHead.includes("<!--hydration-script-->")) {
     return withHead.replace("<!--hydration-script-->", `${hydrationScript}${clientScripts}`);
@@ -385,7 +385,7 @@ function parseUrl(fullUrl: string) {
 async function resolveModuleMetadata(module: any, context: any) {
   if (!module) return null;
   const resolver =
-    typeof module.generateMetadata === "function" ? module.generateMetadata : module.metadata;
+      typeof module.generateMetadata === "function" ? module.generateMetadata : module.metadata;
   return resolveMetadata(resolver, context);
 }
 
@@ -418,8 +418,8 @@ function renderMetadataTags(metadata: any) {
   const locale = metadata.locale;
   const type = metadata.type;
   const keywords = Array.isArray(metadata.keywords)
-    ? metadata.keywords.join(", ")
-    : metadata.keywords;
+      ? metadata.keywords.join(", ")
+      : metadata.keywords;
 
   const og = {
     title: metadata.openGraph?.title ?? title,
@@ -444,52 +444,69 @@ function renderMetadataTags(metadata: any) {
     title ? `<title>${escapeHtml(title)}</title>` : "",
     description ? `<meta name="description" content="${escapeAttribute(description)}" />` : "",
     metadata.themeColor
-      ? `<meta name="theme-color" content="${escapeAttribute(metadata.themeColor)}" />`
-      : "",
+        ? `<meta name="theme-color" content="${escapeAttribute(metadata.themeColor)}" />`
+        : "",
     metadata.robots ? `<meta name="robots" content="${escapeAttribute(metadata.robots)}" />` : "",
     keywords ? `<meta name="keywords" content="${escapeAttribute(keywords)}" />` : "",
     metadata.canonical
-      ? `<link rel="canonical" href="${escapeAttribute(metadata.canonical)}" />`
-      : "",
+        ? `<link rel="canonical" href="${escapeAttribute(metadata.canonical)}" />`
+        : "",
     og.title ? `<meta property="og:title" content="${escapeAttribute(og.title)}" />` : "",
     og.description
-      ? `<meta property="og:description" content="${escapeAttribute(og.description)}" />`
-      : "",
+        ? `<meta property="og:description" content="${escapeAttribute(og.description)}" />`
+        : "",
     og.image ? `<meta property="og:image" content="${escapeAttribute(og.image)}" />` : "",
     og.url ? `<meta property="og:url" content="${escapeAttribute(og.url)}" />` : "",
     og.type ? `<meta property="og:type" content="${escapeAttribute(og.type)}" />` : "",
     og.siteName
-      ? `<meta property="og:site_name" content="${escapeAttribute(og.siteName)}" />`
-      : "",
+        ? `<meta property="og:site_name" content="${escapeAttribute(og.siteName)}" />`
+        : "",
     og.locale ? `<meta property="og:locale" content="${escapeAttribute(og.locale)}" />` : "",
     twitter.card
-      ? `<meta name="twitter:card" content="${escapeAttribute(twitter.card)}" />`
-      : "",
+        ? `<meta name="twitter:card" content="${escapeAttribute(twitter.card)}" />`
+        : "",
     twitter.title
-      ? `<meta name="twitter:title" content="${escapeAttribute(twitter.title)}" />`
-      : "",
+        ? `<meta name="twitter:title" content="${escapeAttribute(twitter.title)}" />`
+        : "",
     twitter.description
-      ? `<meta name="twitter:description" content="${escapeAttribute(twitter.description)}" />`
-      : "",
+        ? `<meta name="twitter:description" content="${escapeAttribute(twitter.description)}" />`
+        : "",
     twitter.image
-      ? `<meta name="twitter:image" content="${escapeAttribute(twitter.image)}" />`
-      : "",
+        ? `<meta name="twitter:image" content="${escapeAttribute(twitter.image)}" />`
+        : "",
     twitter.site
-      ? `<meta name="twitter:site" content="${escapeAttribute(twitter.site)}" />`
-      : "",
+        ? `<meta name="twitter:site" content="${escapeAttribute(twitter.site)}" />`
+        : "",
     twitter.creator
-      ? `<meta name="twitter:creator" content="${escapeAttribute(twitter.creator)}" />`
-      : "",
+        ? `<meta name="twitter:creator" content="${escapeAttribute(twitter.creator)}" />`
+        : "",
   ]
-    .filter(Boolean)
-    .join("");
+      .filter(Boolean)
+      .join("");
 }
 
 function escapeHtml(value: string) {
   return String(value)
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;");
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;");
+}
+
+/**
+ * Serializa um valor para embutir dentro de uma tag <script> inline com
+ * segurança. `JSON.stringify` sozinho não escapa `<`, `>` nem `/`, o que
+ * permite que um valor contendo literalmente "</script>" feche a tag
+ * prematuramente e injete HTML/JS arbitrário (XSS refletido via
+ * pathname/params/query). Também neutraliza U+2028/U+2029, que quebram o
+ * parser de JS em alguns engines dentro de uma string sem estarem entre
+ * aspas escapadas.
+ */
+function safeJsonForScript(value: unknown): string {
+  return JSON.stringify(value)
+      .replace(/</g, "\\u003c")
+      .replace(/>/g, "\\u003e")
+      .replace(/\u2028/g, "\\u2028")
+      .replace(/\u2029/g, "\\u2029");
 }
 
 function escapeAttribute(value: string) {

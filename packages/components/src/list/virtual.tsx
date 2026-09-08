@@ -7,7 +7,7 @@
  */
 
 import type {AdaptiveNode} from "@adaptive-js/web/jsx-runtime";
-import { useLayoutEffect, useReactive, useRef} from "@adaptive-js/web";
+import {layoutEvents, ref, signal} from "@adaptive-js/web";
 
 export type ListVirtualProps<T> = {
     items: T[];
@@ -24,15 +24,15 @@ export type ListVirtualProps<T> = {
 const DEFAULT_OVERSCAN = 6;
 
 export function ListVirtual<T>(props: ListVirtualProps<T>) {
-    const viewportRef = useRef<HTMLDivElement | null>(null);
-    const itemHeightsRef = useRef<Map<number, number>>(new Map());
-    const rowObserversRef = useRef<Map<number, ResizeObserver>>(new Map());
+    const viewportRef = ref<HTMLDivElement | null>(null);
+    const itemHeightsRef = ref<Map<number, number>>(new Map());
+    const rowObserversRef = ref<Map<number, ResizeObserver>>(new Map());
 
-    const scrollTopRef = useRef(0);
+    const scrollTopRef = ref(0);
 
 
 
-    const viewportHeightRef = useRef(
+    const viewportHeightRef = ref(
         typeof props.height === "number" ? props.height : 0
     );
 
@@ -57,7 +57,7 @@ export function ListVirtual<T>(props: ListVirtualProps<T>) {
         );
     };
 
-    const [renderVersion, forceRender] = useReactive(0);
+    const [renderVersion, forceRender] = signal(0);
 
     const overscan = () => props.overscan ?? DEFAULT_OVERSCAN;
     const estimatedHeight = () => props.itemHeight;
@@ -167,7 +167,7 @@ export function ListVirtual<T>(props: ListVirtualProps<T>) {
         };
     };
 
-    useLayoutEffect(() => {
+    layoutEvents(() => {
 
         const viewport = viewportRef.current;
 

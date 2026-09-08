@@ -1,6 +1,6 @@
 "client";
 
-import { useReactive, useRef, useClientEffect, useDOMEffect } from "@adaptive-js/web";
+import {init, ref, signal} from "@adaptive-js/web";
 import * as monaco from "monaco-editor";
 
 export type CodeEditorProps = {
@@ -15,23 +15,24 @@ export function CodeEditor({
                                onCodeChange
                            }: CodeEditorProps) {
     // Teu tuplo nativo [getter, setter]
-    const [code, setCode] = useReactive(initialCode);
-    const editorRef = useRef<HTMLDivElement | null>(null);
-    const instanceRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
-
-    // 1. Disparo inicial puro e isolado (DOMContentLoaded / Mount único)
-    // Graças ao motor novo, este bloco roda sem capturar subscrições reativas!
-
-    useClientEffect(() => {
-
-        console.log("carregando editor")
-        console.log(code())
+    const [code, setCode] = signal(initialCode);
+    const editorRef = ref<HTMLDivElement | null>(null);
+    const instanceRef = ref<monaco.editor.IStandaloneCodeEditor | null>(null);
 
 
 
-    },[])
+    // 2. Sincronização focada: Só altera se a linguagem mudar lá de fora (ex: mudar de aba na IDE)
+    init(() => {
+        const editor = instanceRef.current;
+        if (editor) {
+            const model = editor.getModel();
+            if (model) {
+                monaco.editor.setModelLanguage(model, language);
+            }
+        }
 
-    useDOMEffect(() => {
+
+
         if (!editorRef.current) return;
 
         // O useDOMEffect já executa em untrack(), então ler code() aqui é 100% seguro
@@ -66,18 +67,11 @@ export function CodeEditor({
             subscription.dispose();
             editorInstance.dispose();
         };
-    });
 
-    // 2. Sincronização focada: Só altera se a linguagem mudar lá de fora (ex: mudar de aba na IDE)
-    useClientEffect(() => {
-        const editor = instanceRef.current;
-        if (editor) {
-            const model = editor.getModel();
-            if (model) {
-                monaco.editor.setModelLanguage(model, language);
-            }
-        }
-    }, [language]);
+
+
+
+    });
 
     // Retorna apenas a div crua e limpa que o Monaco vai controlar autonomamente
     return (

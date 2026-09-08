@@ -75,7 +75,7 @@ export async function startAdaptiveDevServer(appDir: string) {
                 });
             } catch (error: any) {
                 console.error(`[Adaptive Dev Server] Erro ao processar requisição ${url}:`, error);
-                
+
                 // Se o erro for de módulo não encontrado durante um rebuild, tenta responder algo básico
                 // ou deixa o h3 lidar com o erro.
                 event.res.status = 500;
@@ -258,9 +258,9 @@ async function handleSsr(event: any, url: string, dirs: {
 
     const hydrationScript =
         `<script>` +
-        `window.__ROUTE__=${JSON.stringify(uri.pathname)};` +
-        `window.__PARAMS__=${JSON.stringify(result.params ?? {})};` +
-        `window.__QUERYS__=${JSON.stringify(result.query ?? {})};` +
+        `window.__ROUTE__=${safeJsonForScript(uri.pathname)};` +
+        `window.__PARAMS__=${safeJsonForScript(result.params ?? {})};` +
+        `window.__QUERYS__=${safeJsonForScript(result.query ?? {})};` +
         `</script>`;
 
     const liveReloadScript = createDevLiveReloadScript(assetVersion);
@@ -450,6 +450,23 @@ function escapeHtml(value: string) {
 
 function escapeAttr(value: string) {
     return escapeHtml(value).replace(/"/g, "&quot;");
+}
+
+/**
+ * Serializa um valor para embutir dentro de uma tag <script> inline com
+ * segurança. `JSON.stringify` sozinho não escapa `<`, `>` nem `/`, o que
+ * permite que um valor contendo literalmente "</script>" feche a tag
+ * prematuramente e injete HTML/JS arbitrário (XSS refletido via
+ * pathname/params/query). Também neutraliza U+2028/U+2029, que quebram o
+ * parser de JS em alguns engines dentro de uma string sem estarem entre
+ * aspas escapadas.
+ */
+function safeJsonForScript(value: unknown): string {
+    return JSON.stringify(value)
+        .replace(/</g, "\\u003c")
+        .replace(/>/g, "\\u003e")
+        .replace(/\u2028/g, "\\u2028")
+        .replace(/\u2029/g, "\\u2029");
 }
 
 function getContentType(filePath: string) {
