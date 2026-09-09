@@ -26,6 +26,7 @@ import {ReactiveSource, runWithContext, runWithEffectScope} from "../reactive/in
 import {cleanupEffectScope, createEffectScope, untrack} from "../reactive/index.js";
 import {createReactiveEffect} from "../reactive/events.js";
 import {getVNodeKey, mountKeyedReactiveFunction} from "./keyed-reactive-block.js";
+import {applyHydrationPayloadToWindow} from "@adaptive-js/shared";
 
 
 const eventHandlers = new WeakMap<EventTarget, Map<string, EventListener>>();
@@ -1814,7 +1815,7 @@ function readHydrationRoute() {
   if (typeof window === "undefined") {
     return "server";
   }
-
+  applyHydrationPayloadToWindow(document);
   return window.__ROUTE__ ?? window.location.pathname;
 }
 

@@ -19,6 +19,7 @@ import {
 } from "./live-reload.js";
 import { writeServerModulesManifest } from "./esm-rolldown.js";
 import { loadAdaptiveConfig, resolveActionAllowedOrigins } from "./load-adaptive-config.js";
+import { buildHydrationPayloadHtml } from "@adaptive-js/shared";
 
 const ACTION_PATH = "/_action";
 const MAX_PORT_CANDIDATES = 20;
@@ -256,12 +257,12 @@ async function handleSsr(event: any, url: string, dirs: {
 
     const headHtml = renderMetadataTags(result.metadata ?? null);
 
-    const hydrationScript =
-        `<script>` +
-        `window.__ROUTE__=${safeJsonForScript(uri.pathname)};` +
-        `window.__PARAMS__=${safeJsonForScript(result.params ?? {})};` +
-        `window.__QUERYS__=${safeJsonForScript(result.query ?? {})};` +
-        `</script>`;
+
+    const hydrationScript = buildHydrationPayloadHtml({
+        route: uri.pathname,
+        params: (result.params ?? {}) as Record<string, string>,
+        query: (result.query ?? {}) as Record<string, string>,
+    });
 
     const liveReloadScript = createDevLiveReloadScript(assetVersion);
 
@@ -452,22 +453,8 @@ function escapeAttr(value: string) {
     return escapeHtml(value).replace(/"/g, "&quot;");
 }
 
-/**
- * Serializa um valor para embutir dentro de uma tag <script> inline com
- * segurança. `JSON.stringify` sozinho não escapa `<`, `>` nem `/`, o que
- * permite que um valor contendo literalmente "</script>" feche a tag
- * prematuramente e injete HTML/JS arbitrário (XSS refletido via
- * pathname/params/query). Também neutraliza U+2028/U+2029, que quebram o
- * parser de JS em alguns engines dentro de uma string sem estarem entre
- * aspas escapadas.
- */
-function safeJsonForScript(value: unknown): string {
-    return JSON.stringify(value)
-        .replace(/</g, "\\u003c")
-        .replace(/>/g, "\\u003e")
-        .replace(/\u2028/g, "\\u2028")
-        .replace(/\u2029/g, "\\u2029");
-}
+
+
 
 function getContentType(filePath: string) {
     if (filePath.endsWith(".js")) return "application/javascript; charset=utf-8";

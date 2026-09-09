@@ -6,7 +6,12 @@
  */
 
 
-import {RouteDefinition, matchRouteServer} from "@adaptive-js/shared";
+import {
+  RouteDefinition,
+  matchRouteServer,
+  applyHydrationPayloadToWindow,
+  parseHydrationPayload
+} from "@adaptive-js/shared";
 import {AdaptiveObserver, isSSR} from "../reactive/index.js";
 import {useClientEffect} from "../reactive/init.js";
 
@@ -62,13 +67,21 @@ class RouterState implements Router {
   private routes: RouteDefinition[] = []; // 👈 adicionar
   private loadedScripts = new Set<string>();
 
+  private ensureHydrationGlobals(): void {
+    if (isSSR()) return;
+    applyHydrationPayloadToWindow(document);
+  }
+
+
   private getInitialPathname(): string {
     if (isSSR()) return "/";
+    this.ensureHydrationGlobals();
     return window.__ROUTE__ ?? window.location.pathname;
   }
 
   private getInitialQuery(): Record<string, string> {
     if (isSSR()) return {};
+    this.ensureHydrationGlobals();
     if (window.__QUERYS__) return window.__QUERYS__;
     const query: Record<string, string> = {};
     const sp = new URLSearchParams(window.location.search);
@@ -80,6 +93,7 @@ class RouterState implements Router {
 
   private getInitialParams(): Record<string, string> {
     if (isSSR()) return {};
+    this.ensureHydrationGlobals();
     return window.__PARAMS__ ?? {};
   }
 
@@ -231,17 +245,10 @@ class RouterState implements Router {
         document.title = doc.title;
       }
 
-      // Reaplica os scripts inline responsáveis por definir __ROUTE__/__PARAMS__/__QUERYS__.
-      doc.querySelectorAll("script:not([src])").forEach((script) => {
-        const content = script.textContent ?? "";
-        if (/__ROUTE__|__PARAMS__|__QUERYS__/.test(content)) {
-          try {
-            new Function(content)();
-          } catch {
-            // ignore
-          }
-        }
-      });
+      const nextPayload = parseHydrationPayload(doc);
+      if (nextPayload) {
+        applyHydrationPayloadToWindow(doc);
+      }
 
       const scriptSrcs = Array.from(
           doc.querySelectorAll<HTMLScriptElement>("script[type=module][src]")

@@ -26,3 +26,12 @@ export {
   toCssPropertyName
 } from "./style-shared.js";
 export { matchRouteServer } from "./routing.js";
+
+export {
+    ADAPTIVE_HYDRATION_SCRIPT_ID,
+    safeJsonForScript,
+    buildHydrationPayloadHtml,
+    parseHydrationPayload,
+    applyHydrationPayloadToWindow,
+} from "./hydration-payload.js";
+export type { AdaptiveHydrationPayload } from "./hydration-payload.js";
