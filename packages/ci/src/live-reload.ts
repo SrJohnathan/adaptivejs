@@ -19,7 +19,7 @@ export type LiveReloadPayload = {
 const sseClients = new Set<ServerResponse>();
 
 export function subscribeLiveReload(res: ServerResponse): void {
-    console.log("[Adaptive LiveReload] client connected");
+
     res.writeHead(200, {
         "Content-Type": "text/event-stream; charset=utf-8",
         "Cache-Control": "no-store, no-cache, must-revalidate",
