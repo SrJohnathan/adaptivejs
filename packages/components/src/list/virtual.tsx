@@ -18,14 +18,22 @@ export type ListVirtualProps<T> = {
     className?: string;
     emptyState?: AdaptiveNode;
     item: (item: T, index: number) => AdaptiveNode;
+    getItemKey?: (item: T, index: number) => string | number;
     onItemClick?: (item: T, index: number, event: MouseEvent) => void;
 };
 
 const DEFAULT_OVERSCAN = 6;
 
+/** Altura assumida antes do layout medir o viewport real.
+ * Usada para que SSR e o primeiro paint do client produzam a MESMA
+ * janela visível (determinístico), evitando mismatch de hidratação. */
+const DEFAULT_VIEWPORT_HEIGHT = 600;
+
 export function ListVirtual<T>(props: ListVirtualProps<T>) {
     const viewportRef = ref<HTMLDivElement | null>(null);
     const itemHeightsRef = ref<Map<number, number>>(new Map());
+    const itemIdentityRef = ref<Map<number, T>>(new Map());
+    const itemKeysRef = ref<Map<number, string | number>>(new Map());
     const rowObserversRef = ref<Map<number, ResizeObserver>>(new Map());
 
     const scrollTopRef = ref(0);
@@ -58,9 +66,55 @@ export function ListVirtual<T>(props: ListVirtualProps<T>) {
     };
 
     const [renderVersion, forceRender] = signal(0);
+    const [viewportReady, setViewportReady] = signal(false);
 
     const overscan = () => props.overscan ?? DEFAULT_OVERSCAN;
     const estimatedHeight = () => props.itemHeight;
+    const getRenderKey = (item: T, index: number) => {
+        return props.getItemKey?.(item, index) ?? index;
+    };
+
+    const syncItemMeasurements = () => {
+        for (let index = 0; index < props.items.length; index += 1) {
+            const item = props.items[index];
+            const key = props.getItemKey?.(item, index);
+            const previousKey = itemKeysRef.current?.get(index);
+            const previousItem = itemIdentityRef.current?.get(index);
+            const itemChanged = props.getItemKey
+                ? !Object.is(previousKey, key)
+                : !Object.is(previousItem, item);
+
+            if (itemChanged) {
+                itemHeightsRef.current?.delete(index);
+            }
+
+            itemIdentityRef.current?.set(index, item);
+
+            if (key == null) {
+                itemKeysRef.current?.delete(index);
+            } else {
+                itemKeysRef.current?.set(index, key);
+            }
+        }
+
+        for (const index of itemHeightsRef.current?.keys() ?? []) {
+            if (index >= props.items.length) {
+                itemHeightsRef.current?.delete(index);
+            }
+        }
+
+        for (const index of itemIdentityRef.current?.keys() ?? []) {
+            if (index >= props.items.length) {
+                itemIdentityRef.current?.delete(index);
+            }
+        }
+
+        for (const index of itemKeysRef.current?.keys() ?? []) {
+            if (index >= props.items.length) {
+                itemKeysRef.current?.delete(index);
+            }
+        }
+    };
 
     const getItemHeight = (index: number) => {
         return itemHeightsRef.current?.get(index) ?? estimatedHeight();
@@ -76,6 +130,34 @@ export function ListVirtual<T>(props: ListVirtualProps<T>) {
         return top;
     };
 
+    const getItemsHeight = (start: number, end: number) => {
+        let height = 0;
+
+        for (let i = start; i < end; i += 1) {
+            height += getItemHeight(i);
+        }
+
+        return height;
+    };
+
+    const resolvePaintViewportHeight = () => {
+        if (typeof props.height === "number") {
+            return props.height;
+        }
+
+        if (typeof props.height === "string" && props.height.endsWith("px")) {
+            const value = Number.parseFloat(props.height);
+            if (Number.isFinite(value)) return value;
+        }
+
+        if (viewportReady()) {
+            const measured = getViewportHeight();
+            return measured > 0 ? measured : DEFAULT_VIEWPORT_HEIGHT;
+        }
+
+        return DEFAULT_VIEWPORT_HEIGHT;
+    };
+
     const totalHeight = () => {
         let height = 0;
 
@@ -88,7 +170,7 @@ export function ListVirtual<T>(props: ListVirtualProps<T>) {
 
     const resolveVisibleRange = () => {
         const scrollTop = scrollTopRef.current ?? 0;
-        const viewportHeight = getViewportHeight();
+        const viewportHeight = resolvePaintViewportHeight();
 
         if (viewportHeight <= 0 || estimatedHeight() <= 0) {
             return {start: 0, end: 0};
@@ -189,6 +271,7 @@ export function ListVirtual<T>(props: ListVirtualProps<T>) {
             }
 
             viewportHeightRef.current = nextHeight;
+            setViewportReady(true);
             forceRender((value) => value + 1);
         };
 
@@ -224,6 +307,10 @@ export function ListVirtual<T>(props: ListVirtualProps<T>) {
     }, [props.height, props.width]);
 
     if (props.items.length === 0) {
+        itemHeightsRef.current?.clear();
+        itemIdentityRef.current?.clear();
+        itemKeysRef.current?.clear();
+
         return (
             <div
                 className={props.className}
@@ -237,7 +324,7 @@ export function ListVirtual<T>(props: ListVirtualProps<T>) {
         );
     }
 
-
+    syncItemMeasurements();
 
     return (<div
             className={props.className}
@@ -254,50 +341,50 @@ export function ListVirtual<T>(props: ListVirtualProps<T>) {
                     overflowX: "hidden"
                 }}
             >
-                <div
-                    style={{
-                        position: "relative",
-                        height: `${totalHeight()}px`
-                    }}
-                >
-                    { () => {
+                {() => {
+                    renderVersion();
+                    const {start, end} = resolveVisibleRange();
+                    const paddingTop = getItemTop(start);
+                    const visibleHeight = getItemsHeight(start, end);
+                    const paddingBottom = Math.max(
+                        0,
+                        totalHeight() - paddingTop - visibleHeight
+                    );
 
-                        renderVersion()
-                        const {start, end} = resolveVisibleRange();
+                    return (
+                        <div
+                            style={{
+                                position: "relative",
+                                paddingTop: `${paddingTop}px`,
+                                paddingBottom: `${paddingBottom}px`
+                            }}
+                        >
+                            {props.items.slice(start, end).map((item, offset) => {
+                                const index = start + offset;
+                                const key = getRenderKey(item, index);
 
-                        return (
-                            <>
-                                {props.items.slice(start, end).map((item, offset) => {
-                                    const index = start + offset;
-
-                                    return () => (
-                                        <div
-                                            key={index}
-                                            ref={registerRow(index)}
-                                            onClick={(event) => {
-                                                props.onItemClick?.(
-                                                    item,
-                                                    index,
-                                                    event as MouseEvent
-                                                );
-                                            }}
-                                            style={{
-                                                position: "absolute",
-                                                top: `${getItemTop(index)}px`,
-                                                left: "0",
-                                                right: "0",
-                                                minHeight: `${props.itemHeight}px`
-                                            }}
-                                        >
-                                            {props.item(item, index)}
-                                        </div>
-                                    );
-                                })}
-                            </>
-                        );
-
-                    } }
-                </div>
+                                return (
+                                    <div
+                                        key={key}
+                                        ref={registerRow(index)}
+                                        onClick={(event) => {
+                                            props.onItemClick?.(
+                                                item,
+                                                index,
+                                                event as MouseEvent
+                                            );
+                                        }}
+                                        style={{
+                                            minHeight: `${props.itemHeight}px`
+                                        }}
+                                    >
+                                        {props.item(item, index)}
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    );
+                }}
             </div>
         </div>
     );
