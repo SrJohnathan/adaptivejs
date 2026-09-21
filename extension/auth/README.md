@@ -35,6 +35,7 @@ The package intentionally separates server authority from client UI state:
 Use `createMemoryAuthAdapter()` for development, tests, and quick prototyping:
 
 ```ts
+'server'
 import { createMemoryAuthAdapter } from "@adaptive-js/extension-auth/memory-adapter";
 
 const adapter = createMemoryAuthAdapter({
@@ -70,6 +71,7 @@ CSRF protection is **mandatory at boot**. If `csrf.allowedOrigins` is not provid
 
 ```ts
 // src/auth.ts
+'server'
 import { createAuth } from "@adaptive-js/extension-auth/server";
 import { createMemoryAuthAdapter } from "@adaptive-js/extension-auth/memory-adapter";
 

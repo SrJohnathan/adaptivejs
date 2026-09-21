@@ -24,4 +24,4 @@ export {events,
 export {signal, rootSignal, ref, memo, store, rootStore, createSignal,RefBox} from "./reactive.js"
 export {init} from "./init.js"
 export {AdaptiveObserver} from "./adaptive-observer.js"
-export * from "../front/reveal.js"
+export {Reveal ,If ,Else} from "../front/reveal.js"

@@ -53,7 +53,22 @@ export interface NitroSecurityPlugin {
   applyHeaders(event: any, nonce: string): void;
 }
 
-let _securityPlugin: NitroSecurityPlugin | null = null;
+// The slot lives on `globalThis` instead of module scope so the registration
+// performed by app bootstrap code (page/runtime modules) is visible to the
+// serving handler even when both live in separate module graphs — the Nitro
+// output bundles this handler into `main.mjs`, while the app's own modules
+// resolve `@adaptive-js/adapter-nitro` from `node_modules` (a different
+// instance). A plain module-local variable (as before) was silently lost.
+const SECURITY_PLUGIN_GLOBAL_KEY = "__ADAPTIVEJS_NITRO_SECURITY_PLUGIN__";
+
+function globalSlot(): Record<string, unknown> {
+  return globalThis as Record<string, unknown>;
+}
+
+export function getSecurityPlugin(): NitroSecurityPlugin | null {
+  const plugin = globalSlot()[SECURITY_PLUGIN_GLOBAL_KEY];
+  return (plugin as NitroSecurityPlugin | null | undefined) ?? null;
+}
 
 /**
  * Registers a security plugin produced by `createSecurity().asNitroPlugin()`.
@@ -67,7 +82,7 @@ let _securityPlugin: NitroSecurityPlugin | null = null;
  * ```
  */
 export function setSecurityPlugin(plugin: NitroSecurityPlugin): void {
-  _securityPlugin = plugin;
+  globalSlot()[SECURITY_PLUGIN_GLOBAL_KEY] = (plugin as NitroSecurityPlugin | null) ?? null;
 }
 
 // ---------------------------------------------------------------------------
@@ -199,7 +214,8 @@ async function handleSsr(event: any, url: string) {
 
   const headHtml = renderMetadataTags(result.metadata ?? null);
 
-  const nonce = _securityPlugin ? _securityPlugin.generateNonce() : undefined;
+  const plugin = getSecurityPlugin();
+  const nonce = plugin ? plugin.generateNonce() : undefined;
 
   const hydrationScript = buildHydrationPayloadHtml({
     route: uri.pathname,
@@ -226,8 +242,8 @@ async function handleSsr(event: any, url: string) {
 
   // Apply security headers after content-type is set and before the response
   // is sent. The nonce is forwarded so CSP matches the hydration script above.
-  if (_securityPlugin && nonce) {
-    _securityPlugin.applyHeaders(event, nonce);
+  if (plugin && nonce) {
+    plugin.applyHeaders(event, nonce);
   }
 
   return html;

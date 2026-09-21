@@ -292,6 +292,9 @@ function renderStyleDevDependencies(styleChoice) {
     ].join("\n");
   }
 
+  // sem deps de estilo o placeholder fica vazio: devolvemos nada
+  // e o template cuida da virgula (ver template/package.json).
+
   return "";
 }
 
@@ -333,7 +336,7 @@ async function finalizeTemplate(targetDir, styleChoice, extensions) {
       "utf8"
     );
   } else {
-    await fs.writeFile(stylesPath, "\n", "utf8");
+    // Estilo "none": mantem o CSS base do template (o app ja nasce estilizado).
     await fs.writeFile(dependencyPath, dependencyTemplate(""), "utf8");
   }
 

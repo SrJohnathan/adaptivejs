@@ -13,6 +13,7 @@ import fs from "node:fs/promises";
 import { createReadStream } from "node:fs";
 import { createRouter, handle_actions_request } from "@adaptive-js/core";
 import * as http from "node:http";
+import { getSecurityPlugin } from "@adaptive-js/adapter-nitro";
 import {
     createDevLiveReloadScript,
     subscribeLiveReload,
@@ -284,6 +285,14 @@ async function handleSsr(event: any, url: string, dirs: {
         event.res.headers.append("set-cookie", cookie);
     }
     setNoStoreHeaders(event.res.headers);
+
+    // Security headers — honor the shared plugin slot so the same
+    // extension-security config used in production also applies in dev SSR.
+    const securityPlugin = getSecurityPlugin();
+    if (securityPlugin) {
+        securityPlugin.applyHeaders(event, securityPlugin.generateNonce());
+    }
+
     return html;
 }
 

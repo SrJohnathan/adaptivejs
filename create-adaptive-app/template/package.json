@@ -17,7 +17,9 @@
   },
   "devDependencies": {
     "tsx": "^4.21.0",
-    "typescript": "^6.0.3",
-    "oxlint": "^1.80.0",__STYLE_DEV_DEPENDENCIES__
+    "@types/node": "^20.11.1",
+    "oxlint": "^1.80.0",
+    "typescript": "^6.0.3"__STYLE_DEV_DEPENDENCIES__
+
   }
 }

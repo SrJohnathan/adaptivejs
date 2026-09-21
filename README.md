@@ -71,6 +71,14 @@ Behavior:
 
 Use `"hydrate"` when first paint from the server matters and interactivity should light up after load.
 
+#### Composing a hydration boundary
+
+`"hydrate"` marks a module as the root of a hydration boundary. Everything it renders belongs to that boundary:
+
+- children **without a directive** render inline during SSR and are hydrated as part of the parent — their events, refs, and reactive bindings are serialized into the parent manifest, so you do **not** need `"hydrate"` on every child;
+- a child marked `"client"` breaks out of the boundary and is constructed **100% in the browser** (the server HTML for that subtree is replaced);
+- do **not** nest `"hydrate"` inside `"hydrate"`. On the server the child renders as a boundary marker and is skipped by the parent's collection; on the client it executes as a real function and its bindings leak into the parent's counters, producing a manifest mismatch (e.g. `manifest:event:extra`, `manifest:reactive:extra`) that forces a hydration fallback. Keep boundaries on leaves (or a single root boundary) and compose the static tree with a plain (server) component.
+
 ### `"client"`
 
 Client-first components.
