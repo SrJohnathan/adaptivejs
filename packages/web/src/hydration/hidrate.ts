@@ -27,7 +27,6 @@ import {cleanupEffectScope, createEffectScope, untrack} from "../reactive/index.
 import {createReactiveEffect} from "../reactive/events.js";
 import {getVNodeKey, mountKeyedReactiveFunction} from "./keyed-reactive-block.js";
 import {applyHydrationPayloadToWindow} from "@adaptive-js/shared";
-import {isClientComponent} from "./client-component.js";
 
 
 const eventHandlers = new WeakMap<EventTarget, Map<string, EventListener>>();
@@ -1008,7 +1007,17 @@ function hydrateReactiveContentWithMarkers(
  */
 const HYDRATED_IN_PLACE = new WeakSet<Element>();
 
+function hydrateExistingReactiveContent(start: Node, end: Node, value: any) {
+  const cursor: DomCursor = {
+    node: start.nextSibling,
+    end,
+    parent: start.parentNode
+  };
 
+  for (const vnode of normalizeVNodeList(value)) {
+    hydrateVNodeAgainstDOM(vnode, cursor);
+  }
+}
 
 type DomCursor = {
   node: Node | null;
@@ -1084,93 +1093,50 @@ function advanceMeaningfulChild(from: Node | null, parent: Element): { node: Nod
   return { node: null, found: null };
 }
 
-function hydrateExistingReactiveContent(start: Node, end: Node, value: any) {
-  const cursor: DomCursor = {
-    node: start.nextSibling,
-    end,
-    parent: start.parentNode,
-  };
-
-  let aligned = true;
-
-  for (const vnode of normalizeVNodeList(value)) {
-    if (!hydrateVNodeAgainstDOM(vnode, cursor)) {
-      aligned = false;
-      break;
-    }
-  }
-
-  // DOM a mais no range → também desalinhado
-  if (aligned) {
-    const leftover = advanceMeaningfulSibling(cursor);
-    if (leftover != null && leftover !== end) {
-      aligned = false;
-    }
-  }
-
-  if (!aligned) {
-    replaceReactiveRangeContent(start, end, value);
-  }
-}
-
-function hydrateVNodeAgainstDOM(vnode: any, cursor: DomCursor): boolean {
-  if (vnode == null || vnode === false || vnode === true) {
-    return true;
-  }
+function hydrateVNodeAgainstDOM(vnode: any, cursor: DomCursor) {
+  if (vnode == null || vnode === false || vnode === true) return;
 
   if (vnode.__adaptive_text != null) {
     const dom = advanceMeaningfulSibling(cursor);
     if (dom && dom.nodeType === Node.TEXT_NODE) {
       cursor.node = dom.nextSibling;
     }
-    // texto em falta não é fatal para o resto do tree
-    return true;
+    return;
   }
 
   if (typeof vnode.tag === "function") {
-    if (isClientComponent(vnode.tag)) {
-      const dom = advanceMeaningfulSibling(cursor);
-      if (dom) cursor.node = dom.nextSibling;
-      return true;
-    }
-
     let resolved: any;
     try {
       resolved = untrack(() =>
           vnode.tag({
             ...(vnode.props ?? {}),
-            children: vnode.children ?? [],
+            children: vnode.children ?? []
           })
       );
     } catch (err) {
-      console.error("[inplace] resolve failed", err);
-      return false;
+      console.error("[inplace]  resolve failed", err);
+      return;
     }
-
     for (const child of normalizeVNodeList(resolved)) {
-      if (!hydrateVNodeAgainstDOM(child, cursor)) return false;
+      hydrateVNodeAgainstDOM(child, cursor);
     }
-    return true;
+    return;
   }
 
   if (vnode.tag === "Fragment") {
     for (const child of normalizeVNodeList(vnode.children ?? [])) {
-      if (!hydrateVNodeAgainstDOM(child, cursor)) return false;
+      hydrateVNodeAgainstDOM(child, cursor);
     }
-    return true;
+    return;
   }
 
   if (vnode.tag === CONTEXT_PROVIDER_TAG) {
-    let ok = true;
     runWithContext(vnode.props.context.id, vnode.props.value, () => {
       for (const child of normalizeVNodeList(vnode.children ?? [])) {
-        if (!hydrateVNodeAgainstDOM(child, cursor)) {
-          ok = false;
-          break;
-        }
+        hydrateVNodeAgainstDOM(child, cursor);
       }
     });
-    return ok;
+    return;
   }
 
   const dom = advanceMeaningfulSibling(cursor);
@@ -1180,24 +1146,22 @@ function hydrateVNodeAgainstDOM(vnode: any, cursor: DomCursor): boolean {
       message: "SSR DOM element not found for vnode during in-place hydration",
       expected: String(vnode.tag ?? "?"),
       found: dom ? describeHydrationNode(dom) : "null",
-      node: dom ?? undefined,
+      node: dom ?? undefined
     });
-    return false;
+    return;
   }
 
   const el = dom as Element;
   const expectedTag = String(vnode.tag).toLowerCase();
   const actualTag = el.tagName.toLowerCase();
-
   if (expectedTag !== actualTag) {
     warnMismatch({
       path: "hydrate.inplace.tag",
       message: "Tag mismatch during in-place hydration of reactive content",
       expected: expectedTag,
       found: actualTag,
-      node: el,
+      node: el
     });
-    return false; // NÃO continuar desalinhado
   }
 
   cursor.node = el.nextSibling;
@@ -1209,79 +1173,57 @@ function hydrateVNodeAgainstDOM(vnode: any, cursor: DomCursor): boolean {
 
   const childCursor = { node: el.firstChild as Node | null };
   for (const child of normalizeVNodeList(vnode.children ?? [])) {
-    if (!hydrateVNodeAgainstDOMInside(child, el, childCursor)) {
-      return false;
-    }
+    hydrateVNodeAgainstDOMInside(child, el, childCursor);
   }
-  return true;
 }
 
 function hydrateVNodeAgainstDOMInside(
     vnode: any,
     parentEl: Element,
     cursor: { node: Node | null }
-): boolean {
-  if (vnode == null || vnode === false || vnode === true) {
-    return true;
-  }
+) {
+  if (vnode == null || vnode === false || vnode === true) return;
 
   if (vnode.__adaptive_text != null) {
     const { found } = advanceMeaningfulChild(cursor.node, parentEl);
     if (found && found.nodeType === Node.TEXT_NODE) {
       cursor.node = found.nextSibling;
     }
-    return true;
+    return;
   }
 
   if (typeof vnode.tag === "function") {
-    if (isClientComponent(vnode.tag)) {
-      const { found } = advanceMeaningfulChild(cursor.node, parentEl);
-      if (found) {
-        cursor.node = found.nextSibling;
-      }
-      return true;
-    }
-
     let resolved: any;
     try {
       resolved = untrack(() =>
           vnode.tag({
             ...(vnode.props ?? {}),
-            children: vnode.children ?? [],
+            children: vnode.children ?? []
           })
       );
     } catch {
-      return false;
+      return;
     }
-
     for (const child of normalizeVNodeList(resolved)) {
-      if (!hydrateVNodeAgainstDOMInside(child, parentEl, cursor)) {
-        return false;
-      }
+      hydrateVNodeAgainstDOMInside(child, parentEl, cursor);
     }
-    return true;
+    return;
   }
 
   if (vnode.tag === "Fragment") {
     for (const child of normalizeVNodeList(vnode.children ?? [])) {
-      if (!hydrateVNodeAgainstDOMInside(child, parentEl, cursor)) {
-        return false;
-      }
+      hydrateVNodeAgainstDOMInside(child, parentEl, cursor);
     }
-    return true;
+    return;
   }
 
   if (vnode.tag === CONTEXT_PROVIDER_TAG) {
-    let ok = true;
     runWithContext(vnode.props.context.id, vnode.props.value, () => {
       for (const child of normalizeVNodeList(vnode.children ?? [])) {
-        if (!hydrateVNodeAgainstDOMInside(child, parentEl, cursor)) {
-          ok = false;
-          break;
-        }
+        hydrateVNodeAgainstDOMInside(child, parentEl, cursor);
       }
     });
-    return ok;
+    return;
   }
 
   const { found } = advanceMeaningfulChild(cursor.node, parentEl);
@@ -1291,26 +1233,12 @@ function hydrateVNodeAgainstDOMInside(
       message: "SSR child element not found during in-place hydration",
       expected: String(vnode.tag ?? "?"),
       found: found ? describeHydrationNode(found) : "null",
-      node: parentEl,
+      node: parentEl
     });
-    return false;
+    return;
   }
 
   const el = found as Element;
-  const expectedTag = String(vnode.tag).toLowerCase();
-  const actualTag = el.tagName.toLowerCase();
-
-  if (expectedTag !== actualTag) {
-    warnMismatch({
-      path: "hydrate.inplace.child.tag",
-      message: "Tag mismatch during in-place hydration of child",
-      expected: expectedTag,
-      found: actualTag,
-      node: el,
-    });
-    return false;
-  }
-
   cursor.node = el.nextSibling;
 
   if (!HYDRATED_IN_PLACE.has(el)) {
@@ -1320,11 +1248,8 @@ function hydrateVNodeAgainstDOMInside(
 
   const nested = { node: el.firstChild as Node | null };
   for (const child of normalizeVNodeList(vnode.children ?? [])) {
-    if (!hydrateVNodeAgainstDOMInside(child, el, nested)) {
-      return false;
-    }
+    hydrateVNodeAgainstDOMInside(child, el, nested);
   }
-  return true;
 }
 
 /**
@@ -1410,142 +1335,40 @@ function describeHydrationNode(node: Node): string {
   return `nodeType:${node.nodeType}`;
 }
 
-function replaceReactiveRangeContent(
-    start: Node,
-    end: Node,
-    value: any,
-    scope?: ReturnType<typeof createEffectScope>
-) {
+function replaceReactiveRangeContent(start:Node, end:Node, value:any, scope?:any) {
   const parent = start.parentNode;
-  if (!parent) return;
+  if (!parent || end.parentNode !== parent) return;
 
-  // Anchors inválidos / desconectados → não tocar no DOM
-  if (!start.isConnected || !end.isConnected) {
-    if (isHydrationDebugEnabled()) {
-      console.warn("[Adaptive] replaceReactiveRangeContent: detached anchors, skip");
-    }
-    return;
-  }
-  if (start.parentNode !== end.parentNode) {
-    if (isHydrationDebugEnabled()) {
-      console.warn("[Adaptive] replaceReactiveRangeContent: anchors lost common parent, skip");
-    }
-    return;
-  }
-
-  // Remove só o que pertence a ESTE range.
-  // Nunca apagar/mover ilhas client que por erro fiquem no caminho.
-  let current: Node | null = start.nextSibling;
+  let current = start.nextSibling;
   while (current && current !== end) {
     const next = current.nextSibling;
-
-    if (isClientBoundaryStartComment(current)) {
-      const boundaryEnd = findMatchingMarkerEnd(
-          parent,
-          current as Comment,
-          CLIENT_BOUNDARY_START_PREFIX,
-          CLIENT_BOUNDARY_END
-      );
-      // Salta a ilha inteira (não remove)
-      current = boundaryEnd ? boundaryEnd.nextSibling : next;
-      continue;
-    }
-
     if (
         current.nodeType === Node.ELEMENT_NODE &&
-        (current as Element).hasAttribute("data-adaptive-client-module")
+        (current as Element).hasAttribute("data-adaptive-client-host")
     ) {
-      // Host de ilha client (modo atributo) — não remover
       current = next;
       continue;
     }
-
-    // Conteúdo de ilha client já montada (markers removidos):
-    // se o nó tem __adaptiveClientHost no parent chain, não remover.
-    if (isProtectedClientIslandNode(current)) {
-      current = next;
-      continue;
-    }
-
     parent.removeChild(current);
     current = next;
   }
 
   const insert = () => {
-    const nextNodes = normalizeToNodes(value);
-    for (const node of nextNodes) {
-      // Bloqueia o teleporte
-      if (node.isConnected && node.parentNode !== parent) {
-        console.warn(
-            "[Adaptive] blocked cross-parent DOM move",
-            node,
-            "from",
-            node.parentNode,
-            "to",
-            parent
-        );
-        continue;
-      }
+    for (const node of normalizeToNodes(value)) {
+      if (node.isConnected && node.parentNode !== parent) continue;
       parent.insertBefore(node, end);
     }
   };
-
-  if (scope) {
-    runWithEffectScope(scope, insert);
-  } else {
-    insert();
-  }
-}
-
-/** Marca hosts montados por ilha client para o parent hydrate não os roubar. */
-const CLIENT_ISLAND_HOSTS = new WeakSet<Node>();
-
-export function markClientIslandHost(node: Node) {
-  CLIENT_ISLAND_HOSTS.add(node);
-  if (node.nodeType === Node.ELEMENT_NODE) {
-    (node as Element).setAttribute("data-adaptive-client-host", "1");
-  }
-}
-
-function isProtectedClientIslandNode(node: Node): boolean {
-  if (CLIENT_ISLAND_HOSTS.has(node)) return true;
-  if (
-      node.nodeType === Node.ELEMENT_NODE &&
-      (node as Element).hasAttribute("data-adaptive-client-host")
-  ) {
-    return true;
-  }
-  // Ancestors
-  let p: Node | null = node.parentNode;
-  while (p) {
-    if (CLIENT_ISLAND_HOSTS.has(p)) return true;
-    if (
-        p.nodeType === Node.ELEMENT_NODE &&
-        ((p as Element).hasAttribute("data-adaptive-client-host") ||
-            (p as Element).hasAttribute("data-adaptive-client-module"))
-    ) {
-      return true;
-    }
-    p = p.parentNode;
-  }
-  return false;
+  if (scope) runWithEffectScope(scope, insert);
+  else insert();
 }
 
 function normalizeReactiveTextValue(value: any): string {
-  if (value == null || value === false) return "";
-  if (typeof value === "function") {
-    try {
-      return normalizeReactiveTextValue(value());
-    } catch {
-      return "";
-    }
+  if (value == null || value === false) {
+    return "";
   }
   if (Array.isArray(value)) {
-    return value.map((item) => normalizeReactiveTextValue(item)).join("");
-  }
-  if (typeof value === "object") {
-    // evita [object Object] em ranges de texto
-    return "";
+    return value.map((item): string => normalizeReactiveTextValue(item)).join("");
   }
   return String(value);
 }

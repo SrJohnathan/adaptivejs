@@ -61,8 +61,9 @@ export function mountKeyedReactiveFunction(
     namespace: string | null,
     renderToDOM: RenderToDOM
 ): DocumentFragment {
-    const start = document.createTextNode("");
-    const end = document.createTextNode("");
+    // Comentários — não fundem, não desaparecem
+    const start = document.createComment("adaptive-reactive-fn-start");
+    const end = document.createComment("adaptive-reactive-fn-end");
     const fragment = document.createDocumentFragment();
     fragment.appendChild(start);
     fragment.appendChild(end);
@@ -70,12 +71,8 @@ export function mountKeyedReactiveFunction(
     let currentKey: string | number | null | undefined = undefined;
     let currentScope: ReturnType<typeof createEffectScope> | null = null;
     let hasMounted = false;
-
-    // Cache por key: on -> off -> on restaura sem remontar
     const cache = new Map<string | number, CachedEntry>();
 
-    // Final cleanup: quando o componente pai desmontar, limpa tudo que ficou em cache
-    // Este efeito roda uma vez e só é disposto no unmount final
     createReactiveEffect(() => {
         return () => {
             for (const entry of cache.values()) {
@@ -89,15 +86,19 @@ export function mountKeyedReactiveFunction(
         };
     }, "layout");
 
-    // Efeito reativo principal: troca de key com cache
     createReactiveEffect(() => {
         const nextValue = thunk();
         const parent = start.parentNode;
         if (!parent) return;
 
-        const nextKey = getVNodeKey(nextValue); // "on" | "off" | null
+        // âncoras partidas → não tocar no DOM
+        if (end.parentNode !== parent) {
+            console.warn("[Adaptive] reactive-fn anchors lost common parent");
+            return;
+        }
 
-        // mesma key → não mexe (count 1→2→3)
+        const nextKey = getVNodeKey(nextValue);
+
         if (
             hasMounted &&
             nextKey != null &&
@@ -107,12 +108,12 @@ export function mountKeyedReactiveFunction(
             return;
         }
 
-        // branch mudou (ou primeira vez): destrói o atual de verdade
         if (currentScope) {
-            cleanupEffectScope(currentScope); // ← unmounting BeerCSS
+            cleanupEffectScope(currentScope);
             currentScope = null;
         }
 
+        // remove só entre ESTE start e ESTE end
         let node: Node | null = start.nextSibling;
         while (node && node !== end) {
             const next = node.nextSibling;
@@ -120,12 +121,11 @@ export function mountKeyedReactiveFunction(
             node = next;
         }
 
-        // monta o branch novo
         currentScope = createEffectScope(
-            `reactive-keyed:${String(nextKey ?? "nokey")}`,
+            `reactive-keyed:${String(nextKey ?? "nokey")}`
         );
         const rendered = runWithEffectScope(currentScope, () =>
-            renderToDOM(nextValue, namespace),
+            renderToDOM(nextValue, namespace)
         );
         parent.insertBefore(rendered, end);
 
