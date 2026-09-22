@@ -1008,17 +1008,7 @@ function hydrateReactiveContentWithMarkers(
  */
 const HYDRATED_IN_PLACE = new WeakSet<Element>();
 
-function hydrateExistingReactiveContent(start: Node, end: Node, value: any) {
-  const cursor: DomCursor = {
-    node: start.nextSibling,
-    end,
-    parent: start.parentNode
-  };
 
-  for (const vnode of normalizeVNodeList(value)) {
-    hydrateVNodeAgainstDOM(vnode, cursor);
-  }
-}
 
 type DomCursor = {
   node: Node | null;
@@ -1094,24 +1084,54 @@ function advanceMeaningfulChild(from: Node | null, parent: Element): { node: Nod
   return { node: null, found: null };
 }
 
-function hydrateVNodeAgainstDOM(vnode: any, cursor: DomCursor) {
-  if (vnode == null || vnode === false || vnode === true) return;
+function hydrateExistingReactiveContent(start: Node, end: Node, value: any) {
+  const cursor: DomCursor = {
+    node: start.nextSibling,
+    end,
+    parent: start.parentNode,
+  };
+
+  let aligned = true;
+
+  for (const vnode of normalizeVNodeList(value)) {
+    if (!hydrateVNodeAgainstDOM(vnode, cursor)) {
+      aligned = false;
+      break;
+    }
+  }
+
+  // DOM a mais no range → também desalinhado
+  if (aligned) {
+    const leftover = advanceMeaningfulSibling(cursor);
+    if (leftover != null && leftover !== end) {
+      aligned = false;
+    }
+  }
+
+  if (!aligned) {
+    replaceReactiveRangeContent(start, end, value);
+  }
+}
+
+function hydrateVNodeAgainstDOM(vnode: any, cursor: DomCursor): boolean {
+  if (vnode == null || vnode === false || vnode === true) {
+    return true;
+  }
 
   if (vnode.__adaptive_text != null) {
     const dom = advanceMeaningfulSibling(cursor);
     if (dom && dom.nodeType === Node.TEXT_NODE) {
       cursor.node = dom.nextSibling;
     }
-    return;
+    // texto em falta não é fatal para o resto do tree
+    return true;
   }
 
   if (typeof vnode.tag === "function") {
-    // Ilha client/hydrate: o DOM e os bindings são da boundary do filho
     if (isClientComponent(vnode.tag)) {
-      // Avança o cursor para além do host da ilha, se existir
       const dom = advanceMeaningfulSibling(cursor);
       if (dom) cursor.node = dom.nextSibling;
-      return;
+      return true;
     }
 
     let resolved: any;
@@ -1124,28 +1144,33 @@ function hydrateVNodeAgainstDOM(vnode: any, cursor: DomCursor) {
       );
     } catch (err) {
       console.error("[inplace] resolve failed", err);
-      return;
+      return false;
     }
+
     for (const child of normalizeVNodeList(resolved)) {
-      hydrateVNodeAgainstDOM(child, cursor);
+      if (!hydrateVNodeAgainstDOM(child, cursor)) return false;
     }
-    return;
+    return true;
   }
 
   if (vnode.tag === "Fragment") {
     for (const child of normalizeVNodeList(vnode.children ?? [])) {
-      hydrateVNodeAgainstDOM(child, cursor);
+      if (!hydrateVNodeAgainstDOM(child, cursor)) return false;
     }
-    return;
+    return true;
   }
 
   if (vnode.tag === CONTEXT_PROVIDER_TAG) {
+    let ok = true;
     runWithContext(vnode.props.context.id, vnode.props.value, () => {
       for (const child of normalizeVNodeList(vnode.children ?? [])) {
-        hydrateVNodeAgainstDOM(child, cursor);
+        if (!hydrateVNodeAgainstDOM(child, cursor)) {
+          ok = false;
+          break;
+        }
       }
     });
-    return;
+    return ok;
   }
 
   const dom = advanceMeaningfulSibling(cursor);
@@ -1155,22 +1180,24 @@ function hydrateVNodeAgainstDOM(vnode: any, cursor: DomCursor) {
       message: "SSR DOM element not found for vnode during in-place hydration",
       expected: String(vnode.tag ?? "?"),
       found: dom ? describeHydrationNode(dom) : "null",
-      node: dom ?? undefined
+      node: dom ?? undefined,
     });
-    return;
+    return false;
   }
 
   const el = dom as Element;
   const expectedTag = String(vnode.tag).toLowerCase();
   const actualTag = el.tagName.toLowerCase();
+
   if (expectedTag !== actualTag) {
     warnMismatch({
       path: "hydrate.inplace.tag",
       message: "Tag mismatch during in-place hydration of reactive content",
       expected: expectedTag,
       found: actualTag,
-      node: el
+      node: el,
     });
+    return false; // NÃO continuar desalinhado
   }
 
   cursor.node = el.nextSibling;
@@ -1182,33 +1209,37 @@ function hydrateVNodeAgainstDOM(vnode: any, cursor: DomCursor) {
 
   const childCursor = { node: el.firstChild as Node | null };
   for (const child of normalizeVNodeList(vnode.children ?? [])) {
-    hydrateVNodeAgainstDOMInside(child, el, childCursor);
+    if (!hydrateVNodeAgainstDOMInside(child, el, childCursor)) {
+      return false;
+    }
   }
+  return true;
 }
 
 function hydrateVNodeAgainstDOMInside(
     vnode: any,
     parentEl: Element,
     cursor: { node: Node | null }
-) {
-  if (vnode == null || vnode === false || vnode === true) return;
+): boolean {
+  if (vnode == null || vnode === false || vnode === true) {
+    return true;
+  }
 
   if (vnode.__adaptive_text != null) {
     const { found } = advanceMeaningfulChild(cursor.node, parentEl);
     if (found && found.nodeType === Node.TEXT_NODE) {
       cursor.node = found.nextSibling;
     }
-    return;
+    return true;
   }
 
   if (typeof vnode.tag === "function") {
-    // Ilha client/hydrate: bindings e DOM são da boundary do filho
     if (isClientComponent(vnode.tag)) {
       const { found } = advanceMeaningfulChild(cursor.node, parentEl);
       if (found) {
         cursor.node = found.nextSibling;
       }
-      return;
+      return true;
     }
 
     let resolved: any;
@@ -1220,28 +1251,37 @@ function hydrateVNodeAgainstDOMInside(
           })
       );
     } catch {
-      return;
+      return false;
     }
+
     for (const child of normalizeVNodeList(resolved)) {
-      hydrateVNodeAgainstDOMInside(child, parentEl, cursor);
+      if (!hydrateVNodeAgainstDOMInside(child, parentEl, cursor)) {
+        return false;
+      }
     }
-    return;
+    return true;
   }
 
   if (vnode.tag === "Fragment") {
     for (const child of normalizeVNodeList(vnode.children ?? [])) {
-      hydrateVNodeAgainstDOMInside(child, parentEl, cursor);
+      if (!hydrateVNodeAgainstDOMInside(child, parentEl, cursor)) {
+        return false;
+      }
     }
-    return;
+    return true;
   }
 
   if (vnode.tag === CONTEXT_PROVIDER_TAG) {
+    let ok = true;
     runWithContext(vnode.props.context.id, vnode.props.value, () => {
       for (const child of normalizeVNodeList(vnode.children ?? [])) {
-        hydrateVNodeAgainstDOMInside(child, parentEl, cursor);
+        if (!hydrateVNodeAgainstDOMInside(child, parentEl, cursor)) {
+          ok = false;
+          break;
+        }
       }
     });
-    return;
+    return ok;
   }
 
   const { found } = advanceMeaningfulChild(cursor.node, parentEl);
@@ -1251,12 +1291,26 @@ function hydrateVNodeAgainstDOMInside(
       message: "SSR child element not found during in-place hydration",
       expected: String(vnode.tag ?? "?"),
       found: found ? describeHydrationNode(found) : "null",
-      node: parentEl
+      node: parentEl,
     });
-    return;
+    return false;
   }
 
   const el = found as Element;
+  const expectedTag = String(vnode.tag).toLowerCase();
+  const actualTag = el.tagName.toLowerCase();
+
+  if (expectedTag !== actualTag) {
+    warnMismatch({
+      path: "hydrate.inplace.child.tag",
+      message: "Tag mismatch during in-place hydration of child",
+      expected: expectedTag,
+      found: actualTag,
+      node: el,
+    });
+    return false;
+  }
+
   cursor.node = el.nextSibling;
 
   if (!HYDRATED_IN_PLACE.has(el)) {
@@ -1266,8 +1320,11 @@ function hydrateVNodeAgainstDOMInside(
 
   const nested = { node: el.firstChild as Node | null };
   for (const child of normalizeVNodeList(vnode.children ?? [])) {
-    hydrateVNodeAgainstDOMInside(child, el, nested);
+    if (!hydrateVNodeAgainstDOMInside(child, el, nested)) {
+      return false;
+    }
   }
+  return true;
 }
 
 /**
@@ -1417,8 +1474,16 @@ function replaceReactiveRangeContent(
   const insert = () => {
     const nextNodes = normalizeToNodes(value);
     for (const node of nextNodes) {
-      // Nunca re-inserir nós que já pertencem a uma ilha client noutro sítio
-      if (node.isConnected && isProtectedClientIslandNode(node)) {
+      // Bloqueia o teleporte
+      if (node.isConnected && node.parentNode !== parent) {
+        console.warn(
+            "[Adaptive] blocked cross-parent DOM move",
+            node,
+            "from",
+            node.parentNode,
+            "to",
+            parent
+        );
         continue;
       }
       parent.insertBefore(node, end);
