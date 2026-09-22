@@ -891,8 +891,8 @@ function hydrateReactiveContentWithMarkers(
   const parent = start.parentNode;
   if (!parent) return;
 
-  const startAnchor = document.createTextNode("");
-  const endAnchor = document.createTextNode("");
+  const startAnchor = document.createComment(`adaptive-reactive-anchor-start:${config.id}`);
+  const endAnchor = document.createComment(`adaptive-reactive-anchor-end:${config.id}`);
   parent.replaceChild(startAnchor, start);
   parent.replaceChild(endAnchor, end);
 
@@ -1335,11 +1335,19 @@ function describeHydrationNode(node: Node): string {
   return `nodeType:${node.nodeType}`;
 }
 
-function replaceReactiveRangeContent(start:Node, end:Node, value:any, scope?:any) {
+function replaceReactiveRangeContent(
+    start: Node,
+    end: Node,
+    value: any,
+    scope?: ReturnType<typeof createEffectScope>
+) {
   const parent = start.parentNode;
-  if (!parent || end.parentNode !== parent) return;
+  if (!parent || end.parentNode !== parent) {
+    console.warn("[Adaptive] replaceReactiveRangeContent: invalid anchors");
+    return;
+  }
 
-  let current = start.nextSibling;
+  let current: Node | null = start.nextSibling;
   while (current && current !== end) {
     const next = current.nextSibling;
     if (
@@ -1355,10 +1363,14 @@ function replaceReactiveRangeContent(start:Node, end:Node, value:any, scope?:any
 
   const insert = () => {
     for (const node of normalizeToNodes(value)) {
-      if (node.isConnected && node.parentNode !== parent) continue;
+      if (node.isConnected && node.parentNode !== parent) {
+        console.warn("[Adaptive] blocked cross-parent move", node);
+        continue;
+      }
       parent.insertBefore(node, end);
     }
   };
+
   if (scope) runWithEffectScope(scope, insert);
   else insert();
 }
