@@ -303,12 +303,6 @@ function mountClientComponentBetweenMarkers(
       : [rendered];
   parent.insertBefore(rendered, end);
 
-  for (const node of mountedNodes) {
-    if (node.nodeType === Node.ELEMENT_NODE) {
-      (node as Element).setAttribute("data-adaptive-client-host", "1");
-    }
-  }
-
   // Client-only boundaries have no server DOM to preserve. Once their content is
   // mounted, the transport markers must not remain in the final document.
   start.remove();
@@ -333,31 +327,40 @@ function hydrateExistingComponentBetweenMarkers(
 
 function hydrateExistingBoundary(
     root: HTMLElement,
-    config: any
+    config: {
+      debugName: string;
+      instructions?: HydrationInstruction[];
+      component?: (props?: Record<string, any>) => any;
+      props?: Record<string, any>;
+      boundaryId?: string;
+    }
 ): Node[] {
   const manifestRecord = readHydrationManifestFromRoot(root, config.boundaryId);
   const collected = collectHydrationBindings(config.component, config.props);
   const bound = manifestRecord
       ? bindHydrationManifest(manifestRecord.manifest, collected)
-      : {
-        instructions: [] as HydrationInstruction[],
-        unsupportedFeatures: ["manifest:missing"],
-      };
+      : { instructions: [] as HydrationInstruction[], unsupportedFeatures: ["manifest:missing"] };
   const instructions = config.instructions ?? bound.instructions;
-
-  applyHydrationInstructions(root, instructions);
-  flushEvents();
-  manifestRecord?.script.remove();
-
-  if (bound.unsupportedFeatures.length > 0) {
-    recordBoundaryHydrationNotice(
-        config.debugName,
-        `Hydrate boundary has unsupported features: ${bound.unsupportedFeatures.join(", ")}`
-    );
+  if (bound.unsupportedFeatures.length === 0) {
+    applyHydrationInstructions(root, instructions);
+    flushEvents();
+    manifestRecord?.script.remove();
+    cleanupAdaptiveMarkersAfterSuccess(root);
+    return Array.from(root.childNodes);
   }
 
-  cleanupAdaptiveMarkersAfterSuccess(root);
-  return Array.from(root.childNodes);
+  const res = adoptExistingBoundary({
+    debugName: config.debugName,
+    instructions,
+    unsupportedFeatures: bound.unsupportedFeatures,
+    snapshot: () => Array.from(root.childNodes)
+  });
+
+  queueMicrotask(() => {
+    cleanupAdaptiveMarkersAfterSuccess(root);
+  });
+
+  return res;
 }
 
 function hydrateExistingBoundaryBetweenMarkers(
@@ -371,15 +374,22 @@ function hydrateExistingBoundaryBetweenMarkers(
       boundaryId?: string;
     }
 ): Node[] {
-  const manifestRecord = readHydrationManifestBetweenMarkers(start, end, config.boundaryId);
+  const manifestRecord = readHydrationManifestBetweenMarkers(
+      start,
+      end,
+      config.boundaryId
+  );
   const collected = collectHydrationBindings(config.component, config.props);
   const bound = manifestRecord
       ? bindHydrationManifest(manifestRecord.manifest, collected)
-      : { instructions: [] as HydrationInstruction[], unsupportedFeatures: ["manifest:missing"] };
+      : {
+        instructions: [] as HydrationInstruction[],
+        unsupportedFeatures: ["manifest:missing"],
+      };
 
   const instructions = config.instructions ?? bound.instructions;
 
-  // 1) Sempre: events / refs / dynamic-prop / effects  → drawer, botões, className
+  // 1) Sempre: o que não reconstrói subárvores
   const interactive = instructions.filter(
       (i) =>
           i.kind === "event" ||
@@ -389,7 +399,7 @@ function hydrateExistingBoundaryBetweenMarkers(
           i.kind === "effect"
   );
 
-  // 2) Reactive: header getActive(), etc. — é isto que mexe no DOM
+  // 2) Isto é o que dispara replace / in-place e pode teletransportar
   const reactive = instructions.filter(
       (i) =>
           i.kind === "reactive-range" ||
@@ -399,17 +409,24 @@ function hydrateExistingBoundaryBetweenMarkers(
   );
 
   applyHydrationInstructionsBetweenMarkers(start, end, interactive);
-  applyHydrationInstructionsBetweenMarkers(start, end, reactive); // ver nota abaixo
 
-  flushEvents();
-  manifestRecord?.script.remove();
+  // Só aplica reactive se a coleta não expandiu ilhas client a mais
+  // (com isClientComponent skip, extras devem baixar muito)
+  if (bound.unsupportedFeatures.length === 0) {
+    applyHydrationInstructionsBetweenMarkers(start, end, reactive);
+  } else {
+    // Ainda assim aplica reactive-range (texto) — mais seguro
+    const textOnly = reactive.filter((i) => i.kind === "reactive-range");
+    applyHydrationInstructionsBetweenMarkers(start, end, textOnly);
 
-  if (bound.unsupportedFeatures.length > 0) {
     recordBoundaryHydrationNotice(
         config.debugName,
         `Hydrate boundary has unsupported features: ${bound.unsupportedFeatures.join(", ")}`
     );
   }
+
+  flushEvents();
+  manifestRecord?.script.remove();
 
   return cleanupAdaptiveMarkersAfterSuccessBetweenMarkers(start, end);
 }
@@ -541,11 +558,10 @@ function collectHydrationBindingsFromNode(
 
 
   if (typeof node.tag === "function") {
-    if (isClientComponent(node.tag)) {
-      return; // ListContects / ListMessage / Drawer / AiChat — bindings são da ilha
-    }
     collectHydrationBindingsFromNode(
-        untrack(() => node.tag(resolveComponentProps(node))),
+        untrack(() =>
+            node.tag(resolveComponentProps(node))
+        ),
         state
     );
     return;
