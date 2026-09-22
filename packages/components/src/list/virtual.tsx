@@ -293,7 +293,7 @@ export function ListVirtual<T>(props: ListVirtualProps<T>) {
 
     return (
         <div
-            className={props.className == "undefined" ? props.className : ''}
+            className={props.className ? props.className : undefined}
             style={resolveContainerStyle(props.height, props.width, {
                 overflow: "hidden",
             })}

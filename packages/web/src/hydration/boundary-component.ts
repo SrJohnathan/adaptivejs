@@ -15,7 +15,7 @@ import {
   type AdaptiveHydrationMismatch,
   type HydrationInstruction,
   collectSiblingNodesBetween,
-  findMatchingMarkerEnd
+  findMatchingMarkerEnd, markClientIslandHost
 } from "./hidrate.js";
 
 import {
@@ -297,16 +297,21 @@ function mountClientComponentBetweenMarkers(
   if (!parent) return [];
 
   removeNodesBetween(start, end);
+
   const rendered = renderToDOM(createElement(Component, props));
-  const mountedNodes = rendered.nodeType === Node.DOCUMENT_FRAGMENT_NODE
-      ? Array.from(rendered.childNodes)
-      : [rendered];
+  const mountedNodes =
+      rendered.nodeType === Node.DOCUMENT_FRAGMENT_NODE
+          ? Array.from(rendered.childNodes)
+          : [rendered];
+
   parent.insertBefore(rendered, end);
 
-  // Client-only boundaries have no server DOM to preserve. Once their content is
-  // mounted, the transport markers must not remain in the final document.
-  start.remove();
-  end.remove();
+  // Mantém start/end como âncoras. NÃO fazer start.remove()/end.remove().
+  // Marca cada root montado para replaceReactiveRangeContent do pai não os mover/apagar.
+  for (const node of mountedNodes) {
+    markClientIslandHost(node);
+  }
+
   return mountedNodes;
 }
 

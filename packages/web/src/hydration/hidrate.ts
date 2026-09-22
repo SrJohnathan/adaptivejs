@@ -27,6 +27,7 @@ import {cleanupEffectScope, createEffectScope, untrack} from "../reactive/index.
 import {createReactiveEffect} from "../reactive/events.js";
 import {getVNodeKey, mountKeyedReactiveFunction} from "./keyed-reactive-block.js";
 import {applyHydrationPayloadToWindow} from "@adaptive-js/shared";
+import {isClientComponent} from "./client-component.js";
 
 
 const eventHandlers = new WeakMap<EventTarget, Map<string, EventListener>>();
@@ -1105,16 +1106,24 @@ function hydrateVNodeAgainstDOM(vnode: any, cursor: DomCursor) {
   }
 
   if (typeof vnode.tag === "function") {
+    // Ilha client/hydrate: o DOM e os bindings são da boundary do filho
+    if (isClientComponent(vnode.tag)) {
+      // Avança o cursor para além do host da ilha, se existir
+      const dom = advanceMeaningfulSibling(cursor);
+      if (dom) cursor.node = dom.nextSibling;
+      return;
+    }
+
     let resolved: any;
     try {
       resolved = untrack(() =>
           vnode.tag({
             ...(vnode.props ?? {}),
-            children: vnode.children ?? []
+            children: vnode.children ?? [],
           })
       );
     } catch (err) {
-      console.error("[inplace]  resolve failed", err);
+      console.error("[inplace] resolve failed", err);
       return;
     }
     for (const child of normalizeVNodeList(resolved)) {
@@ -1193,12 +1202,21 @@ function hydrateVNodeAgainstDOMInside(
   }
 
   if (typeof vnode.tag === "function") {
+    // Ilha client/hydrate: bindings e DOM são da boundary do filho
+    if (isClientComponent(vnode.tag)) {
+      const { found } = advanceMeaningfulChild(cursor.node, parentEl);
+      if (found) {
+        cursor.node = found.nextSibling;
+      }
+      return;
+    }
+
     let resolved: any;
     try {
       resolved = untrack(() =>
           vnode.tag({
             ...(vnode.props ?? {}),
-            children: vnode.children ?? []
+            children: vnode.children ?? [],
           })
       );
     } catch {
@@ -1344,16 +1362,67 @@ function replaceReactiveRangeContent(
   const parent = start.parentNode;
   if (!parent) return;
 
-  let current = start.nextSibling;
+  // Anchors inválidos / desconectados → não tocar no DOM
+  if (!start.isConnected || !end.isConnected) {
+    if (isHydrationDebugEnabled()) {
+      console.warn("[Adaptive] replaceReactiveRangeContent: detached anchors, skip");
+    }
+    return;
+  }
+  if (start.parentNode !== end.parentNode) {
+    if (isHydrationDebugEnabled()) {
+      console.warn("[Adaptive] replaceReactiveRangeContent: anchors lost common parent, skip");
+    }
+    return;
+  }
+
+  // Remove só o que pertence a ESTE range.
+  // Nunca apagar/mover ilhas client que por erro fiquem no caminho.
+  let current: Node | null = start.nextSibling;
   while (current && current !== end) {
     const next = current.nextSibling;
+
+    if (isClientBoundaryStartComment(current)) {
+      const boundaryEnd = findMatchingMarkerEnd(
+          parent,
+          current as Comment,
+          CLIENT_BOUNDARY_START_PREFIX,
+          CLIENT_BOUNDARY_END
+      );
+      // Salta a ilha inteira (não remove)
+      current = boundaryEnd ? boundaryEnd.nextSibling : next;
+      continue;
+    }
+
+    if (
+        current.nodeType === Node.ELEMENT_NODE &&
+        (current as Element).hasAttribute("data-adaptive-client-module")
+    ) {
+      // Host de ilha client (modo atributo) — não remover
+      current = next;
+      continue;
+    }
+
+    // Conteúdo de ilha client já montada (markers removidos):
+    // se o nó tem __adaptiveClientHost no parent chain, não remover.
+    if (isProtectedClientIslandNode(current)) {
+      current = next;
+      continue;
+    }
+
     parent.removeChild(current);
     current = next;
   }
 
   const insert = () => {
     const nextNodes = normalizeToNodes(value);
-    nextNodes.forEach((node) => parent.insertBefore(node, end));
+    for (const node of nextNodes) {
+      // Nunca re-inserir nós que já pertencem a uma ilha client noutro sítio
+      if (node.isConnected && isProtectedClientIslandNode(node)) {
+        continue;
+      }
+      parent.insertBefore(node, end);
+    }
   };
 
   if (scope) {
@@ -1363,12 +1432,55 @@ function replaceReactiveRangeContent(
   }
 }
 
+/** Marca hosts montados por ilha client para o parent hydrate não os roubar. */
+const CLIENT_ISLAND_HOSTS = new WeakSet<Node>();
+
+export function markClientIslandHost(node: Node) {
+  CLIENT_ISLAND_HOSTS.add(node);
+  if (node.nodeType === Node.ELEMENT_NODE) {
+    (node as Element).setAttribute("data-adaptive-client-host", "1");
+  }
+}
+
+function isProtectedClientIslandNode(node: Node): boolean {
+  if (CLIENT_ISLAND_HOSTS.has(node)) return true;
+  if (
+      node.nodeType === Node.ELEMENT_NODE &&
+      (node as Element).hasAttribute("data-adaptive-client-host")
+  ) {
+    return true;
+  }
+  // Ancestors
+  let p: Node | null = node.parentNode;
+  while (p) {
+    if (CLIENT_ISLAND_HOSTS.has(p)) return true;
+    if (
+        p.nodeType === Node.ELEMENT_NODE &&
+        ((p as Element).hasAttribute("data-adaptive-client-host") ||
+            (p as Element).hasAttribute("data-adaptive-client-module"))
+    ) {
+      return true;
+    }
+    p = p.parentNode;
+  }
+  return false;
+}
+
 function normalizeReactiveTextValue(value: any): string {
-  if (value == null || value === false) {
-    return "";
+  if (value == null || value === false) return "";
+  if (typeof value === "function") {
+    try {
+      return normalizeReactiveTextValue(value());
+    } catch {
+      return "";
+    }
   }
   if (Array.isArray(value)) {
-    return value.map((item): string => normalizeReactiveTextValue(item)).join("");
+    return value.map((item) => normalizeReactiveTextValue(item)).join("");
+  }
+  if (typeof value === "object") {
+    // evita [object Object] em ranges de texto
+    return "";
   }
   return String(value);
 }
