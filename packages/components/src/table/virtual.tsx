@@ -53,6 +53,7 @@ export function TableVirtual<T>(props: TableVirtualProps<T>) {
                 height={bodyHeight}
                 itemHeight={props.rowHeight}
                 overscan={props.overscan}
+                getItemKey={(_, index) => index}
                 onItemClick={props.onRowClick}
                 item={(row, index) => {
                     const widths = resolveColumnWidths(props.columns, 1200);

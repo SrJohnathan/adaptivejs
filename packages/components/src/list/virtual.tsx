@@ -1,4 +1,3 @@
-
 /*
  * Copyright (c) 2026 Antonio Johnathan
  *
@@ -6,43 +5,89 @@
  * See LICENSE file in the project root for full license information.
  */
 
-import type {AdaptiveNode} from "@adaptive-js/web/jsx-runtime";
-import {layoutEvents, ref, signal} from "@adaptive-js/web";
+import type { AdaptiveNode } from "@adaptive-js/web/jsx-runtime";
+import { layoutEvents, ref, signal } from "@adaptive-js/web";
 
 export type ListVirtualProps<T> = {
-    items: T[];
+    /**
+     * Fonte dos itens. Prefira um getter para listas reativas; o array direto
+     * continua aceito para dados estáticos e compatibilidade.
+     */
+    items: T[] | (() => T[]);
+    /** Altura do viewport (px ou CSS). String "100%" resolve via parent. */
     height?: number | string;
+    /**
+     * Estimate inicial de cada item (px).
+     * Usado até o ResizeObserver medir a altura real.
+     * Para listas heterogéneas (chat), usa um valor próximo da mediana/pior caso razoável.
+     */
     itemHeight: number;
     width?: number | string;
     overscan?: number;
     className?: string;
     emptyState?: AdaptiveNode;
+    /** Render de cada item */
     item: (item: T, index: number) => AdaptiveNode;
-    getItemKey?: (item: T, index: number) => string | number;
+    /**
+     * Key estável do item (obrigatório para alturas corretas quando a lista
+     * filtra, reordena ou troca de dataset — ex.: mudar de conversa).
+     */
+    getItemKey: (item: T, index: number) => string | number;
     onItemClick?: (item: T, index: number, event: MouseEvent) => void;
 };
 
 const DEFAULT_OVERSCAN = 6;
 
-/** Altura assumida antes do layout medir o viewport real.
- * Usada para que SSR e o primeiro paint do client produzam a MESMA
- * janela visível (determinístico), evitando mismatch de hidratação. */
-const DEFAULT_VIEWPORT_HEIGHT = 600;
-
 export function ListVirtual<T>(props: ListVirtualProps<T>) {
     const viewportRef = ref<HTMLDivElement | null>(null);
-    const itemHeightsRef = ref<Map<number, number>>(new Map());
-    const itemIdentityRef = ref<Map<number, T>>(new Map());
-    const itemKeysRef = ref<Map<number, string | number>>(new Map());
+
+    /** key → altura medida (px) */
+    const heightByKeyRef = ref<Map<string, number>>(new Map());
+    /** index visível → ResizeObserver */
     const rowObserversRef = ref<Map<number, ResizeObserver>>(new Map());
+    /** index → key atual (para invalidar observers) */
+    const indexToKeyRef = ref<Map<number, string>>(new Map());
 
     const scrollTopRef = ref(0);
-
-
-
     const viewportHeightRef = ref(
-        typeof props.height === "number" ? props.height : 0
+        typeof props.height === "number" ? props.height : 0,
     );
+
+    /** Bump de layout: scroll, resize, measure, troca de items */
+    const [layoutVersion, bumpLayout] = signal(0);
+
+    const overscan = () => props.overscan ?? DEFAULT_OVERSCAN;
+    const estimatedHeight = () => Math.max(1, props.itemHeight);
+    const getItems = (): T[] =>
+        typeof props.items === "function" ? props.items() : props.items;
+
+    const keyOf = (item: T, index: number) =>
+        String(props.getItemKey(item, index));
+
+    const getItemHeightByKey = (key: string) =>
+        heightByKeyRef.current?.get(key) ?? estimatedHeight();
+
+    const getItemHeightAt = (items: T[], index: number) => {
+        const item = items[index];
+        if (item === undefined) return estimatedHeight();
+        return getItemHeightByKey(keyOf(item, index));
+    };
+
+    const getItemTop = (items: T[], index: number) => {
+        let top = 0;
+        for (let i = 0; i < index; i += 1) {
+            top += getItemHeightAt(items, i);
+        }
+        return top;
+    };
+
+    const totalHeight = (items: T[]) => {
+        let height = 0;
+        for (let i = 0; i < items.length; i += 1) {
+            height += getItemHeightAt(items, i);
+        }
+        return height;
+    };
 
     const getViewportHeight = () => {
         const viewport = viewportRef.current;
@@ -65,214 +110,147 @@ export function ListVirtual<T>(props: ListVirtualProps<T>) {
         );
     };
 
-    const [renderVersion, forceRender] = signal(0);
-    const [viewportReady, setViewportReady] = signal(false);
+    /**
+     * Quando a lista muda de identidade (filtro, outra conversa, etc.),
+     * remove do cache keys que já não existem — mantém as que ainda servem
+     * (ex.: scroll na mesma conversa com append).
+     */
+    const pruneHeightCache = (items: T[]) => {
+        const map = heightByKeyRef.current;
+        if (!map) return;
 
-    const overscan = () => props.overscan ?? DEFAULT_OVERSCAN;
-    const estimatedHeight = () => props.itemHeight;
-    const getRenderKey = (item: T, index: number) => {
-        return props.getItemKey?.(item, index) ?? index;
-    };
-
-    const syncItemMeasurements = () => {
-        for (let index = 0; index < props.items.length; index += 1) {
-            const item = props.items[index];
-            const key = props.getItemKey?.(item, index);
-            const previousKey = itemKeysRef.current?.get(index);
-            const previousItem = itemIdentityRef.current?.get(index);
-            const itemChanged = props.getItemKey
-                ? !Object.is(previousKey, key)
-                : !Object.is(previousItem, item);
-
-            if (itemChanged) {
-                itemHeightsRef.current?.delete(index);
-            }
-
-            itemIdentityRef.current?.set(index, item);
-
-            if (key == null) {
-                itemKeysRef.current?.delete(index);
-            } else {
-                itemKeysRef.current?.set(index, key);
-            }
+        const live = new Set<string>();
+        for (let i = 0; i < items.length; i += 1) {
+            live.add(keyOf(items[i], i));
         }
 
-        for (const index of itemHeightsRef.current?.keys() ?? []) {
-            if (index >= props.items.length) {
-                itemHeightsRef.current?.delete(index);
-            }
-        }
-
-        for (const index of itemIdentityRef.current?.keys() ?? []) {
-            if (index >= props.items.length) {
-                itemIdentityRef.current?.delete(index);
-            }
-        }
-
-        for (const index of itemKeysRef.current?.keys() ?? []) {
-            if (index >= props.items.length) {
-                itemKeysRef.current?.delete(index);
+        for (const key of map.keys()) {
+            if (!live.has(key)) {
+                map.delete(key);
             }
         }
     };
 
-    const getItemHeight = (index: number) => {
-        return itemHeightsRef.current?.get(index) ?? estimatedHeight();
-    };
-
-    const getItemTop = (index: number) => {
-        let top = 0;
-
-        for (let i = 0; i < index; i += 1) {
-            top += getItemHeight(i);
-        }
-
-        return top;
-    };
-
-    const getItemsHeight = (start: number, end: number) => {
-        let height = 0;
-
-        for (let i = start; i < end; i += 1) {
-            height += getItemHeight(i);
-        }
-
-        return height;
-    };
-
-    const resolvePaintViewportHeight = () => {
-        if (typeof props.height === "number") {
-            return props.height;
-        }
-
-        if (typeof props.height === "string" && props.height.endsWith("px")) {
-            const value = Number.parseFloat(props.height);
-            if (Number.isFinite(value)) return value;
-        }
-
-        if (viewportReady()) {
-            const measured = getViewportHeight();
-            return measured > 0 ? measured : DEFAULT_VIEWPORT_HEIGHT;
-        }
-
-        return DEFAULT_VIEWPORT_HEIGHT;
-    };
-
-    const totalHeight = () => {
-        let height = 0;
-
-        for (let i = 0; i < props.items.length; i += 1) {
-            height += getItemHeight(i);
-        }
-
-        return height;
-    };
-
-    const resolveVisibleRange = () => {
+    const resolveVisibleRange = (items: T[]) => {
         const scrollTop = scrollTopRef.current ?? 0;
-        const viewportHeight = resolvePaintViewportHeight();
+        const viewportHeight = getViewportHeight();
+        const estimate = estimatedHeight();
+        const count = items.length;
 
-        if (viewportHeight <= 0 || estimatedHeight() <= 0) {
-            return {start: 0, end: 0};
+        if (count === 0 || estimate <= 0) {
+            return { start: 0, end: 0 };
         }
 
-        const minY = Math.max(0, scrollTop - overscan() * estimatedHeight());
-        const maxY = scrollTop + viewportHeight + overscan() * estimatedHeight();
+        // Antes do primeiro layout não há clientHeight. Renderiza uma janela
+        // inicial para a lista nunca aparecer vazia; o ResizeObserver substitui
+        // este intervalo pela faixa precisa assim que o viewport for medido.
+        if (viewportHeight <= 0) {
+            return {
+                start: 0,
+                end: Math.min(count, Math.max(1, overscan() * 2 + 1)),
+            };
+        }
+
+        const minY = Math.max(0, scrollTop - overscan() * estimate);
+        const maxY = scrollTop + viewportHeight + overscan() * estimate;
 
         let start = 0;
-        let end = props.items.length;
-
         let y = 0;
 
-        for (let i = 0; i < props.items.length; i += 1) {
-            const h = getItemHeight(i);
+        for (let i = 0; i < count; i += 1) {
+            const h = getItemHeightAt(items, i);
             const nextY = y + h;
-
             if (nextY >= minY) {
                 start = i;
                 break;
             }
-
             y = nextY;
+            if (i === count - 1) {
+                start = i;
+            }
         }
 
-        y = getItemTop(start);
+        y = getItemTop(items, start);
+        let end = count;
 
-        for (let i = start; i < props.items.length; i += 1) {
-            y += getItemHeight(i);
-
+        for (let i = start; i < count; i += 1) {
+            y += getItemHeightAt(items, i);
             if (y >= maxY) {
-                end = Math.min(props.items.length, i + 1);
+                end = Math.min(count, i + 1);
                 break;
             }
         }
 
-        return {start, end};
+        return { start, end };
     };
 
-    const registerRow = (index: number) => {
-        return (element: HTMLDivElement | null) => {
-            const previousObserver = rowObserversRef.current?.get(index);
+    const disconnectRow = (index: number) => {
+        const previous = rowObserversRef.current?.get(index);
+        if (previous) {
+            previous.disconnect();
+            rowObserversRef.current?.delete(index);
+        }
+        indexToKeyRef.current?.delete(index);
+    };
 
-            if (previousObserver) {
-                previousObserver.disconnect();
-                rowObserversRef.current?.delete(index);
-            }
+    const registerRow = (index: number, key: string) => {
+        return (element: HTMLDivElement | null) => {
+            disconnectRow(index);
 
             if (!element) {
                 return;
             }
 
+            indexToKeyRef.current?.set(index, key);
+
             const syncHeight = () => {
-                const nextHeight = element.offsetHeight;
+                // Só confia na medida se a key deste index ainda for a mesma
+                if (indexToKeyRef.current?.get(index) !== key) {
+                    return;
+                }
+
+                const nextHeight = Math.ceil(element.getBoundingClientRect().height);
 
                 if (nextHeight <= 0) {
                     return;
                 }
 
-                const currentHeight = itemHeightsRef.current?.get(index);
+                const map = heightByKeyRef.current;
+                if (!map) return;
 
-                if (Object.is(currentHeight, nextHeight)) {
+                const current = map.get(key);
+                if (Object.is(current, nextHeight)) {
                     return;
                 }
 
-                itemHeightsRef.current?.set(index, nextHeight);
-                forceRender((value) => value + 1);
+                map.set(key, nextHeight);
+                bumpLayout((v) => v + 1);
             };
 
+            // measure após layout (imagens/fontes podem mudar na frame seguinte)
             syncHeight();
+            requestAnimationFrame(syncHeight);
 
-            const observer = new ResizeObserver(syncHeight);
+            const observer = new ResizeObserver(() => {
+                syncHeight();
+            });
             observer.observe(element);
-
             rowObserversRef.current?.set(index, observer);
         };
     };
 
     layoutEvents(() => {
-
         const viewport = viewportRef.current;
-
-        if (!viewport) {
-            return;
-        }
+        if (!viewport) return;
 
         let frame = 0;
 
         const syncViewportHeight = () => {
             const nextHeight = getViewportHeight();
-
-            if (nextHeight <= 0) {
-                return;
-            }
-
-            if (Object.is(viewportHeightRef.current, nextHeight)) {
-                return;
-            }
-
+            if (nextHeight <= 0) return;
+            if (Object.is(viewportHeightRef.current, nextHeight)) return;
             viewportHeightRef.current = nextHeight;
-            setViewportReady(true);
-            forceRender((value) => value + 1);
+            bumpLayout((v) => v + 1);
         };
 
         syncViewportHeight();
@@ -284,52 +262,40 @@ export function ListVirtual<T>(props: ListVirtualProps<T>) {
 
         const onViewportScroll = () => {
             scrollTopRef.current = viewport.scrollTop;
-            forceRender((value) => value + 1);
+            bumpLayout((v) => v + 1);
         };
 
         resizeObserver.observe(viewport);
+        if (viewport.parentElement) {
+            resizeObserver.observe(viewport.parentElement);
+        }
 
-        viewport.addEventListener("scroll", onViewportScroll, {
-            passive: true
-        });
+        viewport.addEventListener("scroll", onViewportScroll, { passive: true });
 
         return () => {
             cancelAnimationFrame(frame);
             resizeObserver.disconnect();
             viewport.removeEventListener("scroll", onViewportScroll);
 
-            for (const observer of (rowObserversRef.current?.values() ?? [])) {
+            for (const observer of rowObserversRef.current?.values() ?? []) {
                 observer.disconnect();
             }
-
             rowObserversRef.current?.clear();
+            indexToKeyRef.current?.clear();
         };
     }, [props.height, props.width]);
 
-    if (props.items.length === 0) {
-        itemHeightsRef.current?.clear();
-        itemIdentityRef.current?.clear();
-        itemKeysRef.current?.clear();
+    // Assina o getter para invalidar o cache até quando o tamanho não muda.
+    layoutEvents(() => {
+        pruneHeightCache(getItems());
+        bumpLayout((v) => v + 1);
+    }, []);
 
-        return (
-            <div
-                className={props.className}
-                style={resolveContainerStyle(props.height, props.width, {
-                    display: "grid",
-                    placeItems: "center"
-                })}
-            >
-                {props.emptyState ?? "Empty list"}
-            </div>
-        );
-    }
-
-    syncItemMeasurements();
-
-    return (<div
+    return (
+        <div
             className={props.className}
             style={resolveContainerStyle(props.height, props.width, {
-                overflow: "hidden"
+                overflow: "hidden",
             })}
         >
             <div
@@ -338,44 +304,55 @@ export function ListVirtual<T>(props: ListVirtualProps<T>) {
                     position: "absolute",
                     inset: "0",
                     overflowY: "auto",
-                    overflowX: "hidden"
+                    overflowX: "hidden",
                 }}
             >
                 {() => {
-                    renderVersion();
-                    const {start, end} = resolveVisibleRange();
-                    const paddingTop = getItemTop(start);
-                    const visibleHeight = getItemsHeight(start, end);
-                    const paddingBottom = Math.max(
-                        0,
-                        totalHeight() - paddingTop - visibleHeight
-                    );
+                    const items = getItems();
+                    layoutVersion();
+
+                    if (items.length === 0) {
+                        return (
+                            <div style={{ height: "100%", display: "grid", placeItems: "center" }}>
+                                {props.emptyState ?? "Empty list"}
+                            </div>
+                        );
+                    }
+
+                    const { start, end } = resolveVisibleRange(items);
+                    const slice = items.slice(start, end);
 
                     return (
                         <div
                             style={{
                                 position: "relative",
-                                paddingTop: `${paddingTop}px`,
-                                paddingBottom: `${paddingBottom}px`
+                                width: "100%",
+                                height: `${totalHeight(items)}px`,
                             }}
                         >
-                            {props.items.slice(start, end).map((item, offset) => {
+                            {slice.map((item, offset) => {
                                 const index = start + offset;
-                                const key = getRenderKey(item, index);
+                                const key = keyOf(item, index);
+                                const top = getItemTop(items, index);
 
                                 return (
                                     <div
                                         key={key}
-                                        ref={registerRow(index)}
+                                        ref={registerRow(index, key)}
                                         onClick={(event) => {
                                             props.onItemClick?.(
                                                 item,
                                                 index,
-                                                event as MouseEvent
+                                                event as MouseEvent,
                                             );
                                         }}
                                         style={{
-                                            minHeight: `${props.itemHeight}px`
+                                            position: "absolute",
+                                            top: `${top}px`,
+                                            left: "0",
+                                            right: "0",
+                                            minHeight: `${estimatedHeight()}px`,
+                                            boxSizing: "border-box",
                                         }}
                                     >
                                         {props.item(item, index)}
@@ -398,12 +375,12 @@ function normalizeCssSize(value: number | string | undefined) {
 function resolveContainerStyle(
     height: number | string | undefined,
     width: number | string | undefined,
-    extra: Record<string, string>
+    extra: Record<string, string>,
 ) {
     return {
-        position: "relative",
+        position: "relative" as const,
         height: normalizeCssSize(height),
         width: normalizeCssSize(width),
-        ...extra
+        ...extra,
     };
 }
