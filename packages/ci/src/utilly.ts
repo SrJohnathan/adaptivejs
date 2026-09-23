@@ -9,6 +9,8 @@
 
 import path from "node:path";
 import {existsSync} from "node:fs";
+import {Plugin} from "rolldown";
+import fs from "node:fs/promises";
 
 export type FileChange = {
     eventType: "rename" | "change";
@@ -198,4 +200,57 @@ export function normalizeEntryId(relativePath: string): string {
     return relativePath
         .replace(/\.(ts|tsx|js|jsx)$/, "")
         .replace(/\\/g, "/");
+}
+
+
+export function markClientExportsPlugin(srcDir: string): Plugin {
+    return {
+        name: "adaptive-mark-client-exports",
+        async transform(code, id) {
+            if (!/\.[cm]?[jt]sx?$/.test(id)) return null;
+            if (id.includes("node_modules")) return null;
+
+            let original: string;
+            try {
+                original = await fs.readFile(id, "utf8");
+            } catch {
+                return null;
+            }
+
+            const directive = getHydratableDirective(original);
+
+
+
+            if (!directive) return null;
+
+            const moduleId = normalizeEntryId(path.relative(srcDir, id));
+            const { namedExports, hasDefaultExport } = extractExports(original);
+
+            const footer: string[] = [
+                "",
+                `import { markClientExport } from "@adaptive-js/web";`,
+            ];
+
+            for (const name of namedExports) {
+                if (name === "default") continue;
+                console.log("directive",name, directive)
+                footer.push(
+                    `typeof ${name} === "function" && markClientExport(${name}, ${JSON.stringify(moduleId)}, ${JSON.stringify(name)},${JSON.stringify(directive)});`
+                );
+            }
+
+            if (hasDefaultExport) {
+                // cobre: export default function X / export default X
+                footer.push(
+                    `import __adaptive_default from ${JSON.stringify(id)};`
+                );
+                // NÃO uses isto (circular). Em vez disso, ver nota abaixo.
+            }
+
+            return {
+                code: code + footer.join("\n"),
+                map: null,
+            };
+        },
+    };
 }

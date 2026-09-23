@@ -26,3 +26,5 @@ export * from  "./hydration/templates.js";
 export { callServerAction } from "@adaptive-js/shared";
 import { AdaptiveRouteContext  } from "@adaptive-js/shared";
 export type PageContext = AdaptiveRouteContext ;
+export { markClientExport } from "./hydration/mark-client.js";
+export { CLIENT_COMPONENT_SYMBOL } from "./hydration/client-boundary.js";

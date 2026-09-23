@@ -25,7 +25,7 @@ import {
   CLIENT_BOUNDARY_START_PREFIX,
   CLIENT_BOUNDARY_TAG,
   CLIENT_COMPONENT_SYMBOL,
-  HYDRATE_SLOT_TAG,
+  HYDRATE_SLOT_TAG, isBoundaryComponent,
   isClientBoundaryTag,
   isHydrateSlotTag
 } from "./client-boundary.js";
@@ -62,6 +62,7 @@ const registeredHydrationModules = new Map<string, Record<string, any>>();
 export type ClientMetadata = {
   moduleId: string;
   exportName: string;
+  mode:string
 };
 
 export type ClientComponentFunction = ((props?: Record<string, any>) => any) & {
@@ -97,7 +98,7 @@ export function createBoundaryComponent({
               ? createElement(serverRender, wrapServerProps ? wrapServerProps(props) : props)
               : null)) as ClientComponentFunction;
 
-  component[CLIENT_COMPONENT_SYMBOL] = { moduleId, exportName };
+  component[CLIENT_COMPONENT_SYMBOL] = { moduleId, exportName, mode };
   return component;
 }
 
@@ -105,8 +106,12 @@ export function isClientComponent(value: unknown): value is ClientComponentFunct
   return typeof value === "function" && Boolean((value as ClientComponentFunction)[CLIENT_COMPONENT_SYMBOL]);
 }
 
-export function getClientComponentMetadata(value: unknown): ClientMetadata | null {
-  return isClientComponent(value) ? value[CLIENT_COMPONENT_SYMBOL] ?? null : null;
+export function getClientComponentMetadata(
+    value: unknown
+): ClientMetadata | null {
+  if (typeof value !== "function") return null;
+  const meta = (value as ClientComponentFunction)[CLIENT_COMPONENT_SYMBOL];
+  return meta ?? null;
 }
 
 export function hydrateClientComponents(moduleId: string, exportsMap: Record<string, any>) {
@@ -344,7 +349,7 @@ function hydrateExistingBoundary(
     }
 ): Node[] {
   const manifestRecord = readHydrationManifestFromRoot(root, config.boundaryId);
-  const collected = collectHydrationBindings(config.component, config.props);
+  const collected = collectHydrationBindings(config.component, config.props , config.boundaryId);
   const bound = manifestRecord
       ? bindHydrationManifest(manifestRecord.manifest, collected)
       : { instructions: [] as HydrationInstruction[], unsupportedFeatures: ["manifest:missing"] };
@@ -383,7 +388,7 @@ function hydrateExistingBoundaryBetweenMarkers(
     }
 ): Node[] {
   const manifestRecord = readHydrationManifestBetweenMarkers(start, end, config.boundaryId);
-  const collected = collectHydrationBindings(config.component, config.props);
+  const collected = collectHydrationBindings(config.component, config.props, config.boundaryId);
   const bound = manifestRecord
       ? bindHydrationManifest(manifestRecord.manifest, collected)
       : { instructions: [] as HydrationInstruction[], unsupportedFeatures: ["manifest:missing"] };
@@ -415,11 +420,7 @@ function adoptExistingBoundary(config: {
   unsupportedFeatures: string[];
   snapshot: () => Node[];
 }): Node[] {
-  console.log("[DEBUG ADOPT BOUNDARY]", {
-    debugName: config.debugName,
-    instructions: config.instructions,
-    unsupportedFeatures: config.unsupportedFeatures,
-  });
+
 
   if (config.unsupportedFeatures.length > 0) {
     recordBoundaryHydrationNotice(
@@ -433,7 +434,8 @@ function adoptExistingBoundary(config: {
 
 function collectHydrationBindings(
     Component?: ((props?: Record<string, any>) => any),
-    props?: Record<string, any>
+    props?: Record<string, any>,
+moduleId?: string
 ): {
   events: Map<string, { event: string; handler: EventListener }>;
   refs: Map<string, any>;
@@ -468,7 +470,8 @@ function collectHydrationBindings(
         reactive: 0,
         dynamicProp: 0
       },
-      unsupportedFeatures: new Set<string>()
+      unsupportedFeatures: new Set<string>(),
+      currentModuleId: moduleId,
     };
 
     collectHydrationBindingsFromNode(createElement(Component, props ?? {}), bindings);
@@ -511,64 +514,62 @@ function collectHydrationBindingsFromNode(
         dynamicProp: number;
       };
       unsupportedFeatures: Set<string>;
+      currentModuleId?: string;
     }
-)
-{
-  if (node == null || node === false || typeof node === "string" || typeof node === "number" || typeof node === "boolean") {
+) {
+  if (
+      node == null ||
+      node === false ||
+      typeof node === "string" ||
+      typeof node === "number" ||
+      typeof node === "boolean"
+  ) {
     return;
   }
 
+  // Thunk reativo: só regista o getter
   if (typeof node === "function") {
-    // Não execute closures reativas durante a coleta: apenas registre o getter.
-    // A classificação e o conteúdo serão resolvidos na hora da hidratação.
     const reactiveKey = nextInstructionKey(state, "reactive");
     state.reactive.set(reactiveKey, node);
     return;
   }
 
   if (Array.isArray(node)) {
-    node.forEach((child) => collectHydrationBindingsFromNode(child, state));
+    for (const child of node) {
+      collectHydrationBindingsFromNode(child, state);
+    }
     return;
   }
-
 
   if (node.tag === CONTEXT_PROVIDER_TAG) {
-    runWithContext(
-        node.props.context.id,
-        node.props.value,
-        () => collectHydrationBindingsFromNode(node.children ?? [], state)
-    );
+    runWithContext(node.props.context.id, node.props.value, () => {
+      collectHydrationBindingsFromNode(node.children ?? [], state);
+    });
     return;
   }
 
-
-
-  if (
-      isHydrateSlotTag(node.tag) ||
-      isClientBoundaryTag(node.tag) ||
-      isClientComponent(node.tag)
-  ) {
-    return;
-  }
-
-
+  // Componente função
   if (typeof node.tag === "function") {
+    const meta = getClientComponentMetadata(node.tag);
 
+    // Ilha "client": bindings na boundary dela
+    if (meta?.mode === "client") {
+      return;
+    }
+    // hydrate da própria boundary (ou componente sem marca) → expandir
     collectHydrationBindingsFromNode(
-        untrack(() =>
-            node.tag(resolveComponentProps(node))
-        ),
+        untrack(() => node.tag(resolveComponentProps(node))),
         state
     );
     return;
   }
-
 
   if (node.tag === "Fragment") {
     collectHydrationBindingsFromNode(node.children ?? [], state);
     return;
   }
 
+  // Tags de transporte SSR (não são componentes função)
   if (isHydrateSlotTag(node.tag) || isClientBoundaryTag(node.tag)) {
     return;
   }
@@ -578,14 +579,16 @@ function collectHydrationBindingsFromNode(
     if (key.startsWith("on") && typeof value === "function") {
       state.events.set(nextInstructionKey(state, "event"), {
         event: key.slice(2).toLowerCase(),
-        handler: value as EventListener
+        handler: value as EventListener,
       });
       continue;
     }
+
     if (key === "ref" && value != null) {
       state.refs.set(nextInstructionKey(state, "ref"), value);
       continue;
     }
+
     if (
         key !== "children" &&
         key !== "ref" &&
@@ -594,10 +597,11 @@ function collectHydrationBindingsFromNode(
     ) {
       state.dynamicProps.set(nextInstructionKey(state, "dynamicProp"), {
         prop: key,
-        getter: value as () => any
+        getter: value as () => any,
       });
       continue;
     }
+
     if (
         !key.startsWith("on") &&
         key !== "children" &&

@@ -1,3 +1,5 @@
+import {ClientComponentFunction, getClientComponentMetadata} from "./boundary-component.js";
+
 export const CLIENT_COMPONENT_SYMBOL = Symbol.for("adaptive.client_component");
 export const CLIENT_BOUNDARY_TAG = "adaptive-client-boundary";
 export const CLIENT_BOUNDARY_MODE_CLIENT = "client";
@@ -22,4 +24,8 @@ export function isClientBoundaryTag(tag: unknown) {
 
 export function isHydrateSlotTag(tag: unknown) {
   return tag === HYDRATE_SLOT_TAG;
+}
+
+export function isBoundaryComponent(value: unknown): value is ClientComponentFunction {
+  return getClientComponentMetadata(value) != null;
 }
