@@ -22,7 +22,7 @@ import {
   HYDRATE_SLOT_START,
 } from "./client-boundary.js";
 import {CONTEXT_PROVIDER_TAG} from "../front/context-runtime.js";
-import {ReactiveSource, runWithContext, runWithEffectScope} from "../reactive/index.js";
+import {events, ReactiveSource, runWithContext, runWithEffectScope} from "../reactive/index.js";
 import {cleanupEffectScope, createEffectScope, untrack} from "../reactive/index.js";
 import {createReactiveEffect} from "../reactive/events.js";
 import {getVNodeKey, mountKeyedReactiveFunction} from "./keyed-reactive-block.js";
@@ -247,14 +247,14 @@ export function renderToDOM(vnode: any, namespace: string | null = null): Node {
     if (key === "style") {
       if (typeof value === "function") {
         // style={() => ({ transform: "..." })} — objeto inteiro reativo
-        createReactiveEffect(() => {
+        events(() => {
           applyStyleObject(el as HTMLElement, value());
         });
       } else if (typeof value === "object" && value !== null) {
         // style={{ transform: $s`...`, color: () => x() }} — propriedades individuais reativas
         for (const [styleKey, styleValue] of Object.entries(value as Record<string, any>)) {
           if (typeof styleValue === "function") {
-            createReactiveEffect(() => {
+            events(() => {
               const resolved = styleValue();
               const cssKey = styleKey.replace(/([A-Z])/g, "-$1").toLowerCase();
               if (resolved == null || resolved === false) {
@@ -355,7 +355,28 @@ export function cleanupAdaptiveMarkersAfterSuccessBetweenMarkers(start: Comment,
   return retainedNodes.filter((node) => node.isConnected);
 }
 
+export  function debugHydrationMarkers(root: ParentNode) {
+  const walker = document.createTreeWalker(
+      root,
+      NodeFilter.SHOW_COMMENT,
+  );
+
+  let node: Comment | null;
+
+  while ((node = walker.nextNode() as Comment | null)) {
+    const data = node.data.trim();
+
+    if (
+        data.startsWith("adaptive-") ||
+        data.startsWith("adaptive:")
+    ) {
+      console.log("[HYDRATION MARKER]", data);
+    }
+  }
+}
+
 export function applyHydrationInstructions(root: ParentNode, instructions: HydrationInstruction[]): void {
+
   const ordered = groupHydrationInstructions(instructions);
   ordered.events.forEach((instruction) => {
     const element = findHydrationElement(root, instruction.id);

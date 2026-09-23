@@ -1,10 +1,8 @@
 import { CLIENT_BOUNDARY_MODE_CLIENT } from "./client-boundary.js";
 import {
-  cleanupClientComponentScopes,
+
   createBoundaryComponent,
-  getClientComponentMetadata,
-  hydrateClientComponents,
-  isClientComponent
+
 } from "./boundary-component.js";
 
 export function createClientComponent(
