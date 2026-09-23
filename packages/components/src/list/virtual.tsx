@@ -308,49 +308,41 @@ export function ListVirtual<T>(props: ListVirtualProps<T>) {
                 }}
             >
                 {() => {
-                    const items = getItems();
                     layoutVersion();
 
+                    const items = getItems();
+                    pruneHeightCache(items);
+
                     if (items.length === 0) {
-                        return (
-                            <div style={{ height: "100%", display: "grid", placeItems: "center" }}>
-                                {props.emptyState ?? "Empty list"}
-                            </div>
-                        );
+                        return props.emptyState ?? null;
                     }
 
                     const { start, end } = resolveVisibleRange(items);
                     const slice = items.slice(start, end);
+                    const top = getItemTop(items, start);
+                    const bottom = Math.max(0, totalHeight(items) - getItemTop(items, end));
 
                     return (
                         <div
                             style={{
-                                position: "relative",
-                                width: "100%",
                                 height: `${totalHeight(items)}px`,
+                                boxSizing: "border-box",
+                                paddingTop: `${top}px`,
+                                paddingBottom: `${bottom}px`,
                             }}
                         >
                             {slice.map((item, offset) => {
                                 const index = start + offset;
                                 const key = keyOf(item, index);
-                                const top = getItemTop(items, index);
 
                                 return (
                                     <div
                                         key={key}
                                         ref={registerRow(index, key)}
                                         onClick={(event) => {
-                                            props.onItemClick?.(
-                                                item,
-                                                index,
-                                                event as MouseEvent,
-                                            );
+                                            props.onItemClick?.(item, index, event as MouseEvent);
                                         }}
                                         style={{
-                                            position: "absolute",
-                                            top: `${top}px`,
-                                            left: "0",
-                                            right: "0",
                                             minHeight: `${estimatedHeight()}px`,
                                             boxSizing: "border-box",
                                         }}
