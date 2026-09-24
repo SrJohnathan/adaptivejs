@@ -6,7 +6,7 @@
 import path from "node:path";
 import fs from "node:fs/promises";
 import { createHash } from "node:crypto";
-import {build, ExternalOption, type Plugin} from "rolldown";
+import {build, type Plugin} from "rolldown";
 import {extractExports, getHydratableDirective, markClientExportsPlugin, normalizeEntryId} from "./utilly.js";
 import {applyThunkTransform} from "./thunk-transform.js";
 import {ExternalPattern} from "./load-adaptive-config.js";
