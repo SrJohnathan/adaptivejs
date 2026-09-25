@@ -76,12 +76,7 @@ export async function createRouter(
             ]
         });
 
-        console.log(
-            "[Adaptive Router] pagesDir:",
-            pagesDir,
-            "modules:",
-            modules,
-        );
+
 
         // Tenta novamente uma vez se não encontrar nada (race condition no dev server)
         // Usamos um contador de tentativas simples via options para evitar loop infinito
@@ -93,10 +88,7 @@ export async function createRouter(
 
         for (const relativePath of modules) {
 
-            console.log(
-                "[Adaptive Router] loading route:",
-                relativePath,
-            );
+
 
             const absolutePath = path.join(pagesDir, relativePath);
             const mod = await importServerRouteModule(
@@ -108,12 +100,7 @@ export async function createRouter(
 
             const routePath = parseRoutePathServer(relativePath);
 
-            console.log(
-                "[Adaptive Router] route:",
-                relativePath,
-                "->",
-                routePath,
-            );
+
 
             routes.push({
                 path: parseRoutePathServer(relativePath),
@@ -136,12 +123,6 @@ export async function createRouter(
 
     const pathname = uri.pathname;
 
-    console.log(
-        "[Adaptive Router] pathname:",
-        pathname,
-        "routes:",
-        routes.map((route) => route.path),
-    );
 
     const routeMatch = resolveRoute(
         routes,
@@ -383,30 +364,18 @@ async function importServerRouteModule(
     absolutePath: string,
     fresh: boolean,
 ) {
-    console.log(
-        "[Adaptive SSR MODULE]",
-        path.basename(absolutePath),
-        "fresh:",
-        fresh,
-    );
+
 
     const moduleUrl = pathToFileURL(absolutePath);
 
     if (fresh) {
         const stats = await fs.stat(absolutePath);
 
-        console.log(
-            "[Adaptive SSR MODULE VERSION]",
-            stats.mtimeMs,
-        );
+
 
         moduleUrl.searchParams.set("t", `${stats.mtimeMs}`);
     }
 
-    console.log(
-        "[Adaptive SSR MODULE IMPORT]",
-        moduleUrl.href,
-    );
 
     return import(moduleUrl.href);
 }

@@ -83,6 +83,37 @@ export interface AuthAdapter<
   listUserSessions?(userId: string): MaybePromise<ManagedUserSession[]>;
 }
 
+
+export interface ApiExternalAdapter <  TUser extends AuthUser = AuthUser>{
+  id: string;
+  token: string;
+/** chamar a rota de login */
+  request(): Promise<TUser>;
+
+  /** atualiza */
+  refresh?(): Promise<TUser>;
+}
+
+export type ExternalAuthResult<TUser extends AuthUser = AuthUser> = {
+  id: string;
+  email?: string;
+  name?: string;
+  /** access token do IdP — o adapter guarda em `.token` */
+  token?: string;
+  /** extra livre (roles, claims, …) */
+  data?: Record<string, unknown>;
+} & Partial<TUser>;
+
+export type ExternalAuthInput = Record<string, unknown>;
+
+export interface ApiExternalAdapter<TUser extends AuthUser = AuthUser> {
+   id: string;
+   token: string;
+  request(input?: ExternalAuthInput): Promise<TUser>;
+  refresh?(input?: ExternalAuthInput): Promise<TUser>;
+}
+
+
 export interface AuthCookieOptions {
   name?: string;
   path?: string;
@@ -175,10 +206,13 @@ export interface AuthRateLimitConfig<TUser extends AuthUser = AuthUser> {
 }
 
 export interface CreateAuthOptions<
-  TUser extends AuthUser = AuthUser,
-  TData extends AuthSessionData = AuthSessionData
+    TUser extends AuthUser = AuthUser,
+    TData extends AuthSessionData = AuthSessionData,
+    TExternal extends ApiExternalAdapter<TUser> = ApiExternalAdapter<TUser>
 > {
   adapter: AuthAdapter<TUser, TData>;
+  /** Opcional: IdP externo (Axum, etc.) */
+  external?: TExternal;
   csrf: AuthCsrfOptions;
   cookie?: AuthCookieOptions;
   sessionDuration?: number;
@@ -211,8 +245,9 @@ export interface AuthClientState<TUser extends AuthUser = AuthUser> {
 }
 
 export interface AuthActionContext<
-  TUser extends AuthUser = AuthUser,
-  TData extends AuthSessionData = AuthSessionData
+    TUser extends AuthUser = AuthUser,
+    TData extends AuthSessionData = AuthSessionData,
+    TExternal extends ApiExternalAdapter<TUser> = ApiExternalAdapter<TUser>
 > {
   session: AuthSession<TUser, TData>;
   freshCookie?: AuthCookieResult;
@@ -220,6 +255,7 @@ export interface AuthActionContext<
   request: AuthRequestLike;
   args: unknown[];
   event?: any;
+  external?: TExternal;
 }
 
 export interface AuthActionOptions {

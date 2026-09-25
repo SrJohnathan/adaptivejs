@@ -864,7 +864,9 @@ export function createAuth<
         formData,
         request,
         args: actionArgs,
-        event: context?.event
+        event: context?.event,
+        external: options.adapter
+
       });
     };
   }

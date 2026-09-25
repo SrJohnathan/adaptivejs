@@ -233,7 +233,6 @@ export function markClientExportsPlugin(srcDir: string): Plugin {
 
             for (const name of namedExports) {
                 if (name === "default") continue;
-                console.log("directive",name, directive)
                 footer.push(
                     `typeof ${name} === "function" && markClientExport(${name}, ${JSON.stringify(moduleId)}, ${JSON.stringify(name)},${JSON.stringify(directive)});`
                 );
