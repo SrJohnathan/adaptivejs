@@ -35,3 +35,4 @@ export {
     applyHydrationPayloadToWindow,
 } from "./hydration-payload.js";
 export type { AdaptiveHydrationPayload } from "./hydration-payload.js";
+export * from "./types-hydrates.js";

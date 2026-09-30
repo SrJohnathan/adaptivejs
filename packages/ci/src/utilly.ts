@@ -168,28 +168,101 @@ function hasModuleIndex(absoluteBase: string): boolean {
 /**
  * Extrai exports nomeados e default de um arquivo
  */
-export function extractExports(sourceText: string): {
+export function extractExports(source: string): {
     namedExports: string[];
     hasDefaultExport: boolean;
+    defaultLocalName: string | null;
 } {
-    const exports = new Set<string>();
+    const named = new Set<string>();
+    let hasDefaultExport = false;
+    let defaultLocalName: string | null = null;
 
-    const patterns = [
-        /export\s+(?:async\s+)?function\s+([A-Za-z_$][\w$]*)/g,
-        /export\s+(?:const|let|var|class)\s+([A-Za-z_$][\w$]*)/g,
-    ];
+    // strip comments grosseiro (evita falsos positivos)
+    const code = source
+        .replace(/\/\*[\s\S]*?\*\//g, "")
+        .replace(/\/\/.*$/gm, "");
 
-    for (const pattern of patterns) {
-        let match: RegExpExecArray | null;
+    // export function Name / export async function Name
+    for (const m of code.matchAll(
+        /\bexport\s+(?:async\s+)?function\s+([A-Za-z_$][\w$]*)/g,
+    )) {
+        named.add(m[1]!);
+    }
 
-        while ((match = pattern.exec(sourceText))) {
-            exports.add(match[1]);
+    // export class Name
+    for (const m of code.matchAll(/\bexport\s+class\s+([A-Za-z_$][\w$]*)/g)) {
+        named.add(m[1]!);
+    }
+
+    // export const/let/var Name = ...
+    for (const m of code.matchAll(
+        /\bexport\s+(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*=/g,
+    )) {
+        named.add(m[1]!);
+    }
+
+    // export { a, b as c }
+    for (const m of code.matchAll(/\bexport\s*\{([^}]+)\}/g)) {
+        const inner = m[1]!;
+        for (const part of inner.split(",")) {
+            const bits = part.trim().split(/\s+as\s+/);
+            const exported = (bits[1] ?? bits[0])?.trim();
+            if (exported && exported !== "default") named.add(exported);
+            if (exported === "default" || bits[0]?.trim() === "default") {
+                hasDefaultExport = true;
+                const local = bits[0]?.trim();
+                if (local && local !== "default") defaultLocalName = local;
+            }
         }
     }
 
+    // export default function Name
+    {
+        const m = code.match(
+            /\bexport\s+default\s+(?:async\s+)?function\s+([A-Za-z_$][\w$]*)/,
+        );
+        if (m) {
+            hasDefaultExport = true;
+            defaultLocalName = m[1]!;
+            named.add(m[1]!); // opcional
+        }
+    }
+
+    // export default function (anónima) — sem nome local
+    if (/\bexport\s+default\s+(?:async\s+)?function\s*\(/.test(code)) {
+        hasDefaultExport = true;
+        // defaultLocalName continua null → plugin tem de reescrever
+    }
+
+    // export default class Name
+    {
+        const m = code.match(/\bexport\s+default\s+class\s+([A-Za-z_$][\w$]*)/);
+        if (m) {
+            hasDefaultExport = true;
+            defaultLocalName = m[1]!;
+        }
+    }
+
+    // export default Identifier
+    {
+        const m = code.match(
+            /\bexport\s+default\s+([A-Za-z_$][\w$]*)\s*;/,
+        );
+        if (m && m[1] !== "function" && m[1] !== "class") {
+            hasDefaultExport = true;
+            defaultLocalName = m[1]!;
+        }
+    }
+
+    // export default () => / export default expr
+    if (/\bexport\s+default\s+/.test(code)) {
+        hasDefaultExport = true;
+    }
+
     return {
-        namedExports: Array.from(exports),
-        hasDefaultExport: /export\s+default\b/.test(sourceText),
+        namedExports: Array.from(named),
+        hasDefaultExport,
+        defaultLocalName,
     };
 }
 
@@ -217,14 +290,16 @@ export function markClientExportsPlugin(srcDir: string): Plugin {
                 return null;
             }
 
-            const directive = getHydratableDirective(original);
+            const raw = getHydratableDirective(original); // "client" | "hydrate" | null
+            if (!raw) return null;
 
-
-
-            if (!directive) return null;
+            // normalizar — crítico
+            const mode: "client" | "hydrate" =
+                raw === "hydrate"  ? "hydrate" : "client";
 
             const moduleId = normalizeEntryId(path.relative(srcDir, id));
-            const { namedExports, hasDefaultExport } = extractExports(original);
+            const { namedExports, hasDefaultExport, defaultLocalName } =
+                extractExports(original);
 
             const footer: string[] = [
                 "",
@@ -234,22 +309,22 @@ export function markClientExportsPlugin(srcDir: string): Plugin {
             for (const name of namedExports) {
                 if (name === "default") continue;
                 footer.push(
-                    `typeof ${name} === "function" && markClientExport(${name}, ${JSON.stringify(moduleId)}, ${JSON.stringify(name)},${JSON.stringify(directive)});`
+                    `typeof ${name} === "function" && markClientExport(${name}, ${JSON.stringify(moduleId)}, ${JSON.stringify(name)}, ${JSON.stringify(mode)});`,
                 );
             }
 
             if (hasDefaultExport) {
-                // cobre: export default function X / export default X
+                // Precisas que extractExports descubra o nome local:
+                // export default function Foo → "Foo"
+                // export default Foo → "Foo"
+                // export default () => {} → reescreve o AST para __AdaptiveDefault e usa isso
+                const local = defaultLocalName ?? "__AdaptiveDefault";
                 footer.push(
-                    `import __adaptive_default from ${JSON.stringify(id)};`
+                    `typeof ${local} === "function" && markClientExport(${local}, ${JSON.stringify(moduleId)}, "default", ${JSON.stringify(mode)});`,
                 );
-                // NÃO uses isto (circular). Em vez disso, ver nota abaixo.
             }
 
-            return {
-                code: code + footer.join("\n"),
-                map: null,
-            };
+            return { code: code + "\n" + footer.join("\n"), map: null };
         },
     };
 }

@@ -21,6 +21,5 @@ export function createClientComponent(
 export {
   cleanupClientComponentScopes,
   hydrateClientComponents,
-  getClientComponentMetadata,
   isClientComponent
 } from "./boundary-component.js";

@@ -28,3 +28,4 @@ import { AdaptiveRouteContext  } from "@adaptive-js/shared";
 export type PageContext = AdaptiveRouteContext ;
 export { markClientExport } from "./hydration/mark-client.js";
 export { CLIENT_COMPONENT_SYMBOL } from "./hydration/client-boundary.js";
+export { getClientComponentMetadata } from "@adaptive-js/shared"

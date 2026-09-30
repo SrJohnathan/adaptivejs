@@ -12,7 +12,7 @@
  * See LICENSE file in the project root for full license information.
  */
 
-import { CONTEXT_PROVIDER_TAG, runWithServerContext } from "@adaptive-js/shared";
+import {CONTEXT_PROVIDER_TAG, getClientComponentMetadata, runWithServerContext} from "@adaptive-js/shared";
 import {
   CLIENT_BOUNDARY_END,
   CLIENT_BOUNDARY_MODE_CLIENT,
@@ -207,8 +207,34 @@ function renderNode(node: any, context: RenderContext): string {
     return renderNode(result, context);
   }
 
-  if (node.tag === "Fragment") {
-    return renderNode(getVNodeChildren(node), context);
+  if (typeof node.tag === "function") {
+    const meta =
+        typeof node.tag === "function" &&
+        (node.tag as any)
+            ? getClientComponentMetadata(node.tag)
+            : getClientComponentMetadata?.(node.tag) ?? null;
+
+    // Preferir import real:
+    // import { getClientComponentMetadata } from "../hydration/boundary-component.js";
+    // import { CLIENT_BOUNDARY_MODE_CLIENT, CLIENT_BOUNDARY_MODE_HYDRATE } from "...";
+
+    const result = node.tag(resolveComponentProps(node));
+
+    // Ilha client: NÃO herdar manifest/counters do pai hydrate
+    if (meta?.mode === CLIENT_BOUNDARY_MODE_CLIENT || meta?.mode === "client") {
+      return renderNode(result, {
+        ...context,
+        // opaco para o boundary pai
+        hydrateManifest: undefined,
+        hydrateInstructionCounters: undefined,
+        hydrateAidCounter: undefined,
+        hydrateReactiveCounter: undefined,
+        // currentBoundaryId pode ficar; renderClientBoundary redefine o seu
+      });
+    }
+
+    // hydrate aninhado ou componente sem marca → mantém context (pai)
+    return renderNode(result, context);
   }
 
   if (isHydrateSlotTag(node.tag)) {

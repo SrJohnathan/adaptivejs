@@ -1,4 +1,6 @@
-import {ClientComponentFunction, getClientComponentMetadata} from "./boundary-component.js";
+import {ClientComponentFunction, getClientComponentMetadata} from "@adaptive-js/shared";
+
+
 
 export const CLIENT_COMPONENT_SYMBOL = Symbol.for("adaptive.client_component");
 export const CLIENT_BOUNDARY_TAG = "adaptive-client-boundary";

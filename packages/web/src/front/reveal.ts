@@ -102,7 +102,5 @@ export const Reveal = RevealFn as any as {
 Reveal.If = If;
 Reveal.Else = Else;
 
-export const When = Reveal;
-export const Branch = Reveal;
 
-export default Reveal;
+

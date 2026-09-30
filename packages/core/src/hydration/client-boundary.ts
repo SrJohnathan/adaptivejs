@@ -5,7 +5,7 @@
  * See LICENSE file in the project root for full license information.
  */
 
-export const CLIENT_COMPONENT_SYMBOL = Symbol.for("adaptive.client_component");
+
 export const CLIENT_BOUNDARY_TAG = "adaptive-client-boundary";
 export const CLIENT_BOUNDARY_MODE_CLIENT = "client";
 export const CLIENT_BOUNDARY_MODE_HYDRATE = "hydrate";

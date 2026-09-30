@@ -1,4 +1,7 @@
-'client'
+'hydrate'
+
+
+
 
 /*
  * Copyright (c) 2026 Antonio Johnathan
@@ -158,6 +161,7 @@ function applyItemNode(
 }
 
 export function RecyclerView<T>(props: RecyclerViewProps<T>) {
+
     const viewportRef = ref<HTMLDivElement | null>(null);
     const spacerRef = ref<HTMLDivElement | null>(null);
 
@@ -431,8 +435,8 @@ export function RecyclerView<T>(props: RecyclerViewProps<T>) {
     }, []);
 
     return (
-        <div
-            className={props.className ? props.className : undefined}
+         <div
+             className={ () =>   props.className ? props.className : ""}
             style={resolveContainerStyle(props.height, props.width, {
                 overflow: "hidden",
             })}

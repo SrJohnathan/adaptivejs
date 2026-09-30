@@ -24,7 +24,6 @@ import {
   CLIENT_BOUNDARY_MODE_HYDRATE,
   CLIENT_BOUNDARY_START_PREFIX,
   CLIENT_BOUNDARY_TAG,
-  CLIENT_COMPONENT_SYMBOL,
   HYDRATE_SLOT_TAG, isBoundaryComponent,
   isClientBoundaryTag,
   isHydrateSlotTag
@@ -45,6 +44,8 @@ import {
   runHydrationCollection,
   runWithContext, flushEvents, runWithEffectScope, untrack, ReactiveSource, DependencyList, EffectFn
 } from "../reactive/events.js";
+import {ClientComponentFunction, getClientComponentMetadata,CLIENT_COMPONENT_SYMBOL} from "@adaptive-js/shared";
+import {formatHydrationMismatchReport} from "./debug-erros.js";
 const clientBoundaryScopes = new Map<Node, {
   scope: ReturnType<typeof createEventsScope>;
   handlerScope: ReturnType<typeof createHandlerScope>;
@@ -59,15 +60,9 @@ const boundaryHydrationNotices = new Set<string>();
 // Registro global de módulos já hidratados, para permitir reexecução em mudanças de rota
 const registeredHydrationModules = new Map<string, Record<string, any>>();
 
-export type ClientMetadata = {
-  moduleId: string;
-  exportName: string;
-  mode:string
-};
 
-export type ClientComponentFunction = ((props?: Record<string, any>) => any) & {
-  [CLIENT_COMPONENT_SYMBOL]?: ClientMetadata;
-};
+
+
 
 export function createBoundaryComponent({
                                           mode,
@@ -106,13 +101,7 @@ export function isClientComponent(value: unknown): value is ClientComponentFunct
   return typeof value === "function" && Boolean((value as ClientComponentFunction)[CLIENT_COMPONENT_SYMBOL]);
 }
 
-export function getClientComponentMetadata(
-    value: unknown
-): ClientMetadata | null {
-  if (typeof value !== "function") return null;
-  const meta = (value as ClientComponentFunction)[CLIENT_COMPONENT_SYMBOL];
-  return meta ?? null;
-}
+
 
 export function hydrateClientComponents(moduleId: string, exportsMap: Record<string, any>) {
   if (typeof document === "undefined") return;
@@ -416,19 +405,25 @@ function hydrateExistingBoundaryBetweenMarkers(
 
 function adoptExistingBoundary(config: {
   debugName: string;
+  boundaryId?: string;
   instructions: HydrationInstruction[];
   unsupportedFeatures: string[];
+  manifest?: HydrationManifest;
+  collected?: ReturnType<typeof collectHydrationBindings>;
   snapshot: () => Node[];
 }): Node[] {
-
-
   if (config.unsupportedFeatures.length > 0) {
     recordBoundaryHydrationNotice(
         config.debugName,
-        `Hydrate boundary has unsupported features: ${config.unsupportedFeatures.join(", ")}`
+        formatHydrationMismatchReport({
+          debugName: config.debugName,
+          boundaryId: config.boundaryId,
+          unsupportedFeatures: config.unsupportedFeatures,
+          manifest: config.manifest,
+          collected: config.collected,
+        }),
     );
   }
-
   return config.snapshot();
 }
 
