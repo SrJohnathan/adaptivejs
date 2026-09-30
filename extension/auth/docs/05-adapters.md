@@ -1,21 +1,29 @@
 # 05 — Adapters
 
-O core do auth é **storage-agnostic**. Você implementa `AuthAdapter` para o seu banco.
+No `@adaptive-js/extension-auth`, **tudo é baseado em Adapters**. Você passa um único adapter para `createAuth({ adapter })`.
+
+Existem 3 formas de usar adapters:
+1. **Adapter Interno** — Armazena usuários e sessões localmente no seu banco de dados ou memória (Memory, Postgres, Redis).
+2. **Adapter Externo** — Conecta diretamente a APIs e microserviços externos (Rust Axum, Go, FastAPI), cuidando de login, tokens e sessões locais para o SSR.
+3. **Custom Adapter** — Você implementa a interface `AuthAdapter` com a lógica específica da sua infraestrutura.
 
 ---
 
-## Contrato
+## 1. Contrato `AuthAdapter`
 
 ```ts
-interface AuthAdapter<TUser, TData> {
-  // Obrigatórios
+export interface AuthAdapter<
+  TUser extends AuthUser = AuthUser,
+  TData extends AuthSessionData = AuthSessionData
+> {
+  // Obrigatórios (Lifecycle de Sessão e Usuário)
   getUser(userId: string): MaybePromise<TUser | null>;
   getSession(sessionId: string): MaybePromise<StoredAuthSession<TData> | null>;
   createSession(session: StoredAuthSession<TData>): MaybePromise<void>;
   updateSession(session: StoredAuthSession<TData>): MaybePromise<void>;
   deleteSession(sessionId: string): MaybePromise<void>;
 
-  // Opcionais (mas necessários para logoutEverywhere / UI de dispositivos)
+  // Opcionais (Device management / Logout global)
   deleteUserSessions?(userId: string): MaybePromise<void>;
   deleteUserSessionsExcept?(userId: string, exceptSessionId: string): MaybePromise<void>;
   listUserSessions?(userId: string): MaybePromise<ManagedUserSession[]>;
@@ -27,22 +35,69 @@ interface AuthAdapter<TUser, TData> {
 
 ---
 
-## Memory (só dev)
+## 2. Adapter Externo (`createExternalAuthAdapter`)
+
+Quando a autenticação do seu sistema vive em uma **API externa** (como um microserviço em Rust Axum, Go ou Python), você usa `createExternalAuthAdapter`.
+
+Ele implementa o contrato `AuthAdapter`, gerencia as sessões locais no servidor AdaptiveJS para SSR rápido e seguro, e expõe métodos para autenticar contra a API externa:
+
+```ts
+import { createAuth } from "@adaptive-js/extension-auth/server";
+import { createExternalAuthAdapter } from "@adaptive-js/extension-auth/external-adapter";
+
+export const adapter = createExternalAuthAdapter({
+  baseUrl: process.env.AUTH_SERVICE_URL ?? "http://localhost:3001",
+  loginPath: "/api/v1/auth/login",
+  registerPath: "/api/v1/auth/register",
+  mapUser: (res: any) => ({
+    id: res.user.id,
+    email: res.user.email,
+    name: res.user.name,
+    roles: res.user.roles ?? [],
+  }),
+  mapToken: (res: any) => res.token,
+});
+
+export const auth = createAuth({
+  adapter, // <-- Único ponto de configuração! Sem providers.
+  csrf: { allowedOrigins: ["http://localhost:3000"] },
+});
+```
+
+### Operações com o Adapter Externo:
+
+```ts
+// 1. Login na API externa:
+const { user, token } = await adapter.login({ email, password });
+const { session, cookie } = await auth.createSession(user, {
+  data: { authToken: token },
+});
+
+// 2. Ou login direto via helper:
+const { session, cookie } = await auth.login({ email, password }, request);
+
+// 3. Registro de novo usuário:
+const { user, token } = await adapter.register({ email, password, name });
+```
+
+---
+
+## 3. Adapters Internos (Memory / Banco de Dados)
+
+### Memory (Apenas Dev e Testes)
 
 ```ts
 import { createMemoryAuthAdapter } from "@adaptive-js/extension-auth/memory-adapter";
 
 const adapter = createMemoryAuthAdapter({
-  users: [{ id: "u1", email: "a@b.com", roles: ["admin"] }],
-  cleanupIntervalMs: 60_000, // limpa sessões expiradas periodicamente
+  users: [{ id: "u1", email: "admin@example.com", roles: ["admin"] }],
+  cleanupIntervalMs: 60_000,
 });
 ```
 
-Dados morrem com o processo. **Proibido em produção.**
+> **Aviso:** Dados em memória são descartados ao reiniciar o processo. Use apenas em desenvolvimento ou testes.
 
----
-
-## Exemplo Postgres (esboço)
+### Exemplo Postgres
 
 ```ts
 import type { AuthAdapter, StoredAuthSession, AuthUser } from "@adaptive-js/extension-auth";
@@ -75,7 +130,7 @@ export function createPostgresAuthAdapter(): AuthAdapter<AuthUser> {
         absoluteExpiresAt: row.absolute_expires_at,
         csrfToken: row.csrf_token,
         binding: row.binding ?? undefined,
-      } satisfies StoredAuthSession;
+      };
     },
 
     async createSession(session) {
@@ -149,50 +204,39 @@ export function createPostgresAuthAdapter(): AuthAdapter<AuthUser> {
 }
 ```
 
-### Schema sugerido
+---
 
-```sql
-create table sessions (
-  id text primary key,
-  user_id text not null references users(id) on delete cascade,
-  data jsonb not null default '{}',
-  created_at timestamptz not null,
-  expires_at timestamptz not null,
-  absolute_expires_at timestamptz not null,
-  csrf_token text not null,
-  binding jsonb,
-  -- índices
-);
-create index sessions_user_id_idx on sessions (user_id);
-create index sessions_expires_at_idx on sessions (expires_at);
-```
+## 4. Custom Adapter (Faça você mesmo)
 
-Limpeza periódica de expiradas (cron / job):
+Qualquer objeto que satisfaça `AuthAdapter` é um adapter válido. Você pode integrar com Redis, MongoDB, DynamoDB, Supabase, Firebase ou sua própria API corporativa:
 
-```sql
-delete from sessions
-where expires_at < now() or absolute_expires_at < now();
+```ts
+import type { AuthAdapter } from "@adaptive-js/extension-auth";
+
+export const myCustomAdapter: AuthAdapter = {
+  async getUser(id) { /* busca usuário */ },
+  async getSession(id) { /* busca sessão */ },
+  async createSession(session) { /* salva sessão */ },
+  async updateSession(session) { /* atualiza sessão */ },
+  async deleteSession(id) { /* deleta sessão */ },
+};
+
+export const auth = createAuth({
+  adapter: myCustomAdapter,
+  csrf: { allowedOrigins: ["https://app.example.com"] },
+});
 ```
 
 ---
 
-## Redis (sessões)
+## 5. Adapter no Contexto de Server Actions
 
-Padrão comum: sessões no Redis, usuários no Postgres.
+Dentro de qualquer Server Action protegida com `auth.action`, o adapter configurado fica disponível no contexto:
 
-- Key: `session:{id}` → JSON do `StoredAuthSession`
-- TTL: alinhado a `expiresAt` (com cuidado no absolute)
-- Índice secundário: `user_sessions:{userId}` → set de session ids (para `deleteUserSessions`)
-
-Renovação deve ser atômica o suficiente para não perder a sessão em race (o core já serializa por id na renovação).
-
----
-
-## Checklist do adapter de produção
-
-- [ ] `updateSession` implementado (usado por `updateSessionData` e grace de renovação)
-- [ ] `deleteUserSessions` / `Except` / `listUserSessions` se a UI precisar
-- [ ] Índice por `userId`
-- [ ] Job de limpeza de expiradas
-- [ ] `csrfToken` e `binding` nunca expostos em APIs
-- [ ] Testes de concorrência na renovação
+```ts
+export const updateProfile = auth.action(async ({ session, adapter, formData }) => {
+  // Acesse diretamente seu adapter (interno, externo ou custom):
+  // adapter.getUser(...), adapter.request(...), etc.
+  return { ok: true };
+});
+```

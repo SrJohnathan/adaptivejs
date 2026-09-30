@@ -7,7 +7,8 @@ export type AuthErrorCode =
   | "CSRF_CONFIGURATION_INVALID"
   | "AUTH_CONFIGURATION_INVALID"
   | "RATE_LIMIT_EXCEEDED"
-  | "SESSION_BINDING_MISMATCH";
+  | "SESSION_BINDING_MISMATCH"
+  | "PROVIDER_NOT_FOUND";
 
 export class AuthError extends Error {
   readonly code: AuthErrorCode;

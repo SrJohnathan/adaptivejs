@@ -21,6 +21,14 @@
     "./memory-adapter": {
       "types": "./dist/memory-adapter.d.ts",
       "import": "./dist/memory-adapter.js"
+    },
+    "./external-adapter": {
+      "types": "./dist/external-adapter.d.ts",
+      "import": "./dist/external-adapter.js"
+    },
+    "./api-adapter": {
+      "types": "./dist/api-adapter.d.ts",
+      "import": "./dist/api-adapter.js"
     }
   },
   "scripts": {

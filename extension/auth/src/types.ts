@@ -69,6 +69,11 @@ export interface OAuthIdentity {
   providerAccountId: string;
 }
 
+/**
+ * Session and User Adapter Contract.
+ * Implemented by internal storage (Memory, Postgres, Redis, etc.),
+ * external API adapters, or custom user-defined adapters.
+ */
 export interface AuthAdapter<
   TUser extends AuthUser = AuthUser,
   TData extends AuthSessionData = AuthSessionData
@@ -83,36 +88,43 @@ export interface AuthAdapter<
   listUserSessions?(userId: string): MaybePromise<ManagedUserSession[]>;
 }
 
-
-export interface ApiExternalAdapter <  TUser extends AuthUser = AuthUser>{
-  id: string;
-  token: string;
-/** chamar a rota de login */
-  request(): Promise<TUser>;
-
-  /** atualiza */
-  refresh?(): Promise<TUser>;
-}
-
-export type ExternalAuthResult<TUser extends AuthUser = AuthUser> = {
-  id: string;
-  email?: string;
-  name?: string;
-  /** access token do IdP — o adapter guarda em `.token` */
-  token?: string;
-  /** extra livre (roles, claims, …) */
-  data?: Record<string, unknown>;
-} & Partial<TUser>;
+// ---------------------------------------------------------------------------
+// External API Adapter types
+// ---------------------------------------------------------------------------
 
 export type ExternalAuthInput = Record<string, unknown>;
 
-export interface ApiExternalAdapter<TUser extends AuthUser = AuthUser> {
-   id: string;
-   token: string;
-  request(input?: ExternalAuthInput): Promise<TUser>;
-  refresh?(input?: ExternalAuthInput): Promise<TUser>;
+export interface ExternalAuthResult<TUser extends AuthUser = AuthUser> {
+  user: TUser;
+  token?: string;
+  data?: Record<string, unknown>;
 }
 
+export interface ExternalAuthAdapter<
+  TUser extends AuthUser = AuthUser,
+  TData extends AuthSessionData = AuthSessionData
+> extends AuthAdapter<TUser, TData> {
+  id?: string;
+  readonly token?: string;
+  login(input: ExternalAuthInput): Promise<ExternalAuthResult<TUser>>;
+  register?(input: ExternalAuthInput): Promise<ExternalAuthResult<TUser>>;
+  request(endpointOrInput: string | ExternalAuthInput, input?: ExternalAuthInput): Promise<ExternalAuthResult<TUser>>;
+  refresh?(input?: ExternalAuthInput): Promise<ExternalAuthResult<TUser>>;
+  setUser(user: TUser): void;
+  deleteUser(userId: string): void;
+  clear(): void;
+  destroy?(): void;
+}
+
+/** Alias for backward compatibility */
+export type ApiExternalAdapter<
+  TUser extends AuthUser = AuthUser,
+  TData extends AuthSessionData = AuthSessionData
+> = ExternalAuthAdapter<TUser, TData>;
+
+// ---------------------------------------------------------------------------
+// Cookie / request types
+// ---------------------------------------------------------------------------
 
 export interface AuthCookieOptions {
   name?: string;
@@ -206,13 +218,18 @@ export interface AuthRateLimitConfig<TUser extends AuthUser = AuthUser> {
 }
 
 export interface CreateAuthOptions<
-    TUser extends AuthUser = AuthUser,
-    TData extends AuthSessionData = AuthSessionData,
-    TExternal extends ApiExternalAdapter<TUser> = ApiExternalAdapter<TUser>
+  TUser extends AuthUser = AuthUser,
+  TData extends AuthSessionData = AuthSessionData,
+  TAdapter extends AuthAdapter<TUser, TData> = AuthAdapter<TUser, TData>
 > {
-  adapter: AuthAdapter<TUser, TData>;
-  /** Opcional: IdP externo (Axum, etc.) */
-  external?: TExternal;
+  /**
+   * Auth adapter (required):
+   * - Internal adapter: createMemoryAuthAdapter, Postgres, Redis...
+   * - External adapter: createExternalAuthAdapter (talking to external APIs/Axum)
+   * - Custom adapter: your own implementation of AuthAdapter
+   */
+  adapter: TAdapter;
+
   csrf: AuthCsrfOptions;
   cookie?: AuthCookieOptions;
   sessionDuration?: number;
@@ -245,9 +262,9 @@ export interface AuthClientState<TUser extends AuthUser = AuthUser> {
 }
 
 export interface AuthActionContext<
-    TUser extends AuthUser = AuthUser,
-    TData extends AuthSessionData = AuthSessionData,
-    TExternal extends ApiExternalAdapter<TUser> = ApiExternalAdapter<TUser>
+  TUser extends AuthUser = AuthUser,
+  TData extends AuthSessionData = AuthSessionData,
+  TAdapter extends AuthAdapter<TUser, TData> = AuthAdapter<TUser, TData>
 > {
   session: AuthSession<TUser, TData>;
   freshCookie?: AuthCookieResult;
@@ -255,7 +272,8 @@ export interface AuthActionContext<
   request: AuthRequestLike;
   args: unknown[];
   event?: any;
-  external?: TExternal;
+  /** The configured auth adapter (internal, external, or custom) */
+  adapter: TAdapter;
 }
 
 export interface AuthActionOptions {
@@ -280,5 +298,3 @@ export type ProtectedPageContext<
   TUser extends AuthUser = AuthUser,
   TData extends AuthSessionData = AuthSessionData
 > = TContext & { session: AuthSession<TUser, TData> };
-
-

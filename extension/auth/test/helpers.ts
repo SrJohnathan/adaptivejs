@@ -16,7 +16,7 @@ export function createTestUser(overrides: Partial<AuthUser> = {}): AuthUser {
 
 export function createTestAuth(options: {
   users?: AuthUser[];
-  csrf?: { allowedOrigins?: string[] };
+  csrf?: { allowedOrigins: string[] };
   sessionDuration?: number;
   renewBefore?: number;
 } = {}) {

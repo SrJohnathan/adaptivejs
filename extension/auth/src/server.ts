@@ -16,6 +16,7 @@ import { evaluateRateLimit, extractClientIp } from "./rate-limit.js";
 import type {
   AuthActionContext,
   AuthActionOptions,
+  AuthAdapter,
   AuthCookieResult,
   AuthPageContext,
   AuthRequestLike,
@@ -219,8 +220,9 @@ export type {
 
 export function createAuth<
   TUser extends AuthUser = AuthUser,
-  TData extends AuthSessionData = AuthSessionData
->(options: CreateAuthOptions<TUser, TData>) {
+  TData extends AuthSessionData = AuthSessionData,
+  TAdapter extends AuthAdapter<TUser, TData> = AuthAdapter<TUser, TData>
+>(options: CreateAuthOptions<TUser, TData, TAdapter>) {
   if (!options.csrf || !options.csrf.allowedOrigins) {
     throw new AuthError(
       "CSRF_CONFIGURATION_INVALID",
@@ -345,6 +347,10 @@ export function createAuth<
       binding: sessionOptions.binding ?? binding
     };
 
+    if (typeof (options.adapter as any).setUser === "function") {
+      await (options.adapter as any).setUser(user);
+    }
+
     await options.adapter.createSession(stored);
     await audit("session.created", { sessionId: stored.id, userId: stored.userId });
 
@@ -379,91 +385,91 @@ export function createAuth<
       renewalGraceCache.delete(sessionId);
     }
 
-    // 2. Join in-flight renewal if this session is currently being renewed
+    // 2. Join in-flight renewal if this session is currently being processed
     const inFlight = renewalInFlight.get(sessionId);
     if (inFlight) {
       return await inFlight;
     }
 
-    const stored = await options.adapter.getSession(sessionId);
-    if (!stored) {
-      // Check grace cache once more in case it was rotated concurrently
-      const raceGrace = renewalGraceCache.get(sessionId);
-      if (raceGrace && Date.now() < raceGrace.expiresAtMs) {
-        return {
-          session: toPublicSession(raceGrace.stored, raceGrace.user),
-          freshCookie: raceGrace.freshCookie
-        };
-      }
-
-      await audit("session.rejected", { reason: "session-not-found" });
-      return {
-        session: null,
-        freshCookie: createBlankSessionCookie(cookieOptions)
-      };
-    }
-
-    const now = Date.now();
-    if (stored.expiresAt.getTime() <= now || stored.absoluteExpiresAt.getTime() <= now) {
-      await options.adapter.deleteSession(stored.id);
-      await audit("session.expired", { sessionId: stored.id, userId: stored.userId });
-      return {
-        session: null,
-        freshCookie: createBlankSessionCookie(cookieOptions)
-      };
-    }
-
-    const user = await options.adapter.getUser(stored.userId);
-    if (!user) {
-      await options.adapter.deleteSession(stored.id);
-      await audit("session.rejected", { sessionId: stored.id, userId: stored.userId, reason: "user-not-found" });
-      throw new AuthError(
-        "SESSION_USER_NOT_FOUND",
-        `The user "${stored.userId}" associated with this session no longer exists.`,
-        401
-      );
-    }
-
-    // Session binding validation
-    if (options.sessionBinding && stored.binding) {
-      let mismatchReason: string | null = null;
-      if (options.sessionBinding.userAgent && stored.binding.userAgent) {
-        const currentUa = readHeader(request, "user-agent");
-        if (currentUa && currentUa !== stored.binding.userAgent) {
-          mismatchReason = "session-binding-user-agent-mismatch";
+    const inFlightPromise = (async (): Promise<ReadSessionResult<TUser, TData>> => {
+      const stored = await options.adapter.getSession(sessionId);
+      if (!stored) {
+        // Check grace cache once more in case it was rotated concurrently
+        const raceGrace = renewalGraceCache.get(sessionId);
+        if (raceGrace && Date.now() < raceGrace.expiresAtMs) {
+          return {
+            session: toPublicSession(raceGrace.stored, raceGrace.user),
+            freshCookie: raceGrace.freshCookie
+          };
         }
-      }
-      if (!mismatchReason && options.sessionBinding.ip && stored.binding.ip) {
-        const currentIp = extractClientIp(request);
-        if (currentIp && currentIp !== stored.binding.ip) {
-          mismatchReason = "session-binding-ip-mismatch";
-        }
-      }
-      if (!mismatchReason && options.sessionBinding.fingerprint && stored.binding.fingerprint) {
-        const currentFp = readHeader(request, "x-client-fingerprint");
-        if (currentFp && currentFp !== stored.binding.fingerprint) {
-          mismatchReason = "session-binding-fingerprint-mismatch";
-        }
-      }
 
-      if (mismatchReason) {
-        await options.adapter.deleteSession(stored.id);
-        await audit("session.rejected", {
-          sessionId: stored.id,
-          userId: stored.userId,
-          reason: mismatchReason
-        });
+        await audit("session.rejected", { reason: "session-not-found" });
         return {
           session: null,
           freshCookie: createBlankSessionCookie(cookieOptions)
         };
       }
-    }
 
-    const remainingSeconds = Math.floor((stored.expiresAt.getTime() - now) / 1000);
+      const now = Date.now();
+      if (stored.expiresAt.getTime() <= now || stored.absoluteExpiresAt.getTime() <= now) {
+        await options.adapter.deleteSession(stored.id);
+        await audit("session.expired", { sessionId: stored.id, userId: stored.userId });
+        return {
+          session: null,
+          freshCookie: createBlankSessionCookie(cookieOptions)
+        };
+      }
 
-    if (remainingSeconds <= renewBefore) {
-      const renewalPromise = (async (): Promise<ReadSessionResult<TUser, TData>> => {
+      const user = await options.adapter.getUser(stored.userId);
+      if (!user) {
+        await options.adapter.deleteSession(stored.id);
+        await audit("session.rejected", { sessionId: stored.id, userId: stored.userId, reason: "user-not-found" });
+        throw new AuthError(
+          "SESSION_USER_NOT_FOUND",
+          `The user "${stored.userId}" associated with this session no longer exists.`,
+          401
+        );
+      }
+
+      // Session binding validation
+      if (options.sessionBinding && stored.binding) {
+        let mismatchReason: string | null = null;
+        if (options.sessionBinding.userAgent && stored.binding.userAgent) {
+          const currentUa = readHeader(request, "user-agent");
+          if (currentUa && currentUa !== stored.binding.userAgent) {
+            mismatchReason = "session-binding-user-agent-mismatch";
+          }
+        }
+        if (!mismatchReason && options.sessionBinding.ip && stored.binding.ip) {
+          const currentIp = extractClientIp(request);
+          if (currentIp && currentIp !== stored.binding.ip) {
+            mismatchReason = "session-binding-ip-mismatch";
+          }
+        }
+        if (!mismatchReason && options.sessionBinding.fingerprint && stored.binding.fingerprint) {
+          const currentFp = readHeader(request, "x-client-fingerprint");
+          if (currentFp && currentFp !== stored.binding.fingerprint) {
+            mismatchReason = "session-binding-fingerprint-mismatch";
+          }
+        }
+
+        if (mismatchReason) {
+          await options.adapter.deleteSession(stored.id);
+          await audit("session.rejected", {
+            sessionId: stored.id,
+            userId: stored.userId,
+            reason: mismatchReason
+          });
+          return {
+            session: null,
+            freshCookie: createBlankSessionCookie(cookieOptions)
+          };
+        }
+      }
+
+      const remainingSeconds = Math.floor((stored.expiresAt.getTime() - now) / 1000);
+
+      if (remainingSeconds <= renewBefore) {
         const renewed: StoredAuthSession<TData> = {
           ...stored,
           id: generateSessionId(),
@@ -490,20 +496,20 @@ export function createAuth<
           session: toPublicSession(renewed, user),
           freshCookie
         };
-      })();
-
-      renewalInFlight.set(stored.id, renewalPromise);
-      try {
-        return await renewalPromise;
-      } finally {
-        renewalInFlight.delete(stored.id);
       }
-    }
 
-    return {
-      session: toPublicSession(stored, user),
-      freshCookie: undefined
-    };
+      return {
+        session: toPublicSession(stored, user),
+        freshCookie: undefined
+      };
+    })();
+
+    renewalInFlight.set(sessionId, inFlightPromise);
+    try {
+      return await inFlightPromise;
+    } finally {
+      renewalInFlight.delete(sessionId);
+    }
   }
 
   async function requireSession(
@@ -717,17 +723,56 @@ export function createAuth<
   }
 
   async function login(
-    user: TUser,
+    userOrInput: TUser | Record<string, unknown>,
     request?: AuthRequestLike,
     sessionOptions?: CreateSessionOptions<TData>
-  ) {
-    return createSession(user, sessionOptions, request);
+  ): Promise<{
+    session: AuthSession<TUser, TData>;
+    cookie: AuthCookieResult;
+    user: TUser;
+    token?: string;
+  }> {
+    if (userOrInput && typeof userOrInput === "object" && "id" in userOrInput && !("password" in userOrInput) && typeof (userOrInput as any).id === "string") {
+      const res = await createSession(userOrInput as TUser, sessionOptions, request);
+      return { ...res, user: userOrInput as TUser };
+    }
+
+    const adapterLoginFn = (options.adapter as any).login ?? (options.adapter as any).request;
+    if (typeof adapterLoginFn === "function") {
+      const result = await adapterLoginFn.call(options.adapter, userOrInput);
+      const user = result.user ?? result;
+      const token = result.token;
+      const mergedOptions = token
+        ? { ...sessionOptions, data: { ...(sessionOptions?.data ?? {}), authToken: token } }
+        : sessionOptions;
+      const res = await createSession(user, mergedOptions as any, request);
+      return {
+        ...res,
+        user,
+        token
+      };
+    }
+
+    throw new AuthError(
+      "AUTHENTICATION_REQUIRED",
+      "[AdaptiveJS auth] The configured adapter does not support credentials login. Pass an AuthUser directly or use an adapter with .login() / .request() support.",
+      400
+    );
   }
 
   async function logout(
-    request: AuthRequestLike | Headers | Record<string, string | string[] | undefined> | string
+    request?: AuthRequestLike | Headers | Record<string, string | string[] | undefined> | string
   ) {
-    const cookie = await invalidateRequestSession(request);
+    if (typeof (options.adapter as any).logout === "function") {
+      try {
+        await (options.adapter as any).logout();
+      } catch {
+        // best-effort
+      }
+    }
+    const cookie = request
+      ? await invalidateRequestSession(request)
+      : createBlankSessionCookie(cookieOptions);
     return { cookie };
   }
 
@@ -802,8 +847,8 @@ export function createAuth<
   function action<TReturn = any>(
     optionsOrHandler:
       | AuthActionOptions
-      | ((context: AuthActionContext<TUser, TData>) => Promise<TReturn> | TReturn),
-    maybeHandler?: (context: AuthActionContext<TUser, TData>) => Promise<TReturn> | TReturn
+      | ((context: AuthActionContext<TUser, TData, TAdapter>) => Promise<TReturn> | TReturn),
+    maybeHandler?: (context: AuthActionContext<TUser, TData, TAdapter>) => Promise<TReturn> | TReturn
   ) {
     const actionOptions: AuthActionOptions =
       typeof optionsOrHandler === "function" ? {} : optionsOrHandler;
@@ -865,8 +910,7 @@ export function createAuth<
         request,
         args: actionArgs,
         event: context?.event,
-        external: options.adapter
-
+        adapter: options.adapter
       });
     };
   }
@@ -947,6 +991,7 @@ export function createAuth<
     action,
     hasRole,
     requireRole,
+    adapter: options.adapter,
     cookie: {
       create: (sessionId: string) => createSessionCookie(sessionId, cookieOptions),
       blank: () => createBlankSessionCookie(cookieOptions)
@@ -956,8 +1001,9 @@ export function createAuth<
 
 export type AdaptiveAuth<
   TUser extends AuthUser = AuthUser,
-  TData extends AuthSessionData = AuthSessionData
-> = ReturnType<typeof createAuth<TUser, TData>>;
+  TData extends AuthSessionData = AuthSessionData,
+  TAdapter extends AuthAdapter<TUser, TData> = AuthAdapter<TUser, TData>
+> = ReturnType<typeof createAuth<TUser, TData, TAdapter>>;
 
 export {
   buildLoginReturnUrl,

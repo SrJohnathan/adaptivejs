@@ -120,7 +120,57 @@ export async function loginAction(email: string, password: string, request: Requ
 
 ---
 
-## 5. Página protegida
+## 5. Usando Adapter Externo (API REST / Axum / Microserviço)
+
+Se a sua autenticação vive em um microserviço externo (Rust Axum, Go, FastAPI, etc.), use `createExternalAuthAdapter`. **Você não precisa configurar providers nem stores adicionais**: o adapter externo cuida de falar com a API e de gerenciar as sessões locais do AdaptiveJS.
+
+```ts
+// src/auth.ts
+import { createAuth } from "@adaptive-js/extension-auth/server";
+import { createExternalAuthAdapter } from "@adaptive-js/extension-auth/external-adapter";
+
+export const adapter = createExternalAuthAdapter({
+  baseUrl: process.env.AUTH_API_URL!, // ex: "http://localhost:3001"
+  loginPath: "/api/v1/auth/login",
+  registerPath: "/api/v1/auth/register",
+  mapUser: (p: any) => p.user,
+  mapToken: (p: any) => p.token,
+});
+
+export const auth = createAuth({
+  adapter, // <-- Um único adapter!
+  csrf: { allowedOrigins: ["https://app.example.com"] },
+  cookie: { name: "adaptive.session.dev", secure: false },
+});
+```
+
+### Login e Registro via Adapter Externo:
+
+No seu endpoint ou Server Action:
+
+```ts
+// Login direto contra a API externa:
+const { user, token } = await adapter.login({ email, password });
+const { session, cookie } = await auth.createSession(user, {
+  data: { authToken: token }
+});
+
+// Ou diretamente via auth.login(credentials):
+const { session, cookie } = await auth.login({ email, password }, request);
+```
+
+Dentro de um `auth.action`, o adapter está disponível no contexto:
+
+```ts
+export const updateProfile = auth.action(async ({ session, formData, adapter }) => {
+  // adapter.token ou adapter.request(...) disponíveis diretamente aqui
+  return { ok: true };
+});
+```
+
+---
+
+## 6. Página protegida
 
 ```tsx
 // src/pages/dashboard.tsx
@@ -162,7 +212,7 @@ export default auth.protectPage(
 
 ---
 
-## 6. Server Action segura (`auth.action`)
+## 7. Server Action segura (`auth.action`)
 
 Este é o caminho recomendado para qualquer mutação autenticada.
 
@@ -202,7 +252,7 @@ return (
 
 ---
 
-## 7. Logout
+## 8. Logout
 
 ```ts
 // Logout só deste dispositivo
@@ -223,7 +273,7 @@ await auth.logoutEverywhere(userId);
 
 ---
 
-## 8. Eventos de risco (invalidação automática)
+## 9. Eventos de risco (invalidação automática)
 
 Depois de qualquer evento sensível, use os helpers — **não** chame `invalidateUserSessions` na mão na maior parte dos casos:
 
@@ -238,7 +288,7 @@ Cada um invalida **todas** as sessões do usuário e emite audit.
 
 ---
 
-## 9. Cliente (UI hidratada)
+## 10. Cliente (UI hidratada)
 
 ```tsx
 // src/auth-client.ts
@@ -276,7 +326,7 @@ return <span>Olá, {auth.user()?.name}</span>;
 
 ---
 
-## 10. Checklist mínimo antes de ir para produção
+## 11. Checklist mínimo antes de ir para produção
 
 - [ ] `csrf.allowedOrigins` com as URLs reais (HTTPS)
 - [ ] Adapter de produção (não `createMemoryAuthAdapter`)
